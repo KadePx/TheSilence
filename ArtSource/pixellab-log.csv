@@ -12,3 +12,19 @@ asc_dart_E,Assets/_Project/Art/Craft/asc_dart_E.png,create_image_pro,34187188-50
 con_gunship_E,Assets/_Project/Art/Craft/con_gunship_E.png,create_image_pro,e7017b64-5fb6-4eef-950d-2fd3fd67b58e,0,2801,32,10,Concord gunship; 64 candidates per call
 title_keyart,Assets/_Project/Art/UI/Menu/title_keyart.png,create_image_pro,10959c35-de70-467f-bc14-907d152bfdb6,0,9001,688x384,25,Title screen key art
 starmap_bg_sector1,Assets/_Project/Art/Map/starmap_bg_sector1.png,create_image_pro,6131b072-0bf5-4473-abe6-854799cdd3c7,0,9002,688x384,25,Sector map background
+asc_blade_E,Assets/_Project/Art/Ships/Ascendancy/Blade/asc_blade_E.png,create_image_pro,99d62e50-da37-4ca5-8b72-60909159ccfb,3,1901,64,10,Blade escort; 16 candidates; style ref asc_cruiser_E128 (outline/detail/shading) + Ascendancy palette; NE/SE by rotsprite.py at 80
+asc_blade_E_n,Assets/_Project/Art/Ships/Ascendancy/Blade/asc_blade_E_n.png,create_normal_map,00243d81-35ef-4448-ab7d-a40618f30944,,,64,0.1,lite; OpenGL convention
+con_outrider_E,Assets/_Project/Art/Ships/Concord/Outrider/con_outrider_E.png,create_image_pro,b8287a94-d363-4488-9d77-a4350f8eb592,4,2901,80,15,PLACEHOLDER: all 9 candidates came out three-hulled (spec says catamaran); style ref asc_cruiser_E128 + Concord palette + con_trimaran_E128 colour ref; NE/SE by rotsprite.py at 100
+con_outrider_E_n,Assets/_Project/Art/Ships/Concord/Outrider/con_outrider_E_n.png,create_normal_map,84a7d887-40a9-4a88-ab66-546e31a21871,,,80,0.1,lite; OpenGL convention (first attempt 9cb7ba86 failed on rate limit; not charged)
+con_torpedo_E,Assets/_Project/Art/Craft/con_torpedo_E.png,create_image_pro,e53aa40c-8852-4211-ab2a-dbdd2dde40d9,26,4001,24,10,Concord torpedo; 64 candidates; Concord palette
+asc_missile_E,Assets/_Project/Art/Craft/asc_missile_E.png,create_image_pro,d5826399-6e69-4452-bfc5-b1e3a6125566,2,4002,16,10,Ascendancy missile; 64 candidates
+asteroid_1,Assets/_Project/Art/Board/asteroid_1.png,create_image_pro,8574eae4-06d3-47ac-a325-3fca19e889e2,4,5001,48,10,Asteroids 1-4 are candidates 4/7/13/18 of one call (25 candidates); Ion Reef rock palette
+asteroid_2,Assets/_Project/Art/Board/asteroid_2.png,create_image_pro,8574eae4-06d3-47ac-a325-3fca19e889e2,7,5001,48,0,same call as asteroid_1
+asteroid_3,Assets/_Project/Art/Board/asteroid_3.png,create_image_pro,8574eae4-06d3-47ac-a325-3fca19e889e2,13,5001,48,0,same call as asteroid_1
+asteroid_4,Assets/_Project/Art/Board/asteroid_4.png,create_image_pro,8574eae4-06d3-47ac-a325-3fca19e889e2,18,5001,48,0,same call as asteroid_1
+debris_1,Assets/_Project/Art/Board/debris_1.png,create_image_pro,818ad75f-30d4-4d25-82ad-ba6d26abb866,16,5101,32,10,Wreckage debris; 64 candidates
+debris_2,Assets/_Project/Art/Board/debris_2.png,create_image_pro,818ad75f-30d4-4d25-82ad-ba6d26abb866,19,5101,32,0,same call as debris_1
+battle_bg_ionreef,Assets/_Project/Art/Board/battle_bg_ionreef.png,create_image_pro,3617727d-4c0e-416c-90b1-6e67d64577a9,0,9003,688x384,25,Ion Reef battle board background; opaque; Ion Reef palette
+intent_icons,Assets/_Project/Art/Icons/Intents/,create_1_direction_object,a84eef0a-e7e7-4b8c-aafe-cb7d8439a7f1,0/5/9/13/18/20/35/37/51,,24,10,attack 0 torpedo 5 move 9 buff 13 spawn 18 unknown 20 warning 35 attack_alt 37 fire 51; 64 candidates; Silence UI palette; kept in PixelLab with tag silence-intent-icons
+card_frame_base,Assets/_Project/Art/UI/Cards/card_frame_base.png,create_ui_asset,571c4dba-f838-4945-bfa1-f8f3c014f70a,,7001,192x256,10,Card frame template (gunmetal + brass); card_cost_badge.png cropped locally from it at 3,3 46x46
+card_cost_badge_attempt,,create_image_pro,fec0c2cc-3e33-4d33-9fe7-8614821bc15a,,7101,32,0,Rejected by PixelLab content policy (not charged); badge cropped from card_frame_base instead
