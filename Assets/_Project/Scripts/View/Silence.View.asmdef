@@ -1,0 +1,14 @@
+{
+    "name": "Silence.View",
+    "rootNamespace": "Silence.View",
+    "references": [ "Silence.Core", "Silence.Data" ],
+    "includePlatforms": [],
+    "excludePlatforms": [],
+    "allowUnsafeCode": false,
+    "overrideReferences": false,
+    "precompiledReferences": [],
+    "autoReferenced": true,
+    "defineConstraints": [],
+    "versionDefines": [],
+    "noEngineReferences": false
+}

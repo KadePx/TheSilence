@@ -1,0 +1,14 @@
+{
+    "name": "Silence.Editor",
+    "rootNamespace": "Silence.Editor",
+    "references": [ "Silence.Core", "Silence.Data", "Silence.View", "Silence.Meta" ],
+    "includePlatforms": [ "Editor" ],
+    "excludePlatforms": [],
+    "allowUnsafeCode": false,
+    "overrideReferences": false,
+    "precompiledReferences": [],
+    "autoReferenced": true,
+    "defineConstraints": [],
+    "versionDefines": [],
+    "noEngineReferences": false
+}

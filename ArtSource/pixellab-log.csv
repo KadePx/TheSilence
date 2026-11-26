@@ -1,0 +1,14 @@
+asset,file,tool,job_id,candidate_index,seed,size,generations,notes
+asc_cruiser_E128,Assets/_Project/Art/Ships/Ascendancy/LanceCruiser/asc_cruiser_E128.png,create_image_pro,a8ea6ac6-ebe8-441f-be94-8f7c6339349a,1,1701,128,10,Ascendancy lance-cruiser; style reference for all factions
+asc_cruiser_rotate_test,,rotate_image,6cefb932-6283-4c4c-bbe6-96980a976920,,,128,2,Rejected: NE only turns ~20 deg; use Tools/rotsprite.py
+asc_cruiser_E128_ramprow,Assets/_Project/Art/Ships/Ascendancy/LanceCruiser/asc_cruiser_E128_ramprow.png,inpaint_image_pro_flash,c5d1d4df-d05e-4946-bdb7-26db4083cd0b,,,128,6,Module test: ram prow
+asc_cruiser_E128_dmg,Assets/_Project/Art/Ships/Ascendancy/LanceCruiser/asc_cruiser_E128_dmg.png,inpaint_image_pro_flash,ac044302-8e57-431f-81a9-c65650fe5a19,,,128,6,Damage state test
+asc_cruiser_E128_n,Assets/_Project/Art/Ships/Ascendancy/LanceCruiser/asc_cruiser_E128_n.png,create_normal_map,fcf70688-f5e5-43b3-997b-ba0083c8bd1c,,,128,0.1,OpenGL convention
+con_trimaran_E128,Assets/_Project/Art/Ships/Concord/Trimaran/con_trimaran_E128.png,create_image_pro,5f777c98-b8ee-4912-a41c-d4a23b8f07ed,0,2702,128,10,Concord trimaran (Venn's flagship); style ref asc_cruiser_E128
+con_trimaran_E128_n,Assets/_Project/Art/Ships/Concord/Trimaran/con_trimaran_E128_n.png,create_normal_map,e402a526-7f24-4907-bb49-250827fe3723,,,128,0.1,
+cho_cantor_E128,Assets/_Project/Art/Ships/Chorus/Cantor/cho_cantor_E128.png,create_image_pro,7b08d0c0-396a-4e00-b6a3-35044b1d690a,0,3703,128,10,Chorus Cantor; style ref asc_cruiser_E128
+cho_cantor_E128_n,Assets/_Project/Art/Ships/Chorus/Cantor/cho_cantor_E128_n.png,create_normal_map,7286e828-6ae0-4c19-b813-eb9fac43e2b8,,,128,0.1,
+asc_dart_E,Assets/_Project/Art/Craft/asc_dart_E.png,create_image_pro,34187188-5022-4926-8ce0-972cfd0873b9,0,1801,32,10,Ordinal dart; 64 candidates per call
+con_gunship_E,Assets/_Project/Art/Craft/con_gunship_E.png,create_image_pro,e7017b64-5fb6-4eef-950d-2fd3fd67b58e,0,2801,32,10,Concord gunship; 64 candidates per call
+title_keyart,Assets/_Project/Art/UI/Menu/title_keyart.png,create_image_pro,10959c35-de70-467f-bc14-907d152bfdb6,0,9001,688x384,25,Title screen key art
+starmap_bg_sector1,Assets/_Project/Art/Map/starmap_bg_sector1.png,create_image_pro,6131b072-0bf5-4473-abe6-854799cdd3c7,0,9002,688x384,25,Sector map background

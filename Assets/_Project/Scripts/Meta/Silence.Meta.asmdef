@@ -1,0 +1,14 @@
+{
+    "name": "Silence.Meta",
+    "rootNamespace": "Silence.Meta",
+    "references": [ "Silence.Core", "Silence.Data" ],
+    "includePlatforms": [],
+    "excludePlatforms": [],
+    "allowUnsafeCode": false,
+    "overrideReferences": false,
+    "precompiledReferences": [],
+    "autoReferenced": true,
+    "defineConstraints": [],
+    "versionDefines": [],
+    "noEngineReferences": false
+}
