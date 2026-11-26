@@ -1,7 +1,13 @@
 {
     "name": "Silence.Meta",
     "rootNamespace": "Silence.Meta",
-    "references": [ "Silence.Core", "Silence.Data" ],
+    "references": [
+        "Silence.Core",
+        "Silence.Data",
+        "Silence.View",
+        "Unity.TextMeshPro",
+        "Unity.InputSystem"
+    ],
     "includePlatforms": [],
     "excludePlatforms": [],
     "allowUnsafeCode": false,

@@ -161,9 +161,14 @@ namespace Silence.Core.Battle
 
         // ================================================================ player actions
 
-        /// <summary>Play a card from hand. Returns null on success, otherwise why it can't be played (nothing changes).</summary>
-        public string PlayCard(int cardId, PlayTarget choice)
+        /// <summary>Why a card can't be played with this choice, or null when it can. Changes nothing.</summary>
+        public string CheckPlay(int cardId, PlayTarget choice) => Prepare(cardId, choice, out _, out _, out _);
+
+        string Prepare(int cardId, PlayTarget choice, out PlayContext ctx, out int cost, out bool expend)
         {
+            ctx = null;
+            cost = 0;
+            expend = false;
             if (Phase != BattlePhase.Command) return "cards can only be played in the Command step";
             var card = Deck.FindInHand(cardId);
             if (card == null) return "card is not in hand";
@@ -177,10 +182,10 @@ namespace Silence.Core.Battle
                 if (source == null || !source.Alive) return "the card's ship is gone";
             }
 
-            int cost = CostOf(card);
+            cost = CostOf(card);
             if (cost > Command) return $"needs {cost} command, have {Command}";
 
-            bool expend = def.ExpendCost > 0 && (!def.ExpendOptional || choice.Expend);
+            expend = def.ExpendCost > 0 && (!def.ExpendOptional || choice.Expend);
             if (expend && Ordinals < def.ExpendCost) return $"needs {def.ExpendCost} Ordinals, have {Ordinals}";
 
             Unit target = null;
@@ -197,12 +202,24 @@ namespace Silence.Core.Battle
                     break;
             }
 
-            var ctx = new PlayContext { Card = card, Source = source, Target = target, Choice = choice, Expended = expend };
+            ctx = new PlayContext { Card = card, Source = source, Target = target, Choice = choice, Expended = expend };
             foreach (var e in def.Effects)
             {
                 string err = e.Validate(this, ctx);
                 if (err != null) return err;
             }
+            return null;
+        }
+
+        /// <summary>Play a card from hand. Returns null on success, otherwise why it can't be played (nothing changes).</summary>
+        public string PlayCard(int cardId, PlayTarget choice)
+        {
+            string error = Prepare(cardId, choice, out var ctx, out int cost, out bool expend);
+            if (error != null) return error;
+            var card = ctx.Card;
+            var def = card.Def;
+            var source = ctx.Source;
+            var target = ctx.Target;
 
             Command -= cost;
             if (expend)
@@ -480,6 +497,27 @@ namespace Silence.Core.Battle
                 if (best < 0 || target.Shields[i] + target.Armor[i] > target.Shields[best] + target.Armor[best]) best = i;
             }
             return best;
+        }
+
+        /// <summary>What an attack would do right now, without doing it: (hit arc, shields absorbed, armor, hull damage).</summary>
+        public (int arc, int shields, int armor, int hull) PreviewDamage(Unit target, int amount, HexCoord from, DamageFlags flags)
+        {
+            int remaining = amount, absorbed = 0, armored = 0, arc = -1;
+            if (target.IsCapital && !flags.Direct)
+            {
+                arc = HitArc(target, from);
+                if (!flags.IgnoreShields)
+                {
+                    absorbed = Math.Min(target.Shields[arc], remaining);
+                    remaining -= absorbed;
+                }
+                if (!flags.IgnoreArmor)
+                {
+                    armored = Math.Min(target.Armor[arc], remaining);
+                    remaining -= armored;
+                }
+            }
+            return (arc, absorbed, armored, Math.Min(remaining, target.Hull));
         }
 
         /// <summary>

@@ -1,8 +1,22 @@
-﻿{
+{
     "name": "Silence.Editor",
     "rootNamespace": "Silence.Editor",
-    "references": [ "Silence.Core", "Silence.Data", "Silence.View", "Silence.Meta", "Unity.RenderPipelines.Universal.Runtime", "Unity.RenderPipelines.Universal.2D.Runtime" ],
-    "includePlatforms": [ "Editor" ],
+    "references": [
+        "Silence.Core",
+        "Silence.Data",
+        "Silence.View",
+        "Silence.Meta",
+        "Unity.RenderPipelines.Universal.Runtime",
+        "Unity.RenderPipelines.Universal.2D.Runtime",
+        "Unity.TextMeshPro",
+        "Unity.TextMeshPro.Editor",
+        "Unity.InputSystem",
+        "UnityEditor.TestRunner",
+        "UnityEngine.TestRunner"
+    ],
+    "includePlatforms": [
+        "Editor"
+    ],
     "excludePlatforms": [],
     "allowUnsafeCode": false,
     "overrideReferences": false,

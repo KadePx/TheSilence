@@ -38,29 +38,34 @@ namespace Silence.Core.Battle
             return null;
         }
 
-        public override void Apply(Battle b, PlayContext ctx)
+        /// <summary>Damage and flags this attack would use on a target right now (marks, Expend, Overcharge, Waymind).</summary>
+        public (int damage, DamageFlags flags) Resolve(Battle b, Unit s, Unit t, bool expended)
         {
-            var s = ctx.Source;
-            var t = ctx.Target;
             int dmg = Damage + t.MarkBonus;
             var flags = new DamageFlags();
-            if (ctx.Expended)
+            if (expended)
             {
                 dmg += ExpendBonus;
                 flags.IgnoreShields = ExpendIgnoresShields;
             }
-            if (IsLance)
-            {
-                dmg += s.LanceBonus;
-                s.LanceBonus = 0;
-            }
+            if (IsLance) dmg += s.LanceBonus;
             if (b.WaymindPrimed)
             {
                 flags.IgnoreArmor = true;
                 flags.CritOnAnyHull = true;
-                b.WaymindPrimed = false;
             }
+            return (dmg, flags);
+        }
+
+        public override void Apply(Battle b, PlayContext ctx)
+        {
+            var s = ctx.Source;
+            var t = ctx.Target;
+            var (dmg, flags) = Resolve(b, s, t, ctx.Expended);
+            if (IsLance) s.LanceBonus = 0;
+            b.WaymindPrimed = false;
             b.AddHeat(s, Heat);
+            b.Emit(EventKind.Attack, s.Id, t.Id, dmg, $"{s.Name} fires {ctx.Card.Def.Name} at {t.Name}");
             b.DealDamage(t, dmg, s.Pos, flags, s);
         }
     }

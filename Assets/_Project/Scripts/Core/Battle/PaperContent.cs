@@ -376,6 +376,31 @@ namespace Silence.Core.Battle
             return b;
         }
 
+        /// <summary>
+        /// Carry damage, junk, Ordinals and dart losses from a finished battle into one that has not started:
+        /// hull by ship name, junk cards into the deck, a lost ship stays lost (with its cards).
+        /// </summary>
+        public static void CarryOver(Battle from, Battle to)
+        {
+            to.Ordinals = from.Ordinals;
+            if (from.DartsInHangar >= 0) to.DartsInHangar = from.DartsInHangar + from.PlayerCraftCount();
+            foreach (var u in to.Units.FindAll(x => x.Side == Side.Player && x.IsCapital))
+            {
+                var old = from.Units.Find(x => x.Side == Side.Player && x.IsCapital && x.Name == u.Name);
+                if (old == null) continue;
+                if (!old.Alive)
+                {
+                    u.Alive = false;
+                    u.Hull = 0;
+                    foreach (var pile in to.Deck.AllPiles()) pile.RemoveAll(c => c.SourceId == u.Id);
+                }
+                else u.Hull = System.Math.Min(u.MaxHull, old.Hull);
+            }
+            foreach (var pile in from.Deck.AllPiles())
+                foreach (var c in pile)
+                    if (c.Def.IsJunk) to.AddCard(c.Def, -1);
+        }
+
         static void AddDeck(Battle b, IEnumerable<(CardDef card, int source)> cards, Unit flag, Unit escort)
         {
             foreach (var (card, source) in cards) b.AddCard(card, source == 1 ? escort.Id : flag.Id);
