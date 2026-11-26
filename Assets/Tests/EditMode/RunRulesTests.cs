@@ -171,6 +171,29 @@ namespace Silence.Tests
         }
 
         [Test]
+        public void TheMapOnlyEverGoesForward()
+        {
+            for (long seed = 1; seed <= 30; seed++)
+            {
+                var r = RunRules.NewRun(seed, c);
+                foreach (var n in r.Nodes)
+                    foreach (int id in n.Next) Assert.Greater(r.Node(id).Layer, n.Layer, $"seed {seed}: a link never leads back or sideways");
+
+                // Walk a few nodes: nothing behind or beside the fleet is ever offered or accepted.
+                for (int step = 0; step < 4; step++)
+                {
+                    var options = RunRules.Choices(r);
+                    int layer = r.CurrentNode < 0 ? -1 : r.Current.Layer;
+                    Assert.IsTrue(options.All(o => o.Layer == layer + 1), $"seed {seed}: only the next layer is offered");
+                    foreach (var behind in r.Nodes.Where(n => n.Layer <= layer))
+                        Assert.IsNotNull(RunRules.Travel(r, c, behind.Id), $"seed {seed}: node {behind.Id} is behind the fleet");
+                    Assert.IsNull(RunRules.Travel(r, c, options[0].Id));
+                    r.Phase = RunPhase.Map; // skip whatever the node holds
+                }
+            }
+        }
+
+        [Test]
         public void TravelFollowsLinksAndMovesTheRace()
         {
             var r = RunRules.NewRun(3, c);
@@ -204,6 +227,42 @@ namespace Silence.Tests
             Assert.AreEqual(1, b.Deck.DrawPile.Count(x => x.Def.IsJunk));
             Assert.IsTrue(b.LiveUnits(Side.Enemy).Any(u => u.IsCapital));
             Assert.AreEqual(c.Encounter(r.PendingEncounter).Name, b.Title);
+        }
+
+        [Test]
+        public void BattlesOpenWithTheFleetsAlreadyInReach()
+        {
+            Assert.AreEqual(2, c.Config.PlayerStartCol);
+            foreach (var enc in c.Encounters)
+            {
+                var r = RunRules.NewRun(3, c);
+                r.Phase = RunPhase.Battle;
+                r.PendingEncounter = enc.Id;
+                r.CurrentNode = 0;
+                var b = RunRules.BuildBattle(r, c);
+                var flag = b.Flagship;
+                Assert.AreEqual((c.Config.PlayerStartCol, 2), flag.Pos.ToOffset(), enc.Id);
+                int nearest = b.LiveUnits(Side.Enemy).Min(e => e.Pos.DistanceTo(flag.Pos));
+                Assert.LessOrEqual(nearest, 4, $"{enc.Id}: something is inside lance range on turn 1");
+                Assert.GreaterOrEqual(nearest, 2, $"{enc.Id}: nothing starts on top of the flagship");
+                Assert.AreEqual(b.Units.Count, b.Units.Select(u => u.Pos).Distinct().Count(), $"{enc.Id}: no two units share a hex");
+                foreach (var u in b.Units) Assert.IsFalse(b.Board.BlocksMovement(u.Pos), $"{enc.Id}: {u.Name} does not start inside terrain");
+            }
+        }
+
+        [Test]
+        public void SlowHeaviesHoldTheBackLineWhileTheirEscortsComeForward()
+        {
+            var r = RunRules.NewRun(3, c);
+            r.Phase = RunPhase.Battle;
+            r.PendingEncounter = "carrier_group";
+            r.CurrentNode = 0;
+            var b = RunRules.BuildBattle(r, c);
+            var enc = c.Encounter("carrier_group");
+            var carrier = b.Units.First(u => u.Side == Side.Enemy && u.MaxSpeed <= 1);
+            var frigate = b.Units.First(u => u.Side == Side.Enemy && u.IsCapital && u.MaxSpeed > 1);
+            Assert.AreEqual(enc.Units.First(u => u.Unit == "carrier").Col, carrier.Pos.ToOffset().col);
+            Assert.AreEqual(enc.Units.First(u => u.Unit == "frigate").Col - c.Config.EnemyAdvance, frigate.Pos.ToOffset().col);
         }
 
         [Test]

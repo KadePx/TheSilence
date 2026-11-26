@@ -47,7 +47,7 @@ namespace Silence.Data
             public int startScrap, startOrdinals, maxOrdinals, startDarts, maxDarts, flagshipBaseHeatCap, layers;
             public int removeCardCost, minDeckSize;
             public int repairCostPerHull, removeJunkCost, moduleCost, rebuildEscortCost, dartCost, ordinalCost, ordinalsPerPurchase;
-            public int rewardCards, ordinalsPerVictory, fieldRepair, concordRate, chorusRate, rivalSpread, concordStart, chorusStart;
+            public int rewardCards, ordinalsPerVictory, fieldRepair, playerStartCol, enemyAdvance, concordRate, chorusRate, rivalSpread, concordStart, chorusStart;
             public int withdrawalDelay, longBattleTurns, longBattleDelay, shipyardDelayPerPurchase;
             public int flagshipRebuildOrdinals, flagshipRebuildMaxHullLoss;
             public string[] slots;
@@ -78,7 +78,7 @@ namespace Silence.Data
                 RemoveCardCost = c.removeCardCost > 0 ? c.removeCardCost : 30, MinDeckSize = c.minDeckSize > 0 ? c.minDeckSize : 8,
                 RepairCostPerHull = c.repairCostPerHull, RemoveJunkCost = c.removeJunkCost, ModuleCost = c.moduleCost, RebuildEscortCost = c.rebuildEscortCost,
                 DartCost = c.dartCost, OrdinalCost = c.ordinalCost, OrdinalsPerPurchase = c.ordinalsPerPurchase,
-                RewardCards = c.rewardCards, OrdinalsPerVictory = c.ordinalsPerVictory, FieldRepair = c.fieldRepair,
+                RewardCards = c.rewardCards, OrdinalsPerVictory = c.ordinalsPerVictory, FieldRepair = c.fieldRepair, PlayerStartCol = c.playerStartCol, EnemyAdvance = c.enemyAdvance,
                 ConcordRate = c.concordRate, ChorusRate = c.chorusRate, RivalSpread = c.rivalSpread, ConcordStart = c.concordStart, ChorusStart = c.chorusStart,
                 WithdrawalDelay = c.withdrawalDelay, LongBattleTurns = c.longBattleTurns, LongBattleDelay = c.longBattleDelay,
                 ShipyardDelayPerPurchase = c.shipyardDelayPerPurchase,

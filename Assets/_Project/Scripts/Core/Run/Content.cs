@@ -100,6 +100,11 @@ namespace Silence.Core.Run
         public int OrdinalsPerVictory = 2;
         /// <summary>Hull each ship regains when the player takes field repairs instead of a reward card.</summary>
         public int FieldRepair = 5;
+        /// <summary>
+        /// Battles open with the fleets already closing: the player's ships start in this column and every
+        /// enemy starts this many columns nearer than its encounter lists, so turn 1 has shots to take.
+        /// </summary>
+        public int PlayerStartCol = 2, EnemyAdvance = 2;
         /// <summary>Race: tenths of a node each rival advances per node you travel, plus 0..spread.</summary>
         public int ConcordRate = 9, ChorusRate = 8, RivalSpread = 3;
         public int ConcordStart = 6, ChorusStart = 2;

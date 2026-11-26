@@ -253,10 +253,21 @@ namespace Silence.Core.Run
             bool isBoss = enc.Tier == 3;
             if (isBoss && (ConcordAhead(r) || r.VennEnraged)) units.AddRange(enc.Reinforcements);
 
-            var taken = new HashSet<HexCoord> { HexCoord.FromOffset(0, 2), HexCoord.FromOffset(0, 4) };
-            foreach (var u in units) taken.Add(HexCoord.FromOffset(u.Col, u.Row));
+            // The fleets start already closing, so the first turn is a fight and not an approach.
+            int playerCol = Math.Max(0, Math.Min(b.Board.Width - 5, cfg.PlayerStartCol));
+            // Slow heavies (carriers, tenders, the boss) hold the back line; their escorts and craft come forward.
+            int EnemyCol(EncounterUnit u)
+            {
+                var spec = UnitLibrary.Get(u.Unit);
+                bool holds = spec.Kind == UnitKind.Capital && spec.MaxSpeed <= 1;
+                return holds ? u.Col : Math.Max(playerCol + 3, u.Col - cfg.EnemyAdvance);
+            }
+
+            var taken = new HashSet<HexCoord> { HexCoord.FromOffset(playerCol, 2), HexCoord.FromOffset(playerCol, 4) };
+            foreach (var u in units) taken.Add(HexCoord.FromOffset(EnemyCol(u), u.Row));
             foreach (var (col, row, asteroid) in enc.Terrain)
             {
+                if (taken.Contains(HexCoord.FromOffset(col, row))) continue; // a ship is there: ships win
                 b.Board.Set(col, row, asteroid ? Terrain.Asteroid : Terrain.Debris);
                 taken.Add(HexCoord.FromOffset(col, row));
             }
@@ -285,13 +296,13 @@ namespace Silence.Core.Run
                     }
                     spec.MaxSpeed = Math.Max(1, spec.MaxSpeed);
                 }
-                var unit = b.AddUnit(spec, Side.Player, 0, i == FlagshipIndex ? 2 : 4, HexDirection.E, 1, i == FlagshipIndex);
+                var unit = b.AddUnit(spec, Side.Player, playerCol, i == FlagshipIndex ? 2 : 4, HexDirection.E, 1, i == FlagshipIndex);
                 unit.Hull = Math.Max(1, Math.Min(ship.Hull, ship.MaxHull));
                 ids[i] = unit.Id;
             }
 
             foreach (var u in units)
-                b.AddUnit(UnitLibrary.Get(u.Unit), Side.Enemy, u.Col, u.Row, u.Facing, u.Speed);
+                b.AddUnit(UnitLibrary.Get(u.Unit), Side.Enemy, EnemyCol(u), u.Row, u.Facing, u.Speed);
 
             foreach (var card in r.Deck)
             {

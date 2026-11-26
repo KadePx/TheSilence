@@ -10,7 +10,7 @@
     {
      "unit": "frigate",
      "col": 8,
-     "row": 3,
+     "row": 2,
      "speed": 2,
      "facing": "W"
     },
@@ -112,12 +112,12 @@
    "terrain": [
     {
      "col": 4,
-     "row": 2,
+     "row": 3,
      "asteroid": true
     },
     {
      "col": 4,
-     "row": 4,
+     "row": 6,
      "asteroid": true
     }
    ],
@@ -206,14 +206,14 @@
    "units": [
     {
      "unit": "frigate",
-     "col": 8,
+     "col": 7,
      "row": 1,
      "speed": 1,
      "facing": "W"
     },
     {
      "unit": "frigate",
-     "col": 8,
+     "col": 7,
      "row": 5,
      "speed": 1,
      "facing": "W"

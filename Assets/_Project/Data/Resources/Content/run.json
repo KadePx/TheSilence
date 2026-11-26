@@ -65,7 +65,9 @@
     "ship": 1
    }
   ],
-  "fieldRepair": 5
+  "fieldRepair": 5,
+  "playerStartCol": 2,
+  "enemyAdvance": 2
  },
  "modules": [
   {
