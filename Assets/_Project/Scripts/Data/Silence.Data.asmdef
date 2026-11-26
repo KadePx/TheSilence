@@ -1,7 +1,10 @@
 {
     "name": "Silence.Data",
     "rootNamespace": "Silence.Data",
-    "references": [ "Silence.Core" ],
+    "references": [
+        "Silence.Core",
+        "Unity.TextMeshPro"
+    ],
     "includePlatforms": [],
     "excludePlatforms": [],
     "allowUnsafeCode": false,

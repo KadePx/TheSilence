@@ -38,29 +38,34 @@ namespace Silence.Core.Battle
             return null;
         }
 
-        public override void Apply(Battle b, PlayContext ctx)
+        /// <summary>Damage and flags this attack would use on a target right now (marks, Expend, Overcharge, Waymind).</summary>
+        public (int damage, DamageFlags flags) Resolve(Battle b, Unit s, Unit t, bool expended)
         {
-            var s = ctx.Source;
-            var t = ctx.Target;
             int dmg = Damage + t.MarkBonus;
             var flags = new DamageFlags();
-            if (ctx.Expended)
+            if (expended)
             {
                 dmg += ExpendBonus;
                 flags.IgnoreShields = ExpendIgnoresShields;
             }
-            if (IsLance)
-            {
-                dmg += s.LanceBonus;
-                s.LanceBonus = 0;
-            }
+            if (IsLance) dmg += s.LanceBonus;
             if (b.WaymindPrimed)
             {
                 flags.IgnoreArmor = true;
                 flags.CritOnAnyHull = true;
-                b.WaymindPrimed = false;
             }
+            return (dmg, flags);
+        }
+
+        public override void Apply(Battle b, PlayContext ctx)
+        {
+            var s = ctx.Source;
+            var t = ctx.Target;
+            var (dmg, flags) = Resolve(b, s, t, ctx.Expended);
+            if (IsLance) s.LanceBonus = 0;
+            b.WaymindPrimed = false;
             b.AddHeat(s, Heat);
+            b.Emit(EventKind.Attack, s.Id, t.Id, dmg, $"{s.Name} fires {ctx.Card.Def.Name} at {t.Name}");
             b.DealDamage(t, dmg, s.Pos, flags, s);
         }
     }
@@ -94,17 +99,21 @@ namespace Silence.Core.Battle
     public sealed class TurnEffect : Effect
     {
         public int SlowSpeed = 1;
+        /// <summary>Turn the card's own ship instead of a chosen one (the escort's Come About).</summary>
+        public bool OnSource;
 
         public override string Validate(Battle b, PlayContext ctx)
         {
+            var ship = OnSource ? ctx.Source : ctx.Target;
+            if (ship == null || !ship.Alive) return "no ship to turn";
             int steps = System.Math.Abs(ctx.Choice.Turn);
             if (steps == 0) return "choose a turn direction";
             if (steps > 2) return "can turn at most twice";
-            if (steps == 2 && ctx.Target.Speed > SlowSpeed) return "can only turn twice at Speed 0-1";
+            if (steps == 2 && ship.Speed > SlowSpeed) return "can only turn twice at Speed 0-1";
             return null;
         }
 
-        public override void Apply(Battle b, PlayContext ctx) => b.TurnShip(ctx.Target, ctx.Choice.Turn);
+        public override void Apply(Battle b, PlayContext ctx) => b.TurnShip(OnSource ? ctx.Source : ctx.Target, ctx.Choice.Turn);
     }
 
     /// <summary>Brace: extra shields on every arc until the End step.</summary>
@@ -145,6 +154,7 @@ namespace Silence.Core.Battle
         public override string Validate(Battle b, PlayContext ctx)
         {
             if (b.PlayerCraftCount() >= MaxOut) return $"already {MaxOut} darts out";
+            if (b.DartsInHangar == 0) return "the hangar is empty";
             if (!b.FreeNeighbors(ctx.Source.Pos).Any()) return "no free hex next to the ship";
             return null;
         }
@@ -154,7 +164,8 @@ namespace Silence.Core.Battle
             for (int i = 0; i < Count && b.PlayerCraftCount() < MaxOut; i++)
             {
                 var free = b.FreeNeighbors(ctx.Source.Pos).ToList();
-                if (free.Count == 0) break;
+                if (free.Count == 0 || b.DartsInHangar == 0) break;
+                if (b.DartsInHangar > 0) b.DartsInHangar--;
                 b.Spawn(b.DartSpec, Side.Player, free[0], ctx.Source.Facing, 0);
             }
         }
@@ -322,6 +333,87 @@ namespace Silence.Core.Battle
                 u.Hull = 0;
                 b.Destroy(u);
             }
+        }
+    }
+
+    /// <summary>Raking Beam: damage every enemy in the given arcs of the source within range (line of fire needed).</summary>
+    public sealed class SweepEffect : Effect
+    {
+        public int Damage;
+        public Arc Arcs;
+        public int Range;
+        public int Heat;
+
+        System.Collections.Generic.List<Unit> Hits(Battle b, Unit s)
+            => b.LiveUnits(Side.Enemy).Where(e => Hex.Arcs.InAny(s.Pos, s.Facing, e.Pos, Arcs)
+                && s.Pos.DistanceTo(e.Pos) <= Range && b.Board.HasLineOfFire(s.Pos, e.Pos)).ToList();
+
+        public override string Validate(Battle b, PlayContext ctx)
+            => Hits(b, ctx.Source).Count == 0 ? "no enemy in the beam's arc and range" : null;
+
+        public override void Apply(Battle b, PlayContext ctx)
+        {
+            var s = ctx.Source;
+            b.AddHeat(s, Heat);
+            foreach (var e in Hits(b, s))
+            {
+                if (b.Outcome != BattleOutcome.Ongoing) break;
+                b.Emit(EventKind.Attack, s.Id, e.Id, Damage, $"{s.Name} rakes {e.Name}");
+                b.DealDamage(e, Damage + e.MarkBonus, s.Pos, new DamageFlags(), s);
+            }
+        }
+    }
+
+    /// <summary>Purge Their Decks: direct hull damage to an enemy next to the source ship.</summary>
+    public sealed class BoardingStrikeEffect : Effect
+    {
+        public int Damage;
+        public int Range = 1;
+
+        public override string Validate(Battle b, PlayContext ctx)
+        {
+            var t = ctx.Target;
+            if (t == null || !t.Alive || t.Side != Side.Enemy) return "needs an enemy target";
+            if (ctx.Source.Pos.DistanceTo(t.Pos) > Range) return Range == 1 ? "target must be adjacent" : $"target must be within {Range} hexes";
+            return null;
+        }
+
+        public override void Apply(Battle b, PlayContext ctx)
+        {
+            b.Emit(EventKind.Attack, ctx.Source.Id, ctx.Target.Id, Damage, $"Ordinals storm {ctx.Target.Name}");
+            b.DealDamage(ctx.Target, Damage, ctx.Source.Pos, new DamageFlags { Direct = true }, ctx.Source);
+        }
+    }
+
+    /// <summary>Hold the Line: extra shields on every arc of every player capital ship.</summary>
+    public sealed class ShieldFleetEffect : Effect
+    {
+        public int Amount;
+
+        public override void Apply(Battle b, PlayContext ctx)
+        {
+            foreach (var u in b.LiveUnits(Side.Player).Where(u => u.IsCapital).ToList())
+            {
+                for (int i = 0; i < ArcIndex.Count; i++) u.Shields[i] += Amount;
+                b.Emit(EventKind.ShieldsRaised, u.Id, -1, Amount, $"{u.Name} +{Amount} shields on every arc");
+            }
+        }
+    }
+
+    /// <summary>Repair hull on the source ship (Damage Control).</summary>
+    public sealed class RepairEffect : Effect
+    {
+        public int Amount;
+
+        public override string Validate(Battle b, PlayContext ctx)
+            => ctx.Target.Hull >= ctx.Target.MaxHull ? $"{ctx.Target.Name} is not damaged" : null;
+
+        public override void Apply(Battle b, PlayContext ctx)
+        {
+            var t = ctx.Target;
+            int before = t.Hull;
+            t.Hull = System.Math.Min(t.MaxHull, t.Hull + Amount);
+            b.Emit(EventKind.Repaired, t.Id, -1, t.Hull - before, $"{t.Name} repairs {t.Hull - before} hull ({t.Hull})");
         }
     }
 }

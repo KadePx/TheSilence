@@ -52,7 +52,7 @@ namespace Silence.Tests
             b.EndTurn();
             Assert.AreEqual(3, b.Command, "unspent command is lost and refilled to 3");
             Assert.AreEqual(5, b.Deck.Hand.Count);
-            Assert.AreEqual(10, b.Deck.Count);
+            Assert.AreEqual(12, b.Deck.Count);
         }
 
         [Test]
@@ -112,7 +112,7 @@ namespace Silence.Tests
             flag.Shields[ArcIndex.Fore] = 0;
             flag.Shields[ArcIndex.Aft] = 3;
             b.EndTurn();
-            Assert.AreEqual(2, flag.Shields[ArcIndex.Fore]);
+            Assert.AreEqual(1, flag.Shields[ArcIndex.Fore]);
             Assert.AreEqual(4, flag.Shields[ArcIndex.Aft]);
             Assert.AreEqual(4, flag.Shields[ArcIndex.Port]);
         }

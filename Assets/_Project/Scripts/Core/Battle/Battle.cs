@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -47,8 +47,12 @@ namespace Silence.Core.Battle
         /// <summary>Fleet-wide Ascendancy crew. At 0 nothing can be Expended and every card costs +1.</summary>
         public int Ordinals = 24;
         public bool WaymindPrimed;
+        /// <summary>Darts left aboard to launch. Losses carry over between battles; -1 = unlimited.</summary>
+        public int DartsInHangar = -1;
+        /// <summary>Shown on the battle screen ("Intercept at the Ring").</summary>
+        public string Title = "";
         /// <summary>After this many turns the fleets disengage (Withdrawal). Placeholder until the spec decides; 0 = no limit.</summary>
-        public int TurnLimit = 40;
+        public int TurnLimit = 25;
 
         public UnitSpec DartSpec = PaperUnits.Dart;
         public UnitSpec GunshipSpec = PaperUnits.Gunship;
@@ -157,9 +161,14 @@ namespace Silence.Core.Battle
 
         // ================================================================ player actions
 
-        /// <summary>Play a card from hand. Returns null on success, otherwise why it can't be played (nothing changes).</summary>
-        public string PlayCard(int cardId, PlayTarget choice)
+        /// <summary>Why a card can't be played with this choice, or null when it can. Changes nothing.</summary>
+        public string CheckPlay(int cardId, PlayTarget choice) => Prepare(cardId, choice, out _, out _, out _);
+
+        string Prepare(int cardId, PlayTarget choice, out PlayContext ctx, out int cost, out bool expend)
         {
+            ctx = null;
+            cost = 0;
+            expend = false;
             if (Phase != BattlePhase.Command) return "cards can only be played in the Command step";
             var card = Deck.FindInHand(cardId);
             if (card == null) return "card is not in hand";
@@ -173,10 +182,10 @@ namespace Silence.Core.Battle
                 if (source == null || !source.Alive) return "the card's ship is gone";
             }
 
-            int cost = CostOf(card);
+            cost = CostOf(card);
             if (cost > Command) return $"needs {cost} command, have {Command}";
 
-            bool expend = def.ExpendCost > 0 && (!def.ExpendOptional || choice.Expend);
+            expend = def.ExpendCost > 0 && (!def.ExpendOptional || choice.Expend);
             if (expend && Ordinals < def.ExpendCost) return $"needs {def.ExpendCost} Ordinals, have {Ordinals}";
 
             Unit target = null;
@@ -193,12 +202,24 @@ namespace Silence.Core.Battle
                     break;
             }
 
-            var ctx = new PlayContext { Card = card, Source = source, Target = target, Choice = choice, Expended = expend };
+            ctx = new PlayContext { Card = card, Source = source, Target = target, Choice = choice, Expended = expend };
             foreach (var e in def.Effects)
             {
                 string err = e.Validate(this, ctx);
                 if (err != null) return err;
             }
+            return null;
+        }
+
+        /// <summary>Play a card from hand. Returns null on success, otherwise why it can't be played (nothing changes).</summary>
+        public string PlayCard(int cardId, PlayTarget choice)
+        {
+            string error = Prepare(cardId, choice, out var ctx, out int cost, out bool expend);
+            if (error != null) return error;
+            var card = ctx.Card;
+            var def = card.Def;
+            var source = ctx.Source;
+            var target = ctx.Target;
 
             Command -= cost;
             if (expend)
@@ -478,6 +499,27 @@ namespace Silence.Core.Battle
             return best;
         }
 
+        /// <summary>What an attack would do right now, without doing it: (hit arc, shields absorbed, armor, hull damage).</summary>
+        public (int arc, int shields, int armor, int hull) PreviewDamage(Unit target, int amount, HexCoord from, DamageFlags flags)
+        {
+            int remaining = amount, absorbed = 0, armored = 0, arc = -1;
+            if (target.IsCapital && !flags.Direct)
+            {
+                arc = HitArc(target, from);
+                if (!flags.IgnoreShields)
+                {
+                    absorbed = Math.Min(target.Shields[arc], remaining);
+                    remaining -= absorbed;
+                }
+                if (!flags.IgnoreArmor)
+                {
+                    armored = Math.Min(target.Armor[arc], remaining);
+                    remaining -= armored;
+                }
+            }
+            return (arc, absorbed, armored, Math.Min(remaining, target.Hull));
+        }
+
         /// <summary>
         /// Shields on the hit arc absorb first, that arc's armor reduces the rest once, the remainder hits hull.
         /// 5 or more hull damage is a critical hit. Returns the hull damage dealt.
@@ -591,7 +633,7 @@ namespace Silence.Core.Battle
         public string Describe()
         {
             var sb = new StringBuilder();
-            sb.AppendLine($"Turn {Turn} Â· {Phase} Â· command {Command} Â· Ordinals {Ordinals} Â· {Outcome}");
+            sb.AppendLine($"Turn {Turn} | {Phase} | command {Command} | Ordinals {Ordinals} | {Outcome}");
             for (int row = 0; row < Board.Height; row++)
             {
                 if ((row & 1) == 1) sb.Append(' ');
@@ -607,7 +649,7 @@ namespace Silence.Core.Battle
             foreach (var u in Units.Where(u => u.Alive)) sb.AppendLine(u.ToString());
             foreach (var i in Intents) sb.AppendLine("Intent: " + i.Describe(this));
             sb.AppendLine($"Hand: {string.Join(", ", Deck.Hand)}");
-            sb.AppendLine($"Draw {Deck.DrawPile.Count} Â· Discard {Deck.Discard.Count} Â· Exhausted {Deck.Exhausted.Count}");
+            sb.AppendLine($"Draw {Deck.DrawPile.Count} | Discard {Deck.Discard.Count} | Exhausted {Deck.Exhausted.Count}");
             return sb.ToString();
         }
 

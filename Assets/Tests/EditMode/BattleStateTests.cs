@@ -16,7 +16,7 @@ namespace Silence.Tests
 
             Assert.AreEqual(7, b.Units.Count);
             Assert.AreEqual(2, b.Units.Count(u => u.Side == Side.Enemy && u.IsCapital));
-            Assert.AreEqual(10, b.Deck.Count);
+            Assert.AreEqual(12, b.Deck.Count);
             Assert.AreEqual(5, b.Deck.Hand.Count);
             Assert.AreEqual(3, b.Command);
             Assert.AreEqual(BattlePhase.Command, b.Phase);

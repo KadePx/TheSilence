@@ -1,7 +1,14 @@
 {
     "name": "Silence.View",
     "rootNamespace": "Silence.View",
-    "references": [ "Silence.Core", "Silence.Data" ],
+    "references": [
+        "Silence.Core",
+        "Silence.Data",
+        "Unity.TextMeshPro",
+        "Unity.InputSystem",
+        "Unity.RenderPipelines.Universal.Runtime",
+        "Unity.RenderPipelines.Universal.2D.Runtime"
+    ],
     "includePlatforms": [],
     "excludePlatforms": [],
     "allowUnsafeCode": false,

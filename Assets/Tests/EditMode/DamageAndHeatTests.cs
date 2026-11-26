@@ -118,7 +118,7 @@ namespace Silence.Tests
             var escort = b.Units.First(u => u.Name == "Blade");
             b.DealDamage(escort, 100, escort.Pos.Neighbor(HexDirection.E), new DamageFlags(), null);
             Assert.IsFalse(escort.Alive);
-            Assert.AreEqual(9, b.Deck.Count);
+            Assert.AreEqual(10, b.Deck.Count);
             Assert.IsFalse(b.Deck.AllPiles().SelectMany(p => p).Any(c => c.SourceId == escort.Id));
             Assert.AreEqual(BattleOutcome.Ongoing, b.Outcome, "losing a ship is not losing the battle");
         }
