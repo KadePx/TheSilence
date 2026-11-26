@@ -16,18 +16,27 @@ namespace Silence.View
     {
         public const float RefW = 1920f, RefH = 1080f;
 
+        /// <summary>
+        /// How many screen pixels one art pixel covers: the largest whole number that still fits the
+        /// 1920x1080 layout on screen (1 up to 1440p, 2 at 4K). Never a fraction, so pixel art stays crisp.
+        /// </summary>
+        public static int PixelScale => Mathf.Max(1, Mathf.FloorToInt(Mathf.Min(Screen.width / RefW, Screen.height / RefH)));
+
+        /// <summary>Orthographic size that draws world sprites (32 PPU) at exactly <see cref="PixelScale"/>.</summary>
+        public static float WorldHalfHeight => Screen.height / (2f * 32f * PixelScale);
+
         public static Canvas Canvas(string name, int order = 0)
         {
             var go = new GameObject(name, typeof(RectTransform));
             var canvas = go.AddComponent<Canvas>();
             canvas.renderMode = RenderMode.ScreenSpaceOverlay;
             canvas.sortingOrder = order;
+            canvas.pixelPerfect = true; // pixel fonts and plates stay on whole pixels
             var scaler = go.AddComponent<CanvasScaler>();
-            scaler.uiScaleMode = CanvasScaler.ScaleMode.ScaleWithScreenSize;
-            scaler.referenceResolution = new Vector2(RefW, RefH);
-            scaler.screenMatchMode = CanvasScaler.ScreenMatchMode.MatchWidthOrHeight;
-            scaler.matchWidthOrHeight = 1f;
+            scaler.uiScaleMode = CanvasScaler.ScaleMode.ConstantPixelSize;
+            scaler.scaleFactor = PixelScale;
             scaler.referencePixelsPerUnit = 32f;
+            go.AddComponent<PixelScaler>();
             go.AddComponent<GraphicRaycaster>();
             EnsureEventSystem();
             return canvas;
@@ -96,6 +105,23 @@ namespace Silence.View
             return img;
         }
 
+        /// <summary>A small floating plate (tooltips, fleet cards, chips with content).</summary>
+        public static Image Panel(Transform parent, string name, float x, float y, float w, float h)
+        {
+            var img = Img(parent, name, Skin.Panel, x, y, w, h, Color.white, true);
+            img.raycastTarget = true;
+            return img;
+        }
+
+        /// <summary>A bar: recessed track with a coloured fill, 0 to 1.</summary>
+        public static Image Bar(Transform parent, string name, float x, float y, float w, float h, float frac, Color color)
+        {
+            var track = Img(parent, name, Skin.BarTrack, x, y, w, h, Color.white, true);
+            float inner = Mathf.Round((w - 8f) * Mathf.Clamp01(frac));
+            if (inner > 0) Fill(track.transform, "Fill", 4, 4, inner, h - 8, color);
+            return track;
+        }
+
         public static Image Fill(Transform parent, string name, float x, float y, float w, float h, Color color)
             => Img(parent, name, Skin.Pixel, x, y, w, h, color);
 
@@ -110,12 +136,12 @@ namespace Silence.View
         }
 
         public static TextMeshProUGUI Label(Transform parent, string text, TMP_FontAsset font, float size, Color color,
-            float x, float y, float w, float h, TextAlignmentOptions align = TextAlignmentOptions.TopLeft)
+            float x, float y, float w, float h, TextAlignmentOptions align = TextAlignmentOptions.TopLeft, float bias = 0.15f)
         {
-            var rt = Box(parent, "Text", x, y, w, h);
+            var rt = Box(parent, "Text", Mathf.Round(x), Mathf.Round(y), Mathf.Round(w), Mathf.Round(h));
             var t = rt.gameObject.AddComponent<TextMeshProUGUI>();
             t.font = font;
-            t.fontSize = size;
+            t.fontSize = Skin.Snap(font, size, bias); // pixel fonts only at whole multiples of their native size
             t.color = color;
             t.alignment = align;
             t.text = text;
@@ -136,7 +162,6 @@ namespace Silence.View
             TextAlignmentOptions align = TextAlignmentOptions.Left, Color? color = null)
         {
             var t = Label(parent, text.ToUpperInvariant(), Skin.Stencil, size, color ?? Skin.Dim, x, y, w, h, align);
-            t.characterSpacing = 8f;
             return t;
         }
 
@@ -146,7 +171,7 @@ namespace Silence.View
 
         public static TextMeshProUGUI Number(Transform parent, string text, float size, float x, float y, float w, float h,
             TextAlignmentOptions align = TextAlignmentOptions.Left, Color? color = null)
-            => Label(parent, text, Skin.Mono, size, color ?? Skin.Text, x, y, w, h, align);
+            => Label(parent, text, Skin.Mono, size, color ?? Skin.Text, x, y, w, h, align, 0.45f);
 
         /// <summary>Chamfered steel button with a brass label; brass with dark text when highlighted.</summary>
         public static Button Btn(Transform parent, string label, float x, float y, float w, float h, Action onClick, float fontSize = 26f)
@@ -156,11 +181,11 @@ namespace Silence.View
             var btn = img.gameObject.AddComponent<Button>();
             btn.targetGraphic = img;
             var colors = btn.colors;
-            colors.normalColor = Skin.Steel;
-            colors.highlightedColor = Skin.Brass;
-            colors.pressedColor = Skin.BrassDark;
-            colors.selectedColor = Skin.Steel;
-            colors.disabledColor = new Color(0.16f, 0.17f, 0.2f, 1f);
+            colors.normalColor = new Color(0.86f, 0.86f, 0.88f, 1f);
+            colors.highlightedColor = Color.white;
+            colors.pressedColor = new Color(0.6f, 0.6f, 0.62f, 1f);
+            colors.selectedColor = colors.normalColor;
+            colors.disabledColor = new Color(0.45f, 0.45f, 0.48f, 0.8f);
             colors.colorMultiplier = 1f;
             colors.fadeDuration = 0.05f;
             btn.colors = colors;
@@ -225,6 +250,62 @@ namespace Silence.View
         }
     }
 
+    /// <summary>
+    /// Keeps a canvas (and the main camera) at a whole-number pixel scale as the window changes, and masks
+    /// whatever lies outside the 1920x1080 layout with black bars.
+    /// </summary>
+    public sealed class PixelScaler : MonoBehaviour
+    {
+        CanvasScaler scaler;
+        RectTransform[] bars;
+        int w, h;
+
+        void Start()
+        {
+            scaler = GetComponent<CanvasScaler>();
+            bars = new RectTransform[4];
+            for (int i = 0; i < 4; i++)
+            {
+                var img = Ui.Img(transform, "Letterbox", Skin.Pixel, 0, 0, 0, 0, Color.black);
+                img.raycastTarget = true;
+                bars[i] = img.rectTransform;
+                bars[i].anchorMin = bars[i].anchorMax = bars[i].pivot = new Vector2(0.5f, 0.5f);
+            }
+            Apply();
+        }
+
+        void LateUpdate()
+        {
+            if (Screen.width != w || Screen.height != h) Apply();
+            for (int i = 0; i < 4; i++) bars[i].SetAsLastSibling();
+        }
+
+        void Apply()
+        {
+            w = Screen.width;
+            h = Screen.height;
+            int k = Ui.PixelScale;
+            scaler.scaleFactor = k;
+            var cam = Camera.main;
+            if (cam != null && cam.orthographic) cam.orthographicSize = Ui.WorldHalfHeight;
+
+            // Canvas size in layout pixels; bars cover everything beyond the centred 1920x1080 root.
+            float cw = w / (float)k, ch = h / (float)k;
+            float sideW = Mathf.Max(0f, (cw - Ui.RefW) / 2f) + 2f, capH = Mathf.Max(0f, (ch - Ui.RefH) / 2f) + 2f;
+            Set(bars[0], -(Ui.RefW / 2f + sideW / 2f), 0, sideW, ch + 4f, cw > Ui.RefW);
+            Set(bars[1], Ui.RefW / 2f + sideW / 2f, 0, sideW, ch + 4f, cw > Ui.RefW);
+            Set(bars[2], 0, Ui.RefH / 2f + capH / 2f, cw + 4f, capH, ch > Ui.RefH);
+            Set(bars[3], 0, -(Ui.RefH / 2f + capH / 2f), cw + 4f, capH, ch > Ui.RefH);
+        }
+
+        static void Set(RectTransform rt, float x, float y, float bw, float bh, bool on)
+        {
+            rt.gameObject.SetActive(on);
+            rt.anchoredPosition = new Vector2(x, y);
+            rt.sizeDelta = new Vector2(bw, bh);
+        }
+    }
+
     /// <summary>Brass label on steel; dark label when the button turns brass under the pointer; grey when disabled.</summary>
     public sealed class ButtonLabelTint : MonoBehaviour, IPointerEnterHandler, IPointerExitHandler
     {
@@ -245,7 +326,7 @@ namespace Silence.View
         void LateUpdate()
         {
             if (label == null || button == null) return;
-            label.color = !button.interactable ? Skin.Faint : hover ? Skin.Ink : Skin.Brass;
+            label.color = !button.interactable ? Skin.Faint : hover ? Skin.BrassLight : Skin.Brass;
         }
     }
 

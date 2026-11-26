@@ -252,3 +252,42 @@ Beams, shots and engine glow are drawn in code rather than from the workbench.
 - Animation is functional: ships slide and swap sprites; there is no engine flame or damage overlay.
 - F9 (bot plays a turn) and F10 (autopilot) are left in for testing.
 - There is no .NET SDK on this PC and `DotnetTests/` never existed, so tests run only through Unity. The README and `CLAUDE.md` no longer mention it.
+
+## UI pass (after the alpha)
+
+Kade's feedback on the alpha: the interface felt out of place next to the pixel art and sometimes showed too much.
+
+### What changed
+
+- **Pixel fonts and a pixel panel kit from PixelLab** replace the smooth Google fonts and the plates drawn in code:
+  four fonts (heading, body, label, blackletter logo) and a kit of plates, wells, buttons, bars and chips, plus a
+  larger card frame. 90 generations, all in `ArtSource/pixellab-log.csv`.
+- **Whole-number scaling.** The alpha scaled everything by the window height, so at 2560x1440 the art was drawn at
+  1.33x and landed on uneven pixels. The UI and camera now scale by 1, 2 or 3 only and letterbox the rest.
+- **Battle screen:** the two full-height side panels are gone and the board has the full width. Each capital ship is
+  one compact card (hull, heat, shields and armor per arc, speed, heading). Enemy orders are one short row each.
+  The log and the rules are behind Log and Help buttons. Whatever the pointer is on shows in one small card.
+- **Cards** use the PixelLab frame at 1:1 and are never scaled. Card art is a close crop of the part of the ship the
+  card comes from, so a hand no longer shows five copies of the same ship.
+- **Map:** the fleet wall is replaced by floating cards, the top bar and race track are slimmer, reachable nodes
+  have a pixel hexagon that blinks instead of a smooth ring that swells.
+- **Dialogs** (briefing, salvage, events, shipyard, deck, run over, skirmish, end of battle) are laid out again on
+  the kit. The deck view shows cards at full size instead of shrunk.
+
+### Screenshots
+
+`ArtSource/Screenshots/ui_iter2_battle.png`, `ui_iter3_battle_busy.png`, `ui_btl_target.png`, `ui_btl_help.png`,
+`ui_btl_end.png`, `ui_iter3_menu.png`, `ui_iter4_map.png` and `ui_dlg_*.png` (one per dialog).
+
+### How it was checked
+
+132 EditMode tests pass. Every screen and dialog was put on screen in Play Mode at 1920x1080 and captured. The
+states were driven from script, not with a mouse, so hover (card lift, order rows, node tooltips) is still untested.
+
+### Still open
+
+- At 1440p the game is a 1080p picture with black bars. Fractional scaling would fill the screen but blur the art.
+- The old Google fonts are still in `Assets/_Project/Fonts` but nothing uses them.
+- Buttons brighten on hover by tint; painted hover and pressed states were not commissioned.
+- The pixel fonts have no degree sign, so card text says "60 deg".
+

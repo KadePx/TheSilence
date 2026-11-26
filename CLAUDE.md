@@ -54,6 +54,19 @@ the sprint plan.
 - Art and audio are in Git LFS; keep PNGs out of `Docs/` (screenshots go in `ArtSource/Screenshots/`).
 - Effect sheets from the PixelLab VFX workbench are square cells in rows; their layout JSON is in `ArtSource/`.
 
+## Interface
+
+- The UI is pixel art on the same grid as the sprites. Everything scales by a whole number (`Ui.PixelScale`:
+  1 up to 1440p, 2 at 4K) and whatever is left over is letterboxed; never scale a card, plate or label by a fraction.
+- Fonts are the four PixelLab pixel fonts in `Assets/_Project/Fonts/Pixel` (Heading 16 px, Body 16 px, Label 12 px,
+  Logo 32 px), baked as 1-bit bitmaps. `Ui.Label` snaps any requested size to a whole multiple of the font's native
+  size, so ask for 16, 32 or 48 (12 or 24 for labels and numbers). They have no glyphs beyond A-Z, a-z, 0-9 and
+  basic punctuation: no degree sign, brackets or ampersand.
+- Plates, wells, buttons, bars and chips come from the kit in `Assets/_Project/Art/UI/Kit`, 9-sliced in `Skin`.
+  Cards use `Art/UI/Cards/card_frame.png` (220x298) at 1:1.
+- Keep screens quiet: nothing sits on screen permanently unless the player needs it every turn. Rules text goes
+  behind Help, the battle log behind Log, detail on hover.
+
 ## Workflow
 
 - Short feature branches, merged to `main` when they play. Every rule change gets a test.

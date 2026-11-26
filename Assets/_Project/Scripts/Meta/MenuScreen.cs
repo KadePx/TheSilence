@@ -31,7 +31,7 @@ namespace Silence.Meta
             logo.fontMaterial.SetColor("_UnderlayColor", new Color(0f, 0f, 0f, 0.9f));
             logo.fontMaterial.SetFloat("_UnderlayOffsetY", -0.6f);
             logo.fontMaterial.SetFloat("_UnderlaySoftness", 0.25f);
-            Ui.Stamp(root, "It was broadcast to everyone at once", 20, 0, 292, Ui.RefW, 28, TextAlignmentOptions.Center, Skin.Brass);
+            Ui.Stamp(root, "It was broadcast to everyone at once", 24, 0, 300, Ui.RefW, 28, TextAlignmentOptions.Center, Skin.Brass);
 
             var panel = Ui.Plate(root, "Panel", 710, 420, 500, 520);
             float y = 34;

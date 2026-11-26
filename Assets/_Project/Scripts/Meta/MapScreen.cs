@@ -18,13 +18,13 @@ namespace Silence.Meta
     /// </summary>
     public sealed partial class MapScreen : MonoBehaviour
     {
-        const float LeftW = 330f, TopH = 58f;
+        const float LeftW = 330f, TopH = 52f, FleetW = 300f;
 
         RunState run;
         RunContent content;
         RectTransform root, mapRoot, fleetRoot, trackRoot, topRoot, overlay;
         TextMeshProUGUI infoText;
-        readonly List<RectTransform> pulsing = new List<RectTransform>();
+        readonly List<Image> pulsing = new List<Image>();
         string notice = "";
 
         public RunState Run => run;
@@ -42,14 +42,15 @@ namespace Silence.Meta
             Ui.Backdrop(root, "starmap_bg_sector1", new Color(0.72f, 0.72f, 0.8f));
 
             mapRoot = Ui.Box(root, "Map", 0, 0, Ui.RefW, Ui.RefH);
-            var top = Ui.Plate(root, "TopBar", 0, 0, Ui.RefW, TopH);
+            var top = Ui.Img(root, "TopBar", Skin.Header, 0, 0, Ui.RefW, TopH, Color.white, true);
+            top.raycastTarget = true;
             topRoot = Ui.Box(top.transform, "Content", 0, 0, Ui.RefW, TopH);
-            var left = Ui.Plate(root, "Fleet", 0, TopH, LeftW, Ui.RefH - TopH);
-            fleetRoot = Ui.Box(left.transform, "Content", 0, 0, LeftW, Ui.RefH - TopH);
-            var track = Ui.Plate(root, "Race", LeftW + 10, TopH + 8, Ui.RefW - LeftW - 20, 112);
-            trackRoot = Ui.Box(track.transform, "Content", 0, 0, Ui.RefW - LeftW - 20, 112);
-            var info = Ui.Well(root, "Info", LeftW + 10, Ui.RefH - 58, Ui.RefW - LeftW - 20, 48);
-            infoText = Ui.Body(info.transform, "", 19, 16, 9, Ui.RefW - LeftW - 60, 30, TextAlignmentOptions.Left);
+            // The fleet is a few compact cards floating over the map, not a wall down the left side.
+            fleetRoot = Ui.Box(root, "Fleet", 12, TopH + 12, FleetW, Ui.RefH - TopH - 24);
+            var track = Ui.Panel(root, "Race", LeftW + 10, TopH + 12, Ui.RefW - LeftW - 22, 100);
+            trackRoot = Ui.Box(track.transform, "Content", 0, 0, Ui.RefW - LeftW - 22, 100);
+            var info = Ui.Img(root, "Info", Skin.Slot, LeftW + 10, Ui.RefH - 50, Ui.RefW - LeftW - 22, 38, Color.white, true);
+            infoText = Ui.Body(info.transform, "", 16, 16, 11, Ui.RefW - LeftW - 60, 16, TextAlignmentOptions.Left);
             infoText.textWrappingMode = TextWrappingModes.NoWrap;
             infoText.overflowMode = TextOverflowModes.Ellipsis;
 
@@ -60,9 +61,10 @@ namespace Silence.Meta
 
         void Update()
         {
-            float s = 1f + 0.07f * Mathf.Sin(Time.unscaledTime * 4f);
-            foreach (var rt in pulsing)
-                if (rt != null) rt.localScale = Vector3.one * s;
+            // Reachable nodes blink rather than swell: scaling pixel art by a fraction makes it shimmer.
+            float a = 0.55f + 0.45f * Mathf.Abs(Mathf.Sin(Time.unscaledTime * 2.2f));
+            foreach (var img in pulsing)
+                if (img != null) img.color = Skin.Alpha(img.color, a);
         }
 
         // ---------------------------------------------------------------- refresh
@@ -119,83 +121,70 @@ namespace Silence.Meta
         void RefreshTop()
         {
             Ui.Clear(topRoot);
-            Ui.Heading(topRoot, "Sector I - The Ion Reef", 32, 22, 6, 520, 46);
-            float x = 620;
+            Ui.Heading(topRoot, "Sector I - The Ion Reef", 16, 28, 18, 520, 20);
+            float x = 560;
             x = Resource(x, "res_scrap", "Scrap", run.Scrap.ToString(), Skin.Brass);
             x = Resource(x, "res_ordinals", "Ordinals", $"{run.Ordinals}/{run.MaxOrdinals}", Skin.Cyan);
             x = Resource(x, "res_darts", "Darts", $"{run.Darts}/{run.MaxDarts}", Skin.Text);
             x = Resource(x, "icon_junk", "Junk", run.JunkCount().ToString(), run.JunkCount() > 0 ? Skin.Warn : Skin.Dim);
-            Ui.Stamp(topRoot, "Seed", 12, 1500, 10, 60, 16);
-            Ui.Number(topRoot, run.Seed.ToString(), 20, 1500, 26, 150, 26, TextAlignmentOptions.Left, Skin.Dim);
-            Ui.Btn(topRoot, "Deck", 1640, 9, 110, 40, ShowDeck, 22);
-            Ui.Btn(topRoot, "Menu", 1764, 9, 140, 40, () => { Game.Save(); Game.ToMenu(); }, 22);
+            Ui.Stamp(topRoot, $"Seed {run.Seed}", 12, 1440, 20, 170, 14, TextAlignmentOptions.Right, Skin.Faint);
+            Ui.Btn(topRoot, "Deck", 1630, 8, 130, 37, ShowDeck, 16);
+            Ui.Btn(topRoot, "Menu", 1768, 8, 134, 37, () => { Game.Save(); Game.ToMenu(); }, 16);
         }
 
         float Resource(float x, string icon, string label, string value, Color color)
         {
-            Ui.Art(topRoot, icon, x, 5, 1f);
-            Ui.Stamp(topRoot, label, 12, x + 54, 9, 120, 16);
-            Ui.Number(topRoot, value, 24, x + 54, 24, 120, 30, TextAlignmentOptions.Left, color);
-            return x + 200;
+            var art = Ui.Art(topRoot, icon, x, 2, 1f);
+            float w = art.rectTransform.sizeDelta.x;
+            Ui.Stamp(topRoot, label, 12, x + w + 8, 8, 120, 14);
+            Ui.Number(topRoot, value, 24, x + w + 8, 22, 120, 24, TextAlignmentOptions.Left, color);
+            return x + 210;
         }
 
         void RefreshFleet()
         {
             Ui.Clear(fleetRoot);
-            var t = fleetRoot;
-            Ui.Heading(t, "Fleet", 30, 18, 12, 200, 40);
-            float y = 58;
+            float y = 0;
             for (int i = 0; i < run.Ships.Count; i++)
             {
                 var ship = run.Ships[i];
-                Ui.Stamp(t, i == 0 ? "Flagship" : "Escort", 12, 20, y, 200, 16, TextAlignmentOptions.Left, Skin.Brass);
-                Ui.Heading(t, ship.Name, 28, 18, y + 14, 290, 36, TextAlignmentOptions.Left, ship.Alive ? Skin.Text : Skin.Faint);
-                var well = Ui.Well(t, "Art", 16, y + 54, 298, i == 0 ? 120 : 84);
-                well.gameObject.AddComponent<RectMask2D>();
-                string spriteName = i == 0 ? "asc_cruiser_E128" : "asc_blade_E";
-                var sprite = ArtLibrary.Instance.Sprite(spriteName);
-                if (sprite != null)
-                {
-                    float sc = i == 0 ? 1f : 1f;
-                    float w = sprite.rect.width * sc, h = sprite.rect.height * sc;
-                    Ui.Img(well.transform, "Ship", sprite, (298 - w) / 2f, ((i == 0 ? 120 : 84) - h) / 2f, w, h, ship.Alive ? Color.white : new Color(0.25f, 0.25f, 0.28f));
-                }
-                y += i == 0 ? 182 : 146;
+                bool flag = i == 0;
+                float h = !ship.Alive ? 66 : flag ? 78 + run.Modules.Count * 18 + 8 : 70;
+                var card = Ui.Panel(fleetRoot, "Ship " + ship.Name, 0, y, FleetW, h);
+                var t = card.transform;
+                Ui.Heading(t, ship.Name, 16, 16, 12, 200, 20, TextAlignmentOptions.Left, ship.Alive ? Skin.Text : Skin.Faint);
+                Ui.Stamp(t, flag ? "Flagship" : "Escort", 12, 190, 16, 94, 14, TextAlignmentOptions.Right, Skin.BrassDark);
+                y += h + 8;
                 if (!ship.Alive)
                 {
-                    Ui.Stamp(t, "Lost - rebuild at a shipyard", 13, 20, y, 290, 18, TextAlignmentOptions.Left, Skin.Bad);
-                    y += 34;
+                    Ui.Stamp(t, "Lost - rebuild at a shipyard", 12, 16, 40, 270, 14, TextAlignmentOptions.Left, Skin.Bad);
                     continue;
                 }
-                Ui.Stamp(t, "Hull", 12, 20, y, 100, 16);
-                Ui.Number(t, $"{ship.Hull}/{ship.MaxHull}", 19, 200, y - 4, 112, 22, TextAlignmentOptions.Right);
-                Ui.Well(t, "HullWell", 16, y + 20, 298, 20);
                 float frac = Mathf.Clamp01(ship.Hull / (float)ship.MaxHull);
-                Ui.Fill(t, "HullFill", 19, y + 23, 292 * frac, 14, frac > 0.34f ? Skin.Good : Skin.Bad);
-                y += 52;
-                if (i != 0) continue;
+                Ui.Stamp(t, "Hull", 12, 16, 43, 36, 14, TextAlignmentOptions.Left, Skin.Dim);
+                Ui.Bar(t, "Hull", 54, 40, 168, 18, frac, frac > 0.34f ? Skin.Good : Skin.Bad);
+                Ui.Number(t, $"{ship.Hull}/{ship.MaxHull}", 12, 224, 43, 62, 14, TextAlignmentOptions.Right);
+                if (!flag) continue;
                 for (int slot = 0; slot < run.Modules.Count; slot++)
                 {
                     var m = content.Module(run.Modules[slot]);
-                    Ui.Stamp(t, m.Slot, 11, 22, y + 3, 96, 16);
-                    Ui.Body(t, m.Name, 17, 124, y, 190, 22, TextAlignmentOptions.TopLeft);
-                    y += 24;
+                    Ui.Stamp(t, m.Slot, 12, 16, 70 + slot * 18, 96, 14, TextAlignmentOptions.Left, Skin.BrassDark);
+                    Ui.Stamp(t, m.Name, 12, 112, 70 + slot * 18, 176, 14, TextAlignmentOptions.Left, Skin.Text).textWrappingMode = TextWrappingModes.NoWrap;
                 }
-                y += 16;
             }
 
-            y += 6;
-            Ui.Stamp(t, $"Command deck - {run.Deck.Count} cards", 12, 20, y, 290, 16, TextAlignmentOptions.Left, Skin.Brass);
-            Ui.Btn(t, "View deck", 16, y + 22, 298, 44, ShowDeck, 24);
-            y += 84;
+            Ui.Btn(fleetRoot, $"Deck - {run.Deck.Count} cards", 0, y, FleetW, 40, ShowDeck, 16);
+            y += 50;
 
-            Ui.Stamp(t, "Log", 12, 20, y, 200, 16);
-            float logH = Ui.RefH - TopH - y - 36;
-            Ui.Well(t, "LogWell", 12, y + 20, LeftW - 24, logH);
-            var lines = run.Journal.Skip(Math.Max(0, run.Journal.Count - 7));
-            var log = Ui.Body(t, string.Join("\n", lines), 14, 22, y + 28, LeftW - 44, logH - 16, TextAlignmentOptions.BottomLeft, Skin.Dim);
-            log.overflowMode = TextOverflowModes.Truncate;
-            log.lineSpacing = -8f;
+            // The journal: only the last few lines, and only once there is something to say.
+            var lines = run.Journal.Skip(Math.Max(0, run.Journal.Count - 4)).ToList();
+            if (lines.Count == 0) return;
+            var log = Ui.Panel(fleetRoot, "Journal", 0, y, FleetW, 200);
+            var text = Ui.Label(log.transform, string.Join("\n", lines), Skin.Stencil, 12, Skin.Dim, 16, 14, FleetW - 32, 172, TextAlignmentOptions.TopLeft);
+            text.lineSpacing = 30f;
+            text.overflowMode = TextOverflowModes.Truncate;
+            text.ForceMeshUpdate();
+            log.rectTransform.sizeDelta = new Vector2(FleetW, Mathf.Min(200f, Mathf.Ceil(text.preferredHeight) + 28f));
         }
 
         // ---------------------------------------------------------------- race track
@@ -204,9 +193,9 @@ namespace Silence.Meta
         {
             Ui.Clear(trackRoot);
             var t = trackRoot;
-            float w = Ui.RefW - LeftW - 20;
-            Ui.Stamp(t, "The race to the gate", 12, 20, 10, 300, 16, TextAlignmentOptions.Left, Skin.Brass);
-            float x0 = 300, x1 = w - 120, yLine = 54;
+            float w = Ui.RefW - LeftW - 22;
+            Ui.Stamp(t, "The race to the gate", 12, 18, 14, 300, 14, TextAlignmentOptions.Left, Skin.BrassDark);
+            float x0 = 320, x1 = w - 130, yLine = 46;
             int length = RunRules.TrackLength(run);
             Ui.Fill(t, "Line", x0, yLine - 1, x1 - x0, 3, Skin.Faint);
             for (int i = 0; i <= run.BossLayer + 1; i++)
@@ -215,14 +204,13 @@ namespace Silence.Meta
                 Ui.Fill(t, "Tick", x - 1, yLine - 6, 2, 13, Skin.Faint);
             }
             Ui.Art(t, "node_boss", x1 + 14, yLine - 24, 1f);
-            Ui.Stamp(t, "Gate", 11, x1 + 64, yLine - 8, 60, 16);
+            Ui.Stamp(t, "Gate", 12, x1 + 66, yLine - 6, 60, 14);
 
-            Marker(t, x0, x1, yLine, run.ConcordProgress, length, "Concord", Skin.Hex("ffc46a"), false, yLine + 28, 11);
-            Marker(t, x0, x1, yLine, run.ChorusProgress, length, "Chorus", Skin.Hex("5fffc8"), false, yLine + 42, 11);
-            Marker(t, x0, x1, yLine, run.PlayerProgress, length, "You", Color.white, true, yLine - 48, 14);
+            Marker(t, x0, x1, yLine, run.ConcordProgress, length, "Concord", Skin.Hex("ffc46a"), false, yLine + 24, 12);
+            Marker(t, x0, x1, yLine, run.ChorusProgress, length, "Chorus", Skin.Hex("5fffc8"), false, yLine + 36, 12);
+            Marker(t, x0, x1, yLine, run.PlayerProgress, length, "You", Color.white, true, yLine - 40, 12);
 
-            Ui.Body(t, Lead("Concord", run.ConcordProgress) + "\n" + Lead("Chorus", run.ChorusProgress), 15, 20, 34, 270, 44, TextAlignmentOptions.TopLeft, Skin.Dim);
-            Ui.Body(t, "Concord ahead at the gate: its guard is reinforced.", 13, 20, 84, 270, 20, TextAlignmentOptions.TopLeft, Skin.Faint);
+            Ui.Body(t, Lead("Concord", run.ConcordProgress) + "\n" + Lead("Chorus", run.ChorusProgress), 16, 18, 38, 290, 40, TextAlignmentOptions.TopLeft, Skin.Dim);
         }
 
         string Lead(string name, int progress)
@@ -242,7 +230,7 @@ namespace Silence.Meta
             arrow.rectTransform.pivot = new Vector2(0.5f, 0.5f);
             arrow.rectTransform.anchoredPosition = new Vector2(x, -(above ? yLine - 14 : yLine + 15));
             arrow.rectTransform.localRotation = Quaternion.Euler(0f, 0f, above ? -90f : 90f);
-            Ui.Stamp(t, label, size, x - 70, labelY, 140, 18, TextAlignmentOptions.Center, color).characterSpacing = 4f;
+            Ui.Stamp(t, label, size, x - 70, labelY, 140, 14, TextAlignmentOptions.Center, color);
         }
 
         // ---------------------------------------------------------------- map
@@ -310,10 +298,12 @@ namespace Silence.Meta
                 float size = n.Kind == NodeKind.Boss ? 144f : 96f;
                 if (can || here)
                 {
-                    var ring = Ui.Img(mapRoot, "Ring", Skin.Ring, p.x - size * 0.68f, p.y - size * 0.68f, size * 1.36f, size * 1.36f, here ? Color.white : Skin.Brass);
+                    // A pixel hexagon around the hexagonal node icon, drawn 1:1.
+                    var hex = Skin.HexOutline(Mathf.RoundToInt(size * 0.62f), 4);
+                    var ring = Ui.Img(mapRoot, "Ring", hex, 0, 0, hex.rect.width, hex.rect.height, here ? Color.white : Skin.BrassLight);
                     ring.rectTransform.pivot = new Vector2(0.5f, 0.5f);
-                    ring.rectTransform.anchoredPosition = new Vector2(p.x, -p.y);
-                    if (can) pulsing.Add(ring.rectTransform);
+                    ring.rectTransform.anchoredPosition = new Vector2(Mathf.Round(p.x), -Mathf.Round(p.y));
+                    if (can) pulsing.Add(ring);
                 }
                 var sprite = ArtLibrary.Instance.Sprite(KindIcon(n.Kind));
                 var tint = here ? Color.white : n.Visited ? new Color(0.4f, 0.4f, 0.45f) : can ? Color.white : new Color(0.72f, 0.72f, 0.78f);
@@ -324,12 +314,11 @@ namespace Silence.Meta
                 relay.Enter = () => SetInfo(Describe(node) + (can ? "" : here ? "   <color=#8a90a0>(you are here)</color>" : node.Visited ? "   <color=#8a90a0>(visited)</color>" : ""));
                 relay.Exit = () => SetInfo(DefaultInfo());
                 relay.Click = _ => ClickNode(node.Id);
-                var label = Ui.Stamp(mapRoot, KindName(n.Kind), 11, p.x - 80, p.y + size / 2f - 2, 160, 16, TextAlignmentOptions.Center, can ? Skin.Brass : Skin.Dim);
-                label.characterSpacing = 4f;
+                Ui.Stamp(mapRoot, KindName(n.Kind), 12, p.x - 80, p.y + size / 2f + 8, 160, 14, TextAlignmentOptions.Center, can ? Skin.BrassLight : Skin.Dim);
             }
 
             if (run.CurrentNode < 0)
-                Ui.Stamp(mapRoot, "Entry", 12, NodePos(run.Nodes[0]).x - 80, 196, 160, 18, TextAlignmentOptions.Center, Skin.Brass);
+                Ui.Stamp(mapRoot, "Entry", 12, NodePos(run.Nodes[0]).x - 80, 186, 160, 14, TextAlignmentOptions.Center, Skin.Brass);
         }
 
         static void Line(Transform parent, Vector2 a, Vector2 b, Color color, float thickness)
@@ -408,26 +397,29 @@ namespace Silence.Meta
             string art = def.IsJunk ? (def.Id == "fire_on_deck" ? "status_fire" : "status_warning")
                 : def.Type == CardType.Hangar ? "asc_dart_E" : card.Ship == 1 ? "asc_blade_E" : "asc_cruiser_E128";
             var view = CardView.Create(parent, def, source, art, def.Cost);
-            view.Rect.anchoredPosition = new Vector2(centreX, -bottomY);
-            view.Rect.localScale = Vector3.one * scale;
+            view.Rect.anchoredPosition = new Vector2(Mathf.Round(centreX), -Mathf.Round(bottomY));
             return view;
         }
 
+        /// <summary>The whole deck at full size (cards are never scaled). Rows close up when the deck outgrows three of them.</summary>
         void ShowDeck()
         {
-            var d = OpenDialog(1700, 980, 0.8f);
-            Ui.Heading(d, $"Command deck - {run.Deck.Count} cards", 34, 34, 20, 900, 46);
-            Ui.Stamp(d, "Every card comes from a ship. Lose the ship and its cards go with it.", 12, 36, 64, 900, 16);
-            Ui.Btn(d, "Close", 1520, 22, 150, 48, Refresh, 26);
+            var d = OpenDialog(1880, 1040, 0.8f);
+            Ui.Heading(d, $"Command deck - {run.Deck.Count} cards", 32, 36, 26, 1200, 36);
+            Ui.Body(d, "Every card comes from a ship. Lose the ship and its cards go with it.", 16, 38, 70, 1200, 16, TextAlignmentOptions.TopLeft, Skin.Dim);
+            Ui.Btn(d, "Close", 1690, 26, 150, 48, Refresh, 16);
             var cards = run.Deck.OrderBy(c => c.Ship < 0 ? 2 : c.Ship).ThenBy(c => PaperCards.Get(c.Card).Type).ThenBy(c => c.Card).ToList();
-            const float scale = 0.78f;
-            float cw = CardView.W * scale + 12, ch = CardView.H * scale + 12;
-            int perRow = 10;
-            for (int i = 0; i < cards.Count && i < 40; i++)
+            const int perRow = 8;
+            int rows = Mathf.Max(1, (cards.Count + perRow - 1) / perRow);
+            float cw = CardView.W + 6, top = 104, room = 1040 - top - 26 - CardView.H;
+            float rowStep = rows <= 1 ? 0 : Mathf.Min(CardView.H + 10, Mathf.Floor(room / (rows - 1)));
+            float x0 = Mathf.Round((1880 - perRow * cw) / 2f);
+            for (int i = 0; i < cards.Count; i++)
             {
-                float x = 40 + (i % perRow) * cw + CardView.W * scale / 2f;
-                float y = 100 + (i / perRow) * ch + CardView.H * scale;
-                MakeCard(d, cards[i], x, y, scale);
+                float x = x0 + (i % perRow) * cw + CardView.W / 2f;
+                float y = top + (i / perRow) * rowStep + CardView.H;
+                var view = MakeCard(d, cards[i], x, y);
+                view.Hovered = v => v.transform.SetAsLastSibling();
             }
         }
     }

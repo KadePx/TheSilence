@@ -49,20 +49,34 @@ namespace Silence.Editor
             Debug.Log($"[ArtLibrary] {lib.Sprites.Count} sprites, {lib.Fonts.Count} fonts, {lib.Clips.Count} clips");
         }
 
+        /// <summary>Native glyph size of a pixel font, or 0 for a smooth font.</summary>
+        public static int PixelSize(string path)
+        {
+            if (!path.Contains("/Fonts/Pixel/")) return 0;
+            string n = Path.GetFileNameWithoutExtension(path);
+            return n.Contains("Logo") ? 32 : n.Contains("Label") ? 12 : 16;
+        }
+
         [MenuItem("Silence/Bake Fonts")]
         public static void BakeFonts()
         {
             foreach (string guid in AssetDatabase.FindAssets("t:Font", new[] { FontDir }))
             {
                 string path = AssetDatabase.GUIDToAssetPath(guid);
-                string outPath = Path.ChangeExtension(path, null) + " SDF.asset";
+                // Pixel fonts (Fonts/Pixel) are baked as 1-bit bitmaps at their native size and drawn only at
+                // whole multiples of it; everything else is a smooth SDF font.
+                int px = PixelSize(path);
+                string outPath = Path.ChangeExtension(path, null) + (px > 0 ? " PX.asset" : " SDF.asset");
                 if (AssetDatabase.LoadAssetAtPath<TMP_FontAsset>(outPath) != null) continue;
 
                 var font = AssetDatabase.LoadAssetAtPath<Font>(path);
-                var fa = TMP_FontAsset.CreateFontAsset(font, 72, 7, GlyphRenderMode.SDFAA, 1024, 1024, AtlasPopulationMode.Dynamic);
+                var fa = px > 0
+                    ? TMP_FontAsset.CreateFontAsset(font, px, 2, GlyphRenderMode.RASTER, 512, 512, AtlasPopulationMode.Dynamic)
+                    : TMP_FontAsset.CreateFontAsset(font, 72, 7, GlyphRenderMode.SDFAA, 1024, 1024, AtlasPopulationMode.Dynamic);
                 fa.name = Path.GetFileNameWithoutExtension(outPath);
                 fa.TryAddCharacters(Charset, out string missing);
                 fa.atlasPopulationMode = AtlasPopulationMode.Static;
+                if (px > 0) fa.atlasTexture.filterMode = FilterMode.Point;
                 AssetDatabase.CreateAsset(fa, outPath);
                 fa.material.name = fa.name + " Material";
                 fa.atlasTexture.name = fa.name + " Atlas";

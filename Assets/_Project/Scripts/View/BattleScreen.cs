@@ -69,12 +69,13 @@ namespace Silence.View
             cam = Camera.main;
             if (cam != null)
             {
-                // Fixed framing: 1080 reference pixels tall at 32 PPU. Identical to the Pixel Perfect Camera at
-                // 1080p and 4K, and it keeps the board lined up with the HUD at every other window size.
+                // Whole-number scaling, the same factor as the HUD (Ui.PixelScale): one art pixel is always
+                // 1, 2 or 3 screen pixels, and anything left over is letterboxed. PixelScaler keeps the size
+                // in step when the window changes.
                 var ppc = cam.GetComponent<PixelPerfectCamera>();
                 if (ppc != null) ppc.enabled = false;
                 cam.orthographic = true;
-                cam.orthographicSize = Ui.RefH / 2f / 32f;
+                cam.orthographicSize = Ui.WorldHalfHeight;
                 cam.transform.position = new Vector3(0f, 0f, -10f);
                 cam.backgroundColor = Skin.Ink;
             }
@@ -466,7 +467,7 @@ namespace Silence.View
             else if (mode == Mode.Dart && selectedDart != null)
             {
                 var reach = Battle.Reachable(selectedDart.Pos, selectedDart.Move + selectedDart.CraftBonusMove);
-                foreach (var h in reach) board.Highlight(h, Skin.Alpha(Skin.Cyan, 0.13f), Skin.Alpha(Skin.Cyan, 0.5f));
+                foreach (var h in reach) board.Highlight(h, Skin.Alpha(Skin.Cyan, 0.05f), Skin.Alpha(Skin.Cyan, 0.5f));
                 board.SetRing(selectedDart.Id, Skin.Cyan);
                 foreach (var en in Battle.LiveUnits(Side.Enemy))
                     if (reach.Any(h => h.DistanceTo(en.Pos) == 1)) board.SetRing(en.Id, Skin.Bad);
@@ -501,7 +502,7 @@ namespace Silence.View
                     for (int i = 0; i < source.Speed + ram.ExtraRange; i++)
                     {
                         h = h.Neighbor(source.Facing);
-                        board.Highlight(h, Skin.Alpha(Skin.Brass, 0.16f), Skin.Alpha(Skin.Brass, 0.6f));
+                        board.Highlight(h, Skin.Alpha(Skin.Brass, 0.06f), Skin.Alpha(Skin.Brass, 0.6f));
                     }
                 }
             }
@@ -529,7 +530,7 @@ namespace Silence.View
                 if (!Arcs.InAny(source.Pos, source.Facing, h, arcs)) continue;
                 bool clear = !needsLine || Battle.Board.HasLineOfFire(source.Pos, h);
                 if (Battle.Board.Get(h) == Terrain.Asteroid) clear = false;
-                board.Highlight(h, Skin.Alpha(Skin.Brass, clear ? 0.15f : 0.04f), Skin.Alpha(Skin.Brass, clear ? 0.55f : 0.18f));
+                board.Highlight(h, Skin.Alpha(Skin.Brass, clear ? 0.05f : 0.015f), Skin.Alpha(Skin.Brass, clear ? 0.55f : 0.15f));
             }
         }
 
@@ -591,7 +592,7 @@ namespace Silence.View
                     }
                     if (hov != null && hov.Side == Side.Player && hov.Kind == UnitKind.Craft)
                         return hov.CraftActed ? "This dart has acted this turn." : "Click the dart to move it.";
-                    return "Select a card, click a dart to move it, or end the turn.  <color=#8a90a0>Keys: 1-9 cards, E end turn, Esc cancel.</color>";
+                    return "Select a card, click a dart to move it, or end the turn.";
                 }
             }
         }
