@@ -94,11 +94,41 @@ namespace Silence.Core.Run
                     r.Nodes.Add(n);
                     nodes.Add(n);
                 }
-                // A yard is always within reach halfway across, so a mauled fleet has somewhere to go.
-                if (layer == last / 2 && !nodes.Any(n => n.Kind == NodeKind.Shipyard)) nodes[rng.NextInt(nodes.Count)].Kind = NodeKind.Shipyard;
-                // A layer is never all events or all fights: it has to be a choice.
-                if (layer > 0 && layer < last - 1 && nodes.All(n => n.Kind == nodes[0].Kind))
-                    nodes[rng.NextInt(nodes.Count)].Kind = nodes[0].Kind == NodeKind.Battle ? NodeKind.Event : NodeKind.Battle;
+                if (layer > 0 && layer < last - 1)
+                {
+                    // A yard is always within reach halfway across, so a mauled fleet has somewhere to go.
+                    if (layer == last / 2 && !nodes.Any(n => n.Kind == NodeKind.Shipyard)) nodes[rng.NextInt(nodes.Count)].Kind = NodeKind.Shipyard;
+                    // Every written event appears at most once per sector; further unknowns are fights.
+                    foreach (var n in nodes)
+                    {
+                        if (n.Kind != NodeKind.Event) continue;
+                        if (nextEvent < events.Count) n.Event = events[nextEvent++];
+                        else n.Kind = NodeKind.Battle;
+                    }
+                    // A layer is never all one thing: it has to be a choice.
+                    if (nodes.All(n => n.Kind == nodes[0].Kind))
+                    {
+                        var pick = nodes[rng.NextInt(nodes.Count)];
+                        if (pick.Kind != NodeKind.Battle)
+                        {
+                            if (pick.Kind == NodeKind.Event)
+                            {
+                                // Hand the most recently dealt event back: whichever node holds it takes this node's instead.
+                                nextEvent--;
+                                var holder = nodes.Find(n => n != pick && n.Event == events[nextEvent]);
+                                if (holder != null) holder.Event = pick.Event;
+                            }
+                            pick.Kind = NodeKind.Battle;
+                            pick.Event = "";
+                        }
+                        else if (nextEvent < events.Count)
+                        {
+                            pick.Kind = NodeKind.Event;
+                            pick.Event = events[nextEvent++];
+                        }
+                        else pick.Kind = layer >= 3 ? NodeKind.Elite : NodeKind.Shipyard;
+                    }
+                }
                 layers.Add(nodes);
             }
 
@@ -106,10 +136,6 @@ namespace Silence.Core.Run
             {
                 switch (n.Kind)
                 {
-                    case NodeKind.Event:
-                        n.Event = events[nextEvent % events.Count];
-                        nextEvent++;
-                        break;
                     case NodeKind.Battle:
                         n.Encounter = PickEncounter(c, rng, n.Layer <= 1 ? 0 : 1);
                         break;
@@ -142,7 +168,7 @@ namespace Silence.Core.Run
                 {
                     int extra = primary[i] + 1;
                     bool crosses = i + 1 < a.Count && primary[i + 1] < extra;
-                    if (extra < b.Count && !crosses && !a[i].Next.Contains(b[extra].Id) && rng.Chance(35)) a[i].Next.Add(b[extra].Id);
+                    if (extra < b.Count && !crosses && !a[i].Next.Contains(b[extra].Id) && rng.Chance(50)) a[i].Next.Add(b[extra].Id);
                 }
                 foreach (var n in a) n.Next.Sort();
             }
@@ -433,6 +459,17 @@ namespace Silence.Core.Run
             if (r.Phase != RunPhase.Reward || !r.Reward.Active) return "no reward is waiting";
             if (cardIndex >= r.Reward.Cards.Count) return "no such card";
             if (cardIndex >= 0) r.Deck.Add(r.Reward.Cards[cardIndex]);
+            r.Reward.Active = false;
+            r.Phase = RunPhase.Map;
+            return null;
+        }
+
+        /// <summary>Instead of a card: spend the lull on field repairs to every surviving ship.</summary>
+        public static string TakeFieldRepair(RunState r, RunContent c)
+        {
+            if (r.Phase != RunPhase.Reward || !r.Reward.Active) return "no reward is waiting";
+            foreach (var s in r.Ships)
+                if (s.Alive) s.Hull = Math.Min(s.MaxHull, s.Hull + c.Config.FieldRepair);
             r.Reward.Active = false;
             r.Phase = RunPhase.Map;
             return null;

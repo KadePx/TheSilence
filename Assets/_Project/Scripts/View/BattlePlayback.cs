@@ -136,7 +136,7 @@ namespace Silence.View
                     {
                         Sfx.Play("sfx_torpedo");
                         yield return board.MoveTo(v, other.Pos, 0.12f * Pace);
-                        StartCoroutine(board.Burst(to, Skin.Warn, 1.6f, 0.4f));
+                        board.Explosion(to, false);
                     }
                     else if (e.Text.Contains("Lance") || e.Text.Contains("Mass Driver") || e.Text.Contains("rakes"))
                     {
@@ -165,13 +165,13 @@ namespace Silence.View
                         Floater(v.Root.position, "-" + e.Amount, Skin.Bad, v.Capital ? 34 : 24);
                         Sfx.Play("sfx_hit", 0.8f);
                         StartCoroutine(board.Flash(v, Skin.Bad, 0.25f));
-                        StartCoroutine(board.Burst(v.Root.position, Skin.Warn, 0.7f, 0.22f));
+                        board.HitSpark(v.Root.position);
                     }
                     else
                     {
                         Floater(v.Root.position, "ABSORBED", Skin.Cyan, 20);
                         Sfx.Play("sfx_shield", 0.8f);
-                        StartCoroutine(board.Burst(v.Root.position, Skin.Cyan, 1.1f, 0.25f));
+                        board.ShieldFlare(v.Root.position, v.Capital);
                     }
                     yield return Wait(0.2f);
                     break;
@@ -179,8 +179,7 @@ namespace Silence.View
                 case EventKind.Destroyed:
                     if (v == null) break;
                     Sfx.Play(v.Capital ? "sfx_explosion" : "sfx_pop", v.Capital ? 1f : 0.7f);
-                    StartCoroutine(board.Burst(v.Root.position, Skin.Warn, v.Capital ? 3.2f : 1.1f, v.Capital ? 0.6f : 0.3f));
-                    if (v.Capital) StartCoroutine(board.Burst(v.Root.position, Color.white, 1.8f, 0.35f));
+                    board.Explosion(v.Root.position, v.Capital);
                     board.Remove(v.Id);
                     yield return Wait(v.Capital ? 0.45f : 0.12f);
                     break;
@@ -200,7 +199,7 @@ namespace Silence.View
                     Floater(v.Root.position, $"+{e.Amount} SHIELDS", Skin.Cyan, 22);
                     Sfx.Play("sfx_shield");
                     board.UpdateBars(v, Battle.Get(v.Id));
-                    StartCoroutine(board.Burst(v.Root.position, Skin.Cyan, 1.4f, 0.3f));
+                    board.ShieldFlare(v.Root.position, true);
                     yield return Wait(0.12f);
                     break;
 

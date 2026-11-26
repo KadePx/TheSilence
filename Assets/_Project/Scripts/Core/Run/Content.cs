@@ -97,6 +97,8 @@ namespace Silence.Core.Run
         public int DartCost = 5, OrdinalCost = 3, OrdinalsPerPurchase = 4;
         public int RewardCards = 3;
         public int OrdinalsPerVictory = 2;
+        /// <summary>Hull each ship regains when the player takes field repairs instead of a reward card.</summary>
+        public int FieldRepair = 5;
         /// <summary>Race: tenths of a node each rival advances per node you travel, plus 0..spread.</summary>
         public int ConcordRate = 9, ChorusRate = 8, RivalSpread = 3;
         public int ConcordStart = 6, ChorusStart = 2;

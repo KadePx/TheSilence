@@ -274,6 +274,36 @@ namespace Silence.Tests
         }
 
         [Test]
+        public void FieldRepairsCanBeTakenInsteadOfACard()
+        {
+            var r = AtFirstBattle();
+            var b = RunRules.BuildBattle(r, c);
+            b.Start();
+            b.Flagship.Hull = 12;
+            foreach (var e in b.Units.Where(u => u.Side == Side.Enemy && u.IsCapital).ToList()) b.Destroy(e);
+            RunRules.FinishBattle(r, c, b);
+            int deck = r.Deck.Count;
+            Assert.IsNull(RunRules.TakeFieldRepair(r, c));
+            Assert.AreEqual(12 + c.Config.FieldRepair, r.Flagship.Hull);
+            Assert.AreEqual(14, r.Escort.Hull, "never above maximum");
+            Assert.AreEqual(deck, r.Deck.Count);
+            Assert.AreEqual(RunPhase.Map, r.Phase);
+            Assert.IsNotNull(RunRules.TakeFieldRepair(r, c), "only once, and not as well as a card");
+        }
+
+        [Test]
+        public void EachEventAppearsAtMostOncePerSector()
+        {
+            for (long seed = 1; seed <= 40; seed++)
+            {
+                var r = RunRules.NewRun(seed, c);
+                var ids = r.Nodes.Where(n => n.Kind == NodeKind.Event).Select(n => n.Event).ToList();
+                Assert.AreEqual(ids.Count, ids.Distinct().Count(), $"seed {seed}");
+                Assert.IsTrue(r.Nodes.Where(n => n.Kind == NodeKind.Battle).All(n => !string.IsNullOrEmpty(n.Encounter)));
+            }
+        }
+
+        [Test]
         public void DefeatEndsTheRun()
         {
             var r = AtFirstBattle();

@@ -44,6 +44,11 @@ namespace Silence.Core.Run
                 }
                 case RunPhase.Reward:
                 {
+                    if (r.Flagship.Hull * 10 < r.Flagship.MaxHull * 6)
+                    {
+                        RunRules.TakeFieldRepair(r, c);
+                        break;
+                    }
                     int pick = -1, best = int.MaxValue;
                     for (int i = 0; i < r.Reward.Cards.Count; i++)
                     {

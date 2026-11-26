@@ -188,6 +188,15 @@ namespace Silence.View
             StartCoroutine(PlayEvents());
         }
 
+        public bool IsOver => mode == Mode.Over;
+        public bool IsIdle => mode == Mode.Idle;
+
+        /// <summary>The end screen's Continue button.</summary>
+        public void Continue()
+        {
+            if (mode == Mode.Over) LeaveBattle();
+        }
+
         /// <summary>Let the bot play the whole battle through this screen (play-testing).</summary>
         public void AutoPlay() => StartCoroutine(AutoPlayRoutine());
 

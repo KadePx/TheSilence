@@ -511,6 +511,71 @@ namespace Silence.View
             Destroy(ring.gameObject);
         }
 
+        readonly Dictionary<string, Sprite[]> sheets = new Dictionary<string, Sprite[]>();
+
+        /// <summary>Frames of an effect sheet from the art library: square cells in rows from the top-left.</summary>
+        Sprite[] Frames(string sheet, int cell, int count)
+        {
+            if (sheets.TryGetValue(sheet, out var frames)) return frames;
+            var whole = ArtLibrary.Instance.Sprite(sheet);
+            if (whole == null)
+            {
+                sheets[sheet] = null;
+                return null;
+            }
+            var tex = whole.texture;
+            int cols = tex.width / cell;
+            frames = new Sprite[count];
+            for (int i = 0; i < count; i++)
+            {
+                var rect = new Rect((i % cols) * cell, tex.height - (i / cols + 1) * cell, cell, cell);
+                frames[i] = Sprite.Create(tex, rect, new Vector2(0.5f, 0.5f), 32f, 0, SpriteMeshType.FullRect);
+            }
+            sheets[sheet] = frames;
+            return frames;
+        }
+
+        /// <summary>Play a one-shot effect sheet at a point. Returns false when the sheet is not in the library.</summary>
+        public bool PlaySheet(string sheet, int cell, int count, float fps, Vector3 at, float scale, Color tint)
+        {
+            var frames = Frames(sheet, cell, count);
+            if (frames == null) return false;
+            StartCoroutine(SheetRoutine(frames, fps, at, scale, tint));
+            return true;
+        }
+
+        IEnumerator SheetRoutine(Sprite[] frames, float fps, Vector3 at, float scale, Color tint)
+        {
+            var sr = NewSprite(fxRoot, "Sheet", frames[0], 34);
+            sr.transform.position = at;
+            sr.transform.localScale = Vector3.one * scale;
+            sr.color = tint;
+            float life = frames.Length / fps;
+            for (float t = 0; t < life; t += Time.deltaTime)
+            {
+                sr.sprite = frames[Mathf.Min(frames.Length - 1, (int)(t * fps))];
+                yield return null;
+            }
+            Destroy(sr.gameObject);
+        }
+
+        public void Explosion(Vector3 at, bool large)
+        {
+            if (!PlaySheet("fx_explosion", 96, 10, 14f, at, large ? 2f : 1f, Color.white))
+                StartCoroutine(Burst(at, Skin.Warn, large ? 3.2f : 1.1f, large ? 0.6f : 0.3f));
+        }
+
+        public void HitSpark(Vector3 at)
+        {
+            if (!PlaySheet("fx_hit", 64, 5, 16f, at, 1f, Color.white)) StartCoroutine(Burst(at, Skin.Warn, 0.7f, 0.22f));
+        }
+
+        public void ShieldFlare(Vector3 at, bool capital)
+        {
+            if (!PlaySheet("fx_shield", 96, 8, 22f, at, capital ? 1.5f : 0.75f, new Color(0.6f, 0.95f, 1f, 0.9f)))
+                StartCoroutine(Burst(at, Skin.Cyan, 1.1f, 0.25f));
+        }
+
         public IEnumerator Flash(UnitView v, Color color, float seconds)
         {
             if (v.Sprite == null) yield break;

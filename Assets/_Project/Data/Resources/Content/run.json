@@ -64,7 +64,8 @@
     "card": "come_about",
     "ship": 1
    }
-  ]
+  ],
+  "fieldRepair": 5
  },
  "modules": [
   {
