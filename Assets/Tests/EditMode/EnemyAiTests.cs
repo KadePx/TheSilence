@@ -9,7 +9,7 @@ namespace Silence.Tests
     public class EnemyAiTests
     {
         [Test]
-        public void FrigateCyclesBroadsideManeuverTorpedo()
+        public void FrigateCyclesManeuverBroadsideTorpedo()
         {
             var b = T.Fleet(out _, out _);
             var f = b.AddUnit(PaperUnits.Frigate, Side.Enemy, 8, 0, HexDirection.W, 0);
@@ -20,7 +20,7 @@ namespace Silence.Tests
                 kinds.Add(b.Intents.First(x => x.UnitId == f.Id).Kind);
                 b.EndTurn();
             }
-            CollectionAssert.AreEqual(new[] { IntentKind.Broadside, IntentKind.Maneuver, IntentKind.LaunchTorpedo, IntentKind.Broadside }, kinds);
+            CollectionAssert.AreEqual(new[] { IntentKind.Maneuver, IntentKind.Broadside, IntentKind.LaunchTorpedo, IntentKind.Maneuver }, kinds);
         }
 
         [Test]
@@ -40,10 +40,12 @@ namespace Silence.Tests
             var b = T.Fleet(out var flag, out _);
             var f = b.AddUnit(PaperUnits.Frigate, Side.Enemy, 0, 0, HexDirection.E, 0);
             f.Pos = new HexCoord(flag.Pos.Q, flag.Pos.R - 2); // flagship is in the frigate's starboard arc, range 2
+            f.CycleIndex = 1; // Broadside
             b.Start();
             b.EndTurn();
             Assert.IsTrue(b.Log.Any(e => e.Kind == EventKind.Attack && e.UnitId == f.Id));
-            Assert.AreEqual(2, flag.Shields[ArcIndex.Port], "5 dmg emptied the port shields; regen 2");
+            Assert.AreEqual(1, flag.Shields[ArcIndex.Port], "the broadside emptied the port shields; regen 1");
+            Assert.AreEqual(30 - (9 - 4 - 2), flag.Hull, "9 damage, 4 shields, 2 port armor");
         }
 
         [Test]
@@ -52,6 +54,7 @@ namespace Silence.Tests
             var b = T.Fleet(out var flag, out _);
             var f = b.AddUnit(PaperUnits.Frigate, Side.Enemy, 0, 0, HexDirection.E, 0);
             f.Pos = new HexCoord(flag.Pos.Q, flag.Pos.R - 2);
+            f.CycleIndex = 1; // Broadside
             flag.Speed = 3;
             b.Start();
             b.EndTurn(); // flagship drifts 3 east, ending in the frigate's fore arc
@@ -63,17 +66,18 @@ namespace Silence.Tests
         public void ManeuverLinesUpABroadside()
         {
             var b = T.Fleet(out var flag, out _);
-            var f = b.AddUnit(PaperUnits.Frigate, Side.Enemy, 6, 3, HexDirection.W, 0);
+            var f = b.AddUnit(PaperUnits.Frigate, Side.Enemy, 5, 3, HexDirection.W, 0);
             b.Start();
-            var (facing, path) = b.ChooseManeuver(f);
+            var (facing, path, speed) = b.ChooseManeuver(f);
             var end = path.Count > 0 ? path.Last() : f.Pos;
+            for (int i = 0; i < speed; i++) end = end.Neighbor(facing); // where next turn's drift leaves it
             var nearest = b.NearestPlayerCapital(end);
             Assert.IsTrue(Arcs.InAny(end, facing, nearest.Pos, Arc.Port | Arc.Starboard));
             Assert.LessOrEqual(end.DistanceTo(nearest.Pos), 3);
         }
 
         [Test]
-        public void TorpedoClosesThreeHexesAndHitsForSix()
+        public void TorpedoClosesThreeHexesAndHitsForNine()
         {
             var b = new Battle(1);
             var target = b.AddUnit(T.Dummy(30), Side.Player, 2, 3, HexDirection.E, 0, flagship: true);
@@ -85,7 +89,7 @@ namespace Silence.Tests
             Assert.AreEqual(T.At(4, 3), torp.Pos);
             b.EndTurn();
             Assert.IsFalse(torp.Alive);
-            Assert.AreEqual(24, target.Hull);
+            Assert.AreEqual(21, target.Hull);
         }
 
         [Test]
@@ -98,7 +102,7 @@ namespace Silence.Tests
             b.Start();
             b.EndTurn();
             Assert.AreEqual(target.Pos.Neighbor(HexDirection.W), g.Pos);
-            Assert.AreEqual(28, target.Hull);
+            Assert.AreEqual(27, target.Hull);
         }
 
         [Test]
@@ -111,11 +115,11 @@ namespace Silence.Tests
             b.EndTurn();
             Assert.AreEqual(2, b.LiveUnits(Side.Enemy).Count(u => u.Ai == AiProfile.Gunship));
 
-            c.Hull = 30;
+            c.Hull = 20;
             var patch = b.Intents.First(i => i.UnitId == c.Id);
             Assert.AreEqual(IntentKind.PatchUp, patch.Kind);
             b.EndTurn();
-            Assert.AreEqual(36, c.Hull);
+            Assert.AreEqual(24, c.Hull);
 
             var joint = b.Intents.First(i => i.UnitId == c.Id);
             Assert.AreEqual(IntentKind.JointFire, joint.Kind);
@@ -144,7 +148,7 @@ namespace Silence.Tests
                 if (two.Outcome != BattleOutcome.Withdrawal) decided++;
                 TestContext.WriteLine($"seed {seed}: scenario 1 {one.Outcome} on turn {one.Turn}, scenario 2 {two.Outcome} on turn {two.Turn}");
             }
-            Assert.GreaterOrEqual(decided, 36, "at least 90% of bot battles end in a win or a loss");
+            Assert.GreaterOrEqual(decided, 38, "at least 95% of bot battles end in a win or a loss");
         }
 
         [Test]

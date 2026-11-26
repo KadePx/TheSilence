@@ -9,26 +9,86 @@ namespace Silence.Core.Battle
     /// </summary>
     public static class PaperUnits
     {
-        public static UnitSpec LanceCruiser => UnitSpec.Capital("Sixth Verdict", 30, 3, 2, 2, 1, 4, 2, 10, 2, 3);
-        public static UnitSpec Blade => UnitSpec.Capital("Blade", 14, 1, 1, 1, 0, 2, 1, 6, 2, 3);
-        public static UnitSpec Dart => UnitSpec.Craft("Ordinal dart", 2, 4, 2);
+        const Arc Sides = Arc.Port | Arc.Starboard;
 
-        public static UnitSpec Frigate => UnitSpec.Capital("Concord frigate", 16, 1, 1, 1, 1, 3, 1, 0, 0, 2, AiProfile.Frigate);
-        public static UnitSpec Gunship => UnitSpec.Craft("Gunship", 2, 4, 2, AiProfile.Gunship);
-        public static UnitSpec Carrier => UnitSpec.Capital("Long Promise", 40, 2, 2, 2, 1, 5, 2, 0, 0, 1, AiProfile.Carrier);
+        public static UnitSpec LanceCruiser => Named("asc_cruiser", UnitSpec.Capital("Sixth Verdict", 30, 3, 2, 2, 1, 4, 1, 10, 2, 3));
+        public static UnitSpec Blade => Named("asc_blade", UnitSpec.Capital("Blade", 14, 1, 1, 1, 0, 2, 1, 6, 2, 3));
+        public static UnitSpec Dart => Named("asc_dart", UnitSpec.Craft("Ordinal dart", 2, 4, 2));
+
+        public static UnitSpec Frigate => Cycled("con_outrider",
+            UnitSpec.Capital("Concord frigate", 18, 1, 1, 1, 1, 3, 1, 0, 0, 2, AiProfile.Frigate),
+            IntentStep.Of(IntentKind.Maneuver), IntentStep.Fire("Broadside", 9, Sides, 3), IntentStep.Of(IntentKind.LaunchTorpedo));
+
+        public static UnitSpec Gunship => Named("con_gunship", UnitSpec.Craft("Gunship", 3, 4, 3, AiProfile.Gunship));
+
+        public static UnitSpec Carrier => Cycled("con_trimaran",
+            UnitSpec.Capital("Long Promise", 32, 2, 2, 2, 1, 4, 1, 0, 0, 1, AiProfile.Carrier),
+            IntentStep.Of(IntentKind.LaunchCraft, 2), IntentStep.Of(IntentKind.PatchUp, 4), IntentStep.Of(IntentKind.JointFire));
+
+        /// <summary>Concord escort: fast, fragile, fights with its fore guns.</summary>
+        public static UnitSpec Skiff => Cycled("con_skiff",
+            UnitSpec.Capital("Concord skiff", 9, 0, 0, 0, 0, 2, 1, 0, 0, 3, AiProfile.Frigate),
+            IntentStep.Of(IntentKind.Maneuver), IntentStep.Fire("Fore guns", 5, Arc.Fore, 3));
+
+        /// <summary>Concord support ship: repairs the line and adds its own light broadside.</summary>
+        public static UnitSpec Tender => Cycled("con_tender",
+            UnitSpec.Capital("Concord tender", 22, 1, 1, 1, 1, 4, 1, 0, 0, 1, AiProfile.Carrier),
+            IntentStep.Of(IntentKind.PatchUp, 5), IntentStep.Fire("Broadside", 5, Sides, 3), IntentStep.Of(IntentKind.LaunchCraft, 1));
+
+        /// <summary>Sector boss: Marshal Oru Venn's flagship. The Mass Driver is dodged by leaving its fore arc.</summary>
+        public static UnitSpec VennFlagship => Cycled("con_trimaran",
+            UnitSpec.Capital("Long Promise", 46, 2, 2, 2, 1, 5, 2, 0, 0, 1, AiProfile.Carrier),
+            IntentStep.Of(IntentKind.LaunchCraft, 2), IntentStep.Fire("Mass Driver", 12, Arc.Fore, 6),
+            IntentStep.Of(IntentKind.Maneuver), IntentStep.Of(IntentKind.JointFire), IntentStep.Of(IntentKind.PatchUp, 6));
 
         public static UnitSpec Torpedo
         {
             get
             {
-                var s = UnitSpec.Craft("Torpedo", 1, 3, 6, AiProfile.Torpedo);
+                var s = UnitSpec.Craft("Torpedo", 1, 3, 9, AiProfile.Torpedo);
                 s.Kind = UnitKind.Torpedo;
+                s.Id = "con_torpedo";
                 return s;
+            }
+        }
+
+        static UnitSpec Named(string id, UnitSpec s)
+        {
+            s.Id = id;
+            return s;
+        }
+
+        static UnitSpec Cycled(string id, UnitSpec s, params IntentStep[] cycle)
+        {
+            s.Id = id;
+            s.Cycle = cycle;
+            return s;
+        }
+    }
+
+    /// <summary>Unit templates by id, for encounters defined in data.</summary>
+    public static class UnitLibrary
+    {
+        public static UnitSpec Get(string id)
+        {
+            switch (id)
+            {
+                case "flagship": return PaperUnits.LanceCruiser;
+                case "escort": return PaperUnits.Blade;
+                case "dart": return PaperUnits.Dart;
+                case "frigate": return PaperUnits.Frigate;
+                case "gunship": return PaperUnits.Gunship;
+                case "carrier": return PaperUnits.Carrier;
+                case "skiff": return PaperUnits.Skiff;
+                case "tender": return PaperUnits.Tender;
+                case "venn": return PaperUnits.VennFlagship;
+                case "torpedo": return PaperUnits.Torpedo;
+                default: throw new System.ArgumentException($"unknown unit '{id}'");
             }
         }
     }
 
-    /// <summary>The 20 paper-prototype cards (10 starter, 10 reward) and the three junk cards, as effect blocks.</summary>
+    /// <summary>The paper-prototype cards (starter and reward), the alpha additions and the three junk cards, as effect blocks.</summary>
     public static class PaperCards
     {
         // ---- starter ----
@@ -79,7 +139,7 @@ namespace Silence.Core.Battle
         public static readonly CardDef LaunchDarts = new CardDef
         {
             Id = "launch_darts", Name = "Launch Darts", Cost = 1, Type = CardType.Hangar, Tags = "Hangar · Swarm", Module = "Hangar",
-            Text = "Launch 2 darts next to the flagship (max 4 out); they act this turn.",
+            Text = "Launch 2 darts from the hangar next to the flagship (max 4 out); they act this turn.",
             Effects = new Effect[] { new LaunchDartsEffect { Count = 2, MaxOut = 4 } },
         };
 
@@ -159,8 +219,60 @@ namespace Silence.Core.Battle
         public static readonly CardDef FlakLattice = new CardDef
         {
             Id = "flak_lattice", Name = "Flak Lattice", Cost = 1, Type = CardType.Defense, Module = "Point defense",
-            Text = "Destroy up to 3 small craft or torpedoes adjacent to the escort.",
+            Text = "Destroy up to 3 small craft or torpedoes adjacent to this ship.",
             Effects = new Effect[] { new FlakEffect { Count = 3 } },
+        };
+
+        // ---- alpha additions (escort helm, module and reward cards) ----
+
+        public static readonly CardDef ComeAbout = new CardDef
+        {
+            Id = "come_about", Name = "Come About", Cost = 0, Type = CardType.Maneuver, Module = "Helm",
+            Text = "This ship turns 60°; twice at Speed 0-1.",
+            Effects = new Effect[] { new TurnEffect { OnSource = true } },
+        };
+
+        public static readonly CardDef ShortLance = new CardDef
+        {
+            Id = "short_lance", Name = "Short Lance", Cost = 1, Type = CardType.Weapon, Tags = "Weapon · Lance", Module = "Fore lance",
+            Text = "5 dmg, fore arc, range 3, +2 Heat.", Target = TargetKind.Enemy,
+            Effects = new Effect[] { new AttackEffect { Damage = 5, Arcs = Arc.Fore, Range = 3, Heat = 2, IsLance = true } },
+        };
+
+        public static readonly CardDef RakingBeam = new CardDef
+        {
+            Id = "raking_beam", Name = "Raking Beam", Cost = 2, Type = CardType.Weapon, Tags = "Weapon · Heat", Module = "Broadside",
+            Text = "4 dmg to every enemy in the port or starboard arc within 4, +3 Heat.",
+            Effects = new Effect[] { new SweepEffect { Damage = 4, Arcs = Arc.Port | Arc.Starboard, Range = 4, Heat = 3 } },
+        };
+
+        public static readonly CardDef PurgeTheirDecks = new CardDef
+        {
+            Id = "purge_their_decks", Name = "Purge Their Decks", Cost = 1, Type = CardType.Boarding, Module = "Boarding pods",
+            Text = "Expend 2 Ordinals: 6 hull damage to an enemy within 2, ignoring shields and armor.",
+            Target = TargetKind.Enemy, ExpendCost = 2,
+            Effects = new Effect[] { new BoardingStrikeEffect { Damage = 6, Range = 2 } },
+        };
+
+        public static readonly CardDef HoldTheLine = new CardDef
+        {
+            Id = "hold_the_line", Name = "Hold the Line", Cost = 1, Type = CardType.Defense, Module = "Plating",
+            Text = "Every ship: +3 shields on every arc this turn.",
+            Effects = new Effect[] { new ShieldFleetEffect { Amount = 3 } },
+        };
+
+        public static readonly CardDef ScryTheVoid = new CardDef
+        {
+            Id = "scry_the_void", Name = "Scry the Void", Cost = 0, Type = CardType.Sensor, Module = "Sensors",
+            Text = "Draw 2. Exhaust.", Exhaust = true,
+            Effects = new Effect[] { new DrawEffect { Count = 2 } },
+        };
+
+        public static readonly CardDef SealTheDecks = new CardDef
+        {
+            Id = "seal_the_decks", Name = "Seal the Decks", Cost = 1, Type = CardType.Order, Tags = "Order · Repair", Module = "Bridge",
+            Text = "Expend 2 Ordinals: repair 5 hull on one ship. Exhaust.", Target = TargetKind.AllyCapital, ExpendCost = 2, Exhaust = true,
+            Effects = new Effect[] { new RepairEffect { Amount = 5 } },
         };
 
         // ---- junk ----
@@ -187,7 +299,7 @@ namespace Silence.Core.Battle
         public static readonly (CardDef card, int source)[] Starter =
         {
             (LanceVolley, 0), (LanceVolley, 0), (BroadsideBattery, 0), (BroadsideBattery, 0), (Burn, 0),
-            (HardAbout, 0), (Brace, 0), (EscortGuns, 1), (LaunchDarts, 0), (VentPlasma, 0),
+            (HardAbout, 0), (HardAbout, 0), (Brace, 0), (EscortGuns, 1), (LaunchDarts, 0), (VentPlasma, 0), (ComeAbout, 1),
         };
 
         public static readonly (CardDef card, int source)[] Rewards =
@@ -201,6 +313,23 @@ namespace Silence.Core.Battle
             foreach (var (c, _) in Starter) yield return c;
             foreach (var (c, _) in Rewards) yield return c;
         }
+
+        /// <summary>Every card in the game, including junk.</summary>
+        public static readonly CardDef[] Everything =
+        {
+            LanceVolley, BroadsideBattery, Burn, HardAbout, Brace, EscortGuns, LaunchDarts, VentPlasma,
+            OverchargeLances, DecimationOrder, SacrificialRam, BoardingAction, WaymindTargeting, PrecisionEdict,
+            ColdDiscipline, ScreeningManeuver, DartSortie, FlakLattice,
+            ComeAbout, ShortLance, RakingBeam, PurgeTheirDecks, HoldTheLine, ScryTheVoid, SealTheDecks,
+            HullBreach, FireOnDeck, JammedMount,
+        };
+
+        public static CardDef Get(string id)
+        {
+            foreach (var c in Everything)
+                if (c.Id == id) return c;
+            throw new System.ArgumentException($"unknown card '{id}'");
+        }
     }
 
     /// <summary>The paper-prototype scenarios, built in code.</summary>
@@ -213,7 +342,7 @@ namespace Silence.Core.Battle
         /// </summary>
         public static Battle InterceptAtTheRing(ulong seed, IEnumerable<(CardDef card, int source)> extraCards = null)
         {
-            var b = new Battle(seed);
+            var b = new Battle(seed) { Title = "Intercept at the Ring" };
             b.Board.Set(4, 2, Terrain.Asteroid);
             b.Board.Set(4, 4, Terrain.Asteroid);
 
@@ -233,7 +362,7 @@ namespace Silence.Core.Battle
         /// <summary>Scenario 2, The Long Promise: the carrier and one frigate.</summary>
         public static Battle TheLongPromise(ulong seed, IEnumerable<(CardDef card, int source)> extraCards = null)
         {
-            var b = new Battle(seed);
+            var b = new Battle(seed) { Title = "The Long Promise" };
             b.Board.Set(4, 3, Terrain.Asteroid);
             b.Board.Set(5, 1, Terrain.Debris);
 

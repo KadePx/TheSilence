@@ -10,6 +10,22 @@ namespace Silence.Core.Battle
     /// <summary>Which intent cycle an enemy runs (Docs/PaperPrototype.md, Enemy).</summary>
     public enum AiProfile { None, Frigate, Gunship, Carrier, Torpedo }
 
+    /// <summary>One step of an enemy capital ship's repeating intent cycle.</summary>
+    public sealed class IntentStep
+    {
+        public IntentKind Kind;
+        /// <summary>Damage of an attack, hull repaired by Patch Up, or number of craft launched.</summary>
+        public int Amount;
+        public int Range;
+        public Arc Arcs;
+        /// <summary>Name shown to the player ("Broadside", "Mass Driver").</summary>
+        public string Label;
+
+        public static IntentStep Fire(string label, int damage, Arc arcs, int range)
+            => new IntentStep { Kind = IntentKind.Broadside, Label = label, Amount = damage, Arcs = arcs, Range = range };
+        public static IntentStep Of(IntentKind kind, int amount = 0) => new IntentStep { Kind = kind, Amount = amount };
+    }
+
     /// <summary>Index of an arc in per-arc arrays (shields, armor). Matches the bit order of <see cref="Arc"/>.</summary>
     public static class ArcIndex
     {
@@ -36,9 +52,13 @@ namespace Silence.Core.Battle
     /// </summary>
     public sealed class UnitSpec
     {
+        /// <summary>Key in <see cref="UnitLibrary"/> and the name of its sprite set.</summary>
+        public string Id = "";
         public string Name;
         public UnitKind Kind;
         public AiProfile Ai;
+        /// <summary>Intent cycle for enemy capital ships (Frigate and Carrier profiles).</summary>
+        public IntentStep[] Cycle = new IntentStep[0];
         public int Hull;
         /// <summary>Armor per arc, indexed by <see cref="ArcIndex"/>.</summary>
         public int[] Armor = new int[ArcIndex.Count];
@@ -75,7 +95,9 @@ namespace Silence.Core.Battle
     public sealed class Unit
     {
         public int Id;
+        public string SpecId = "";
         public string Name;
+        public IntentStep[] Cycle = new IntentStep[0];
         public Side Side;
         public UnitKind Kind;
         public AiProfile Ai;
@@ -116,7 +138,7 @@ namespace Silence.Core.Battle
         {
             var u = new Unit
             {
-                Id = id, Name = spec.Name, Side = side, Kind = spec.Kind, Ai = spec.Ai, Pos = pos, Facing = facing,
+                Id = id, SpecId = spec.Id, Name = spec.Name, Cycle = spec.Cycle, Side = side, Kind = spec.Kind, Ai = spec.Ai, Pos = pos, Facing = facing,
                 Hull = spec.Hull, MaxHull = spec.Hull, MaxShields = spec.Shields, ShieldRegen = spec.ShieldRegen,
                 HeatCap = spec.HeatCap, Vent = spec.Vent, MaxSpeed = spec.MaxSpeed, Speed = speed,
                 Move = spec.Move, AttackDamage = spec.AttackDamage,

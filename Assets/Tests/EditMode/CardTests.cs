@@ -58,9 +58,10 @@ namespace Silence.Tests
         [Test]
         public void EveryPaperCardIsDefined()
         {
-            Assert.AreEqual(10, PaperCards.Starter.Length);
+            Assert.AreEqual(12, PaperCards.Starter.Length);
             Assert.AreEqual(10, PaperCards.Rewards.Length);
-            Assert.AreEqual(18, PaperCards.All().Distinct().Count());
+            Assert.AreEqual(19, PaperCards.All().Distinct().Count());
+            Assert.AreEqual(PaperCards.Everything.Length, PaperCards.Everything.Select(c => c.Id).Distinct().Count());
         }
 
         // ---------------------------------------------------------------- starter
@@ -308,6 +309,7 @@ namespace Silence.Tests
             var esc = bb.AddUnit(PaperUnits.Blade, Side.Player, 1, 3, HexDirection.NE, 0);
             var frigate = bb.AddUnit(PaperUnits.Frigate, Side.Enemy, 0, 0, HexDirection.E, 0);
             frigate.Pos = new HexCoord(f.Pos.Q, f.Pos.R - 2);
+            frigate.CycleIndex = 1; // Broadside
             bb.Start();
             Assert.AreEqual(f.Id, bb.Intents[0].TargetId);
             var c = T.Give(bb, PaperCards.ScreeningManeuver, esc);

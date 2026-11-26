@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -47,8 +47,12 @@ namespace Silence.Core.Battle
         /// <summary>Fleet-wide Ascendancy crew. At 0 nothing can be Expended and every card costs +1.</summary>
         public int Ordinals = 24;
         public bool WaymindPrimed;
+        /// <summary>Darts left aboard to launch. Losses carry over between battles; -1 = unlimited.</summary>
+        public int DartsInHangar = -1;
+        /// <summary>Shown on the battle screen ("Intercept at the Ring").</summary>
+        public string Title = "";
         /// <summary>After this many turns the fleets disengage (Withdrawal). Placeholder until the spec decides; 0 = no limit.</summary>
-        public int TurnLimit = 40;
+        public int TurnLimit = 25;
 
         public UnitSpec DartSpec = PaperUnits.Dart;
         public UnitSpec GunshipSpec = PaperUnits.Gunship;
@@ -591,7 +595,7 @@ namespace Silence.Core.Battle
         public string Describe()
         {
             var sb = new StringBuilder();
-            sb.AppendLine($"Turn {Turn} Â· {Phase} Â· command {Command} Â· Ordinals {Ordinals} Â· {Outcome}");
+            sb.AppendLine($"Turn {Turn} | {Phase} | command {Command} | Ordinals {Ordinals} | {Outcome}");
             for (int row = 0; row < Board.Height; row++)
             {
                 if ((row & 1) == 1) sb.Append(' ');
@@ -607,7 +611,7 @@ namespace Silence.Core.Battle
             foreach (var u in Units.Where(u => u.Alive)) sb.AppendLine(u.ToString());
             foreach (var i in Intents) sb.AppendLine("Intent: " + i.Describe(this));
             sb.AppendLine($"Hand: {string.Join(", ", Deck.Hand)}");
-            sb.AppendLine($"Draw {Deck.DrawPile.Count} Â· Discard {Deck.Discard.Count} Â· Exhausted {Deck.Exhausted.Count}");
+            sb.AppendLine($"Draw {Deck.DrawPile.Count} | Discard {Deck.Discard.Count} | Exhausted {Deck.Exhausted.Count}");
             return sb.ToString();
         }
 

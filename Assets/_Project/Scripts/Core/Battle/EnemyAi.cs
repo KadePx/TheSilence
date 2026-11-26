@@ -19,6 +19,8 @@ namespace Silence.Core.Battle
         /// <summary>Extra damage from a carrier's Joint Fire.</summary>
         public int Bonus;
         public bool Cancelled;
+        /// <summary>Name of the attack ("Broadside", "Mass Driver").</summary>
+        public string Label;
 
         public string Describe(Battle b)
         {
@@ -29,13 +31,13 @@ namespace Silence.Core.Battle
             string text;
             switch (Kind)
             {
-                case IntentKind.Broadside: text = $"Broadside {Damage + Bonus} at {target} ({Arcs}, range {Range})"; break;
+                case IntentKind.Broadside: text = $"{Label ?? "Broadside"} {Damage + Bonus} at {target} ({Arcs}, range {Range})"; break;
                 case IntentKind.Maneuver: text = $"Maneuver toward {target}"; break;
                 case IntentKind.LaunchTorpedo: text = $"Launch torpedo at {target}"; break;
                 case IntentKind.TorpedoRun: text = $"Torpedo run at {target}, {Damage + Bonus} on impact"; break;
                 case IntentKind.CraftAttack: text = $"Attack {target}'s aft for {Damage + Bonus}"; break;
                 case IntentKind.LaunchCraft: text = $"Launch {Damage} gunships"; break;
-                case IntentKind.PatchUp: text = $"Patch Up {target}: repair {Damage}, +3 shields"; break;
+                case IntentKind.PatchUp: text = $"Patch Up {target}: repair {Damage}, +{EnemyRules.PatchUpShields} shields"; break;
                 case IntentKind.JointFire: text = $"Joint Fire: every attack at {target}, +2"; break;
                 default: text = Kind.ToString(); break;
             }
@@ -43,14 +45,11 @@ namespace Silence.Core.Battle
         }
     }
 
-    /// <summary>Paper-prototype enemy numbers and intent cycles (Docs/PaperPrototype.md).</summary>
+    /// <summary>Enemy numbers shared by every cycle (Docs/PaperPrototype.md).</summary>
     public static class EnemyRules
     {
-        public const int BroadsideDamage = 5, BroadsideRange = 3, ManeuverMove = 2;
-        public const int CarrierLaunch = 2, PatchUpRepair = 6, PatchUpShields = 3, JointFireBonus = 2;
-
-        public static readonly IntentKind[] FrigateCycle = { IntentKind.Broadside, IntentKind.Maneuver, IntentKind.LaunchTorpedo };
-        public static readonly IntentKind[] CarrierCycle = { IntentKind.LaunchCraft, IntentKind.PatchUp, IntentKind.JointFire };
+        public const int ManeuverMove = 2;
+        public const int PatchUpShields = 3, JointFireBonus = 2;
     }
 
     public sealed partial class Battle
@@ -85,20 +84,6 @@ namespace Silence.Core.Battle
             var nearest = NearestPlayerCapital(u.Pos);
             switch (u.Ai)
             {
-                case AiProfile.Frigate:
-                {
-                    if (nearest == null) return null;
-                    var kind = EnemyRules.FrigateCycle[u.CycleIndex % EnemyRules.FrigateCycle.Length];
-                    var i = new Intent { UnitId = u.Id, Kind = kind, TargetId = nearest.Id };
-                    if (kind == IntentKind.Broadside)
-                    {
-                        i.Damage = EnemyRules.BroadsideDamage;
-                        i.Range = EnemyRules.BroadsideRange;
-                        i.Arcs = Arc.Port | Arc.Starboard;
-                    }
-                    if (kind == IntentKind.LaunchTorpedo) i.Damage = TorpedoSpec.AttackDamage;
-                    return i;
-                }
                 case AiProfile.Gunship:
                     if (nearest == null) return null;
                     return new Intent { UnitId = u.Id, Kind = IntentKind.CraftAttack, TargetId = nearest.Id, Damage = u.AttackDamage };
@@ -110,22 +95,36 @@ namespace Silence.Core.Battle
                     u.TargetId = t.Id;
                     return new Intent { UnitId = u.Id, Kind = IntentKind.TorpedoRun, TargetId = t.Id, Damage = u.AttackDamage };
                 }
+                case AiProfile.Frigate:
                 case AiProfile.Carrier:
                 {
-                    var kind = EnemyRules.CarrierCycle[u.CycleIndex % EnemyRules.CarrierCycle.Length];
-                    var i = new Intent { UnitId = u.Id, Kind = kind };
-                    if (kind == IntentKind.LaunchCraft) i.Damage = EnemyRules.CarrierLaunch;
-                    if (kind == IntentKind.PatchUp)
+                    if (u.Cycle.Length == 0) return null;
+                    var step = u.Cycle[u.CycleIndex % u.Cycle.Length];
+                    var i = new Intent { UnitId = u.Id, Kind = step.Kind, Label = step.Label, Damage = step.Amount, Range = step.Range, Arcs = step.Arcs };
+                    switch (step.Kind)
                     {
-                        i.Damage = EnemyRules.PatchUpRepair;
-                        i.TargetId = LiveUnits(Side.Enemy).Where(e => e.IsCapital)
-                            .OrderByDescending(e => e.MaxHull - e.Hull).ThenBy(e => e.Id).First().Id;
-                    }
-                    if (kind == IntentKind.JointFire)
-                    {
-                        var weakest = LiveUnits(Side.Player).Where(p => p.IsCapital).OrderBy(p => p.Hull).ThenBy(p => p.Id).FirstOrDefault();
-                        if (weakest == null) return null;
-                        i.TargetId = weakest.Id;
+                        case IntentKind.PatchUp:
+                            i.TargetId = LiveUnits(Side.Enemy).Where(e => e.IsCapital)
+                                .OrderByDescending(e => e.MaxHull - e.Hull).ThenBy(e => e.Id).First().Id;
+                            break;
+                        case IntentKind.JointFire:
+                        {
+                            var weakest = LiveUnits(Side.Player).Where(p => p.IsCapital).OrderBy(p => p.Hull).ThenBy(p => p.Id).FirstOrDefault();
+                            if (weakest == null) return null;
+                            i.TargetId = weakest.Id;
+                            break;
+                        }
+                        case IntentKind.LaunchCraft:
+                            break;
+                        case IntentKind.LaunchTorpedo:
+                            if (nearest == null) return null;
+                            i.TargetId = nearest.Id;
+                            i.Damage = TorpedoSpec.AttackDamage;
+                            break;
+                        default:
+                            if (nearest == null) return null;
+                            i.TargetId = nearest.Id;
+                            break;
                     }
                     return i;
                 }
@@ -134,9 +133,10 @@ namespace Silence.Core.Battle
             }
         }
 
+        /// <summary>The player capital ship an enemy at this hex goes for: the nearest, but the flagship wins when it is at most one hex further.</summary>
         public Unit NearestPlayerCapital(HexCoord from)
             => LiveUnits(Side.Player).Where(p => p.IsCapital)
-                .OrderBy(p => p.Pos.DistanceTo(from)).ThenBy(p => p.Id).FirstOrDefault();
+                .OrderBy(p => p.Pos.DistanceTo(from) - (p.IsFlagship ? 1 : 0)).ThenBy(p => p.IsFlagship ? 0 : 1).ThenBy(p => p.Id).FirstOrDefault();
 
         /// <summary>Boarding Action and similar: the unit skips its intent this turn.</summary>
         public void CancelIntent(int unitId)
@@ -175,6 +175,7 @@ namespace Silence.Core.Battle
                         break;
                 }
                 if (Outcome != BattleOutcome.Ongoing) return;
+                if (u.Alive && u.IsCapital && i.Kind != IntentKind.Maneuver) Trim(u);
             }
         }
 
@@ -198,22 +199,53 @@ namespace Silence.Core.Battle
             else if (!Board.HasLineOfFire(u.Pos, t.Pos)) miss = "line of fire blocked";
             if (miss != null)
             {
-                Emit(EventKind.Miss, u.Id, i.TargetId, 0, $"{u.Name} broadside misses: {miss}");
+                Emit(EventKind.Miss, u.Id, i.TargetId, 0, $"{u.Name} {i.Label ?? "Broadside"} misses: {miss}");
                 return;
             }
             var victim = Screen(t);
-            Emit(EventKind.Attack, u.Id, victim.Id, i.Damage + i.Bonus, $"{u.Name} fires a broadside at {victim.Name}");
+            Emit(EventKind.Attack, u.Id, victim.Id, i.Damage + i.Bonus, $"{u.Name} fires {i.Label ?? "Broadside"} at {victim.Name}");
             DealDamage(victim, i.Damage + i.Bonus, u.Pos, new DamageFlags(), u);
         }
 
         void ResolveManeuver(Unit u)
         {
-            var (facing, path) = ChooseManeuver(u);
+            var (facing, path, speed) = ChooseManeuver(u);
             if (facing != u.Facing) TurnShip(u, TurnSteps(u.Facing, facing));
             foreach (var h in path)
             {
                 Emit(EventKind.Moved, u.Id, -1, 1, $"{u.Name} maneuvers", u.Pos, h);
                 u.Pos = h;
+            }
+            if (speed != u.Speed)
+            {
+                Emit(EventKind.SpeedChanged, u.Id, -1, speed, $"{u.Name} speed {u.Speed} -> {speed}");
+                u.Speed = speed;
+            }
+        }
+
+        /// <summary>
+        /// After acting, an enemy capital ship trims its course: up to one 60 degree turn and one step of
+        /// speed, whichever keeps its guns on the nearest player ship after the next drift.
+        /// </summary>
+        void Trim(Unit u)
+        {
+            if (!u.Cycle.Any(s => s.Kind == IntentKind.Broadside)) return;
+            int bestScore = int.MinValue, bestTurn = 0, bestSpeed = u.Speed;
+            int[] turns = { 0, 1, -1 };
+            int[] speeds = { 0, -1, 1 };
+            foreach (int k in turns)
+            foreach (int ds in speeds)
+            {
+                int speed = u.Speed + ds;
+                if (speed < 0 || speed > u.MaxSpeed) continue;
+                int score = ScoreFiringPosition(u, u.Pos, u.Facing.Rotate(k), speed) - Math.Abs(k) - Math.Abs(ds);
+                if (score > bestScore) { bestScore = score; bestTurn = k; bestSpeed = speed; }
+            }
+            if (bestTurn != 0) TurnShip(u, bestTurn);
+            if (bestSpeed != u.Speed)
+            {
+                Emit(EventKind.SpeedChanged, u.Id, -1, bestSpeed, $"{u.Name} speed {u.Speed} -> {bestSpeed}");
+                u.Speed = bestSpeed;
             }
         }
 
@@ -224,14 +256,16 @@ namespace Silence.Core.Battle
         }
 
         /// <summary>
-        /// Paper AI for a frigate's Maneuver: turn to any facing and move up to 2 straight ahead, picking the spot
-        /// that best lines up a broadside (target in a side arc at range 2-3) and won't drift into the edge.
+        /// Enemy Maneuver: turn to any facing, move up to 2 straight ahead and set a new speed, picking the
+        /// combination that leaves its guns bearing on the nearest player ship after next turn's drift
+        /// (both its own and the target's, as currently predicted). The player dodges by changing course.
         /// </summary>
-        public (HexDirection facing, List<HexCoord> path) ChooseManeuver(Unit u)
+        public (HexDirection facing, List<HexCoord> path, int speed) ChooseManeuver(Unit u)
         {
             int bestScore = int.MinValue;
             var bestFacing = u.Facing;
             var bestPath = new List<HexCoord>();
+            int bestSpeed = u.Speed;
             int[] order = { 0, 1, -1, 2, -2, 3 };
             foreach (int k in order)
             {
@@ -247,33 +281,59 @@ namespace Silence.Core.Battle
                         pos = next;
                         path.Add(next);
                     }
-                    int score = ScoreFiringPosition(u, pos, f) - Math.Abs(k);
-                    if (score > bestScore)
+                    for (int speed = 0; speed <= u.MaxSpeed; speed++)
                     {
-                        bestScore = score;
-                        bestFacing = f;
-                        bestPath = new List<HexCoord>(path);
+                        int score = ScoreFiringPosition(u, pos, f, speed) - Math.Abs(k);
+                        if (score > bestScore)
+                        {
+                            bestScore = score;
+                            bestFacing = f;
+                            bestPath = new List<HexCoord>(path);
+                            bestSpeed = speed;
+                        }
                     }
                 }
             }
-            return (bestFacing, bestPath);
+            return (bestFacing, bestPath, bestSpeed);
         }
 
-        int ScoreFiringPosition(Unit u, HexCoord pos, HexDirection f)
+        int ScoreFiringPosition(Unit u, HexCoord pos, HexDirection f, int speed)
         {
-            var t = NearestPlayerCapital(pos);
-            if (t == null) return 0;
-            int d = pos.DistanceTo(t.Pos);
-            int score = -3 * Math.Abs(d - 2);
-            if (d <= EnemyRules.BroadsideRange && Arcs.InAny(pos, f, t.Pos, Arc.Port | Arc.Starboard) && Board.HasLineOfFire(pos, t.Pos))
-                score += 100;
-            var drift = pos;
-            for (int s = 0; s < u.Speed; s++)
+            var end = pos;
+            int score = 0;
+            for (int s = 0; s < speed; s++)
             {
-                drift = drift.Neighbor(f);
-                if (Board.BlocksMovement(drift)) { score -= 15; break; }
+                var next = end.Neighbor(f);
+                var occ = UnitAt(next);
+                if (Board.BlocksMovement(next) || (occ != null && occ != u)) { score -= 40; break; }
+                end = next;
             }
+            var t = NearestPlayerCapital(end);
+            if (t == null) return score;
+            var tp = PredictDrift(t);
+            int d = end.DistanceTo(tp);
+            if (d == 0) return int.MinValue / 2;
+            var gun = u.Cycle.FirstOrDefault(s => s.Kind == IntentKind.Broadside);
+            var arcs = gun != null ? gun.Arcs : Arc.Port | Arc.Starboard;
+            int range = gun != null ? gun.Range : 3;
+            score -= 3 * Math.Abs(d - Math.Min(2, range));
+            if (d <= range && Arcs.InAny(end, f, tp, arcs) && Board.HasLineOfFire(end, tp)) score += 100;
             return score;
+        }
+
+        /// <summary>
+        /// Whether an attack intent would land if every ship simply drifted as predicted from here.
+        /// For the board's intent lines; the real check happens when the intent resolves.
+        /// </summary>
+        public bool ForecastHit(Intent i)
+        {
+            var u = Get(i.UnitId);
+            var t = Get(i.TargetId);
+            if (u == null || t == null || !u.Alive || !t.Alive || i.Cancelled) return false;
+            if (i.Kind != IntentKind.Broadside) return i.Kind == IntentKind.CraftAttack || i.Kind == IntentKind.TorpedoRun;
+            var from = u.IsCapital ? PredictDrift(u) : u.Pos;
+            var to = t.IsCapital ? PredictDrift(t) : t.Pos;
+            return Arcs.InAny(from, u.Facing, to, i.Arcs) && from.DistanceTo(to) <= i.Range && Board.HasLineOfFire(from, to);
         }
 
         void ResolveLaunchTorpedo(Unit u, Intent i)

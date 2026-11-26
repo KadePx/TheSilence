@@ -40,7 +40,8 @@ namespace Silence.Core.Battle
             {
                 case "vent_plasma": case "cold_discipline": return 0;
                 case "decimation_order": case "waymind_targeting": case "precision_edict": case "overcharge_lances": return 1;
-                case "hard_about": return 2;
+                case "hard_about": case "come_about": return 2;
+                case "scry_the_void": return 1;
                 case "lance_volley": return 3;
                 case "launch_darts": case "dart_sortie": return 5;
                 case "fire_on_deck": return 6;
@@ -69,7 +70,14 @@ namespace Silence.Core.Battle
                 case "burn":
                     return flag.Speed == 0 && b.PlayCard(card.Id, PlayTarget.At(flag.Id)) == null;
                 case "hard_about":
-                    return TryTurnToward(b, card, flag);
+                    return TryTurnToward(b, card, flag, false);
+                case "come_about":
+                    return source != null && TryTurnToward(b, card, source, true);
+                case "hold_the_line":
+                    return b.Intents.Any(i => !i.Cancelled && i.Damage > 0) && b.PlayCard(card.Id, PlayTarget.None) == null;
+                case "seal_the_decks":
+                    var hurt = b.LiveUnits(Side.Player).Where(u => u.IsCapital && u.MaxHull - u.Hull >= 5).OrderBy(u => u.Hull).FirstOrDefault();
+                    return hurt != null && b.Ordinals > 8 && b.PlayCard(card.Id, PlayTarget.At(hurt.Id)) == null;
                 case "overcharge_lances":
                 case "waymind_targeting":
                     return HasPlayableWeapon(b, card) && b.PlayCard(card.Id, PlayTarget.None) == null;
@@ -115,7 +123,7 @@ namespace Silence.Core.Battle
         }
 
         /// <summary>Turn the flagship so the nearest enemy ship ends up closer to its fore arc.</summary>
-        static bool TryTurnToward(Battle b, CardInstance card, Unit ship)
+        static bool TryTurnToward(Battle b, CardInstance card, Unit ship, bool onSource)
         {
             var target = b.LiveUnits(Side.Enemy).Where(e => e.IsCapital).OrderBy(e => e.Pos.DistanceTo(ship.Pos)).ThenBy(e => e.Id).FirstOrDefault();
             if (target == null || Arcs.InAny(ship.Pos, ship.Facing, target.Pos, Arc.Fore)) return false;
@@ -127,7 +135,7 @@ namespace Silence.Core.Battle
                 int score = Score(ship.Facing.Rotate(s));
                 if (score < bestScore) { bestScore = score; best = s; }
             }
-            return best != 0 && b.PlayCard(card.Id, PlayTarget.Turning(ship.Id, best)) == null;
+            return best != 0 && b.PlayCard(card.Id, PlayTarget.Turning(onSource ? -1 : ship.Id, best)) == null;
 
             int Score(HexDirection f)
             {
