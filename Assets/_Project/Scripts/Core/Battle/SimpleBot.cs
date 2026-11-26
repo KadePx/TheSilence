@@ -31,14 +31,51 @@ namespace Silence.Core.Battle
 
             if (b.Phase != BattlePhase.Command) return;
             MoveCraft(b);
-            if (b.Phase == BattlePhase.Command) b.EndTurn();
+            if (b.Phase != BattlePhase.Command) return;
+            SetThrottles(b);
+            b.EndTurn();
+        }
+
+        /// <summary>
+        /// The helm, last thing each turn: stop rather than drift into something, hold position once an enemy
+        /// ship is in gun range, and otherwise close at Speed 1 (2 when the enemy is far off).
+        /// </summary>
+        static void SetThrottles(Battle b)
+        {
+            foreach (var u in b.LiveUnits(Side.Player).Where(u => u.IsCapital).ToList())
+            {
+                var enemy = b.LiveUnits(Side.Enemy).Where(e => e.IsCapital).OrderBy(e => e.Pos.DistanceTo(u.Pos)).ThenBy(e => e.Id).FirstOrDefault();
+                int d = enemy == null ? 99 : enemy.Pos.DistanceTo(u.Pos);
+                // Hold only where a gun actually bears: the fore arc out to lance range, or a flank inside broadside range.
+                int foreRange = u.IsFlagship ? 4 : 3;
+                bool bears = b.LiveUnits(Side.Enemy).Any(e => e.IsCapital &&
+                    ((Arcs.InAny(u.Pos, u.Facing, e.Pos, Arc.Fore) && e.Pos.DistanceTo(u.Pos) <= foreRange) ||
+                     (u.IsFlagship && Arcs.InAny(u.Pos, u.Facing, e.Pos, Arc.Port | Arc.Starboard) && e.Pos.DistanceTo(u.Pos) <= 3)));
+                // Close to knife range before holding, and stop holding in a fight that is dragging on:
+                // a ship that sits at long range only ever fires the lance.
+                bool hold = bears && d <= 2 && b.Turn <= 8 && Arcs.InAny(u.Pos, u.Facing, enemy.Pos, Arc.Fore);
+                int want = hold ? 0 : d > 6 ? 2 : 1;
+                // Never drift into rock, wreckage or another unit.
+                var h = u.Pos;
+                for (int step = 1; step <= want; step++)
+                {
+                    h = h.Neighbor(u.Facing);
+                    if (!b.Board.InBounds(h)) break;
+                    if (!b.IsFree(h)) { want = step - 1; break; }
+                }
+                want = System.Math.Min(want, u.MaxSpeed);
+                if (want > u.Speed && u.Heat < u.HeatCap - 1) b.Throttle(u.Id, 1);
+                else if (want < u.Speed) b.Throttle(u.Id, -1);
+            }
         }
 
         static int Priority(CardInstance c)
         {
             switch (c.Def.Id)
             {
+                case "thermal_purge": return 0;
                 case "vent_plasma": case "cold_discipline": return 0;
+                case "redline": return 1;
                 case "decimation_order": case "waymind_targeting": case "precision_edict": case "overcharge_lances": return 1;
                 case "hard_about": case "come_about": return 2;
                 case "scry_the_void": return 1;
@@ -68,7 +105,24 @@ namespace Silence.Core.Battle
                     var threatened = b.Intents.Where(i => !i.Cancelled).Select(i => b.Get(i.TargetId)).FirstOrDefault(u => u != null && u.Side == Side.Player);
                     return threatened != null && b.PlayCard(card.Id, PlayTarget.At(threatened.Id)) == null;
                 case "burn":
-                    return flag.Speed == 0 && b.PlayCard(card.Id, PlayTarget.At(flag.Id)) == null;
+                {
+                    // Close one hex when the nearest enemy ship is just outside the lance's reach.
+                    var far = b.LiveUnits(Side.Enemy).Where(e => e.IsCapital).OrderBy(e => e.Pos.DistanceTo(flag.Pos)).FirstOrDefault();
+                    return far != null && far.Pos.DistanceTo(flag.Pos) == 5 && Arcs.InAny(flag.Pos, flag.Facing, far.Pos, Arc.Fore)
+                           && b.PlayCard(card.Id, PlayTarget.At(flag.Id)) == null;
+                }
+                case "redline":
+                    // One more command, if the reactor has room and there is a card that the extra command buys.
+                    return source != null && source.Heat + 4 <= source.HeatCap
+                           && b.Deck.Hand.Any(c => c != card && !c.Def.Unplayable && c.Def.Type == CardType.Weapon && b.CostOf(c) == b.Command + 1)
+                           && b.PlayCard(card.Id, PlayTarget.None) == null;
+                case "thermal_purge":
+                {
+                    if (source == null || source.Heat < 5) return false;
+                    foreach (var e in enemies)
+                        if (b.PlayCard(card.Id, PlayTarget.At(e.Id)) == null) return true;
+                    return false;
+                }
                 case "hard_about":
                     return TryTurnToward(b, card, flag, false);
                 case "come_about":
@@ -95,7 +149,8 @@ namespace Silence.Core.Battle
                 case TargetKind.Enemy:
                     foreach (var e in enemies)
                     {
-                        bool expend = def.ExpendOptional && b.Ordinals > 12;
+                        // Spend crew freely early; in a fight that drags on, keep spending down to a small reserve to break it open.
+                        bool expend = def.ExpendOptional && (b.Ordinals > 12 || (b.Turn > 8 && e.IsCapital && b.Ordinals >= 6));
                         if (b.PlayCard(card.Id, PlayTarget.At(e.Id, expend)) == null) return true;
                         if (expend && b.PlayCard(card.Id, PlayTarget.At(e.Id)) == null) return true;
                     }
@@ -107,8 +162,22 @@ namespace Silence.Core.Battle
             }
         }
 
+        /// <summary>
+        /// Is there a weapon in hand that could really be fired after paying for <paramref name="except"/>: affordable,
+        /// and with some enemy inside its arc and range right now? (A buff with nothing to buff is a wasted command.)
+        /// </summary>
         static bool HasPlayableWeapon(Battle b, CardInstance except)
-            => b.Deck.Hand.Any(c => c != except && c.Def.Type == CardType.Weapon && b.CostOf(c) + b.CostOf(except) <= b.Command);
+        {
+            bool lanceOnly = except.Def.Id == "overcharge_lances";
+            foreach (var c in b.Deck.Hand)
+            {
+                if (c == except || c.Def.Type != CardType.Weapon) continue;
+                if (b.CostOf(c) + b.CostOf(except) > b.Command) continue;
+                if (lanceOnly && !c.Def.Effects.OfType<AttackEffect>().Any(a => a.IsLance)) continue;
+                if (b.LiveUnits(Side.Enemy).Any(e => b.CheckPlay(c.Id, PlayTarget.At(e.Id)) == null)) return true;
+            }
+            return false;
+        }
 
         static bool CanHit(Battle b, Unit e)
         {

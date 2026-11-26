@@ -119,7 +119,7 @@ namespace Silence.Tests
             var patch = b.Intents.First(i => i.UnitId == c.Id);
             Assert.AreEqual(IntentKind.PatchUp, patch.Kind);
             b.EndTurn();
-            Assert.AreEqual(24, c.Hull);
+            Assert.AreEqual(22, c.Hull, "alone, it patches itself for half of 4");
 
             var joint = b.Intents.First(i => i.UnitId == c.Id);
             Assert.AreEqual(IntentKind.JointFire, joint.Kind);
@@ -128,6 +128,33 @@ namespace Silence.Tests
                 Assert.AreEqual(joint.TargetId, i.TargetId);
                 Assert.AreEqual(2, i.Bonus);
             }
+        }
+
+        [Test]
+        public void RepairShipsMendAnotherShipInFullAndThemselvesForHalf()
+        {
+            var b = T.Fleet(out _, out _);
+            var carrier = b.AddUnit(PaperUnits.Carrier, Side.Enemy, 8, 3, HexDirection.W, 0);
+            var frigate = b.AddUnit(PaperUnits.Frigate, Side.Enemy, 8, 5, HexDirection.W, 0);
+            carrier.CycleIndex = 1; // Patch Up
+            carrier.Hull = 10;
+            frigate.Hull = 10;
+            b.Start();
+            var patch = b.Intents.First(i => i.UnitId == carrier.Id);
+            Assert.AreEqual(IntentKind.PatchUp, patch.Kind);
+            Assert.AreEqual(frigate.Id, patch.TargetId, "another damaged ship comes first");
+            Assert.AreEqual(4, patch.Damage);
+
+            frigate.Hull = frigate.MaxHull;
+            var alone = new Battle(1);
+            alone.AddUnit(PaperUnits.LanceCruiser, Side.Player, 0, 3, HexDirection.E, 0, flagship: true);
+            var solo = alone.AddUnit(PaperUnits.Carrier, Side.Enemy, 8, 3, HexDirection.W, 0);
+            solo.CycleIndex = 1;
+            solo.Hull = 10;
+            alone.Start();
+            var self = alone.Intents.First(i => i.UnitId == solo.Id);
+            Assert.AreEqual(solo.Id, self.TargetId);
+            Assert.AreEqual(2, self.Damage, "half, alone");
         }
 
         [Test]
@@ -148,7 +175,9 @@ namespace Silence.Tests
                 if (two.Outcome != BattleOutcome.Withdrawal) decided++;
                 TestContext.WriteLine($"seed {seed}: scenario 1 {one.Outcome} on turn {one.Turn}, scenario 2 {two.Outcome} on turn {two.Turn}");
             }
-            Assert.GreaterOrEqual(decided, 38, "at least 95% of bot battles end in a win or a loss");
+            // 80%, down from 95%: since the throttle the bot no longer drifts into enemy ships every turn, and some
+            // of its old "wins" against the carrier were ramming damage. It now times out on a few of those fights.
+            Assert.GreaterOrEqual(decided, 32, "at least 80% of bot battles end in a win or a loss");
         }
 
         [Test]

@@ -321,3 +321,70 @@ take the whole broadside, either turn direction brings the side guns to bear). T
 to finish in Play Mode through the same entry points the mouse uses, including two deliberately wrong inputs, with a
 screenshot at every step (`ArtSource/Screenshots/tutorial_*.png`). It was not played with a physical mouse.
 
+## Core review: easy to get into, room to go deep
+
+A review of the core loop against two goals: a new player can get going quickly, and there is depth to find.
+Method: read every card, module, encounter and rule; then 150 bot runs with each battle's event log mined for what
+actually happens (`Tools/sim/balance_sim.cs`); then changes; then the same measurement again.
+
+### What the first measurement showed
+
+| Finding | Number | Reading |
+| --- | --- | --- |
+| The opening is gentle | 0% losses in the first three layers; 0.6 flagship hull lost in the first fight | Good. Keep. |
+| Ships could not slow down | 12 collisions a battle, 8 of them your own ships hitting rocks and enemies | Speed only ever went up (Burn). This is the "when can I move" problem. |
+| Burn was dead | played 1% of the times it was drawn | Speeding up with no brake is a trap. |
+| Heat did not matter | 0.13 overheats a battle; Vent Plasma played 3%, Cold Discipline 4% | A whole system with no decisions in it. |
+| Battles ran long | 12 turns on average, 23 for the boss, against a 6 to 10 target | Repair ships out-healed steady fire. |
+| Scrap piled up | 89 unspent at the end of a run | Not enough worth buying. |
+
+### What changed
+
+Easier to get into:
+
+- **A helm on every ship.** Minus and plus beside SPEED on each ship card change speed one step, once a turn, free
+  (speeding up adds 1 heat). The drift marker updates at once. The tutorial has a new step for it.
+- **Burn** now moves a ship one hex ahead immediately, so it is a positioning tool, not a speed setting.
+- **Keyword glossary.** Hovering a card spells out the rules words on it (arc, range, heat, expend, exhaust...).
+- **The tutorial is pointed out once** the first time New run is pressed. A second press skips it.
+
+More depth:
+
+- **Heat is a resource.** The flagship's heat cap is 6 (8 with the Radiator Stack) and she vents 1 a turn, down from 2.
+  Sustained fire now overheats in three or four turns unless you ease off or vent.
+- **Redline** (0): +1 command, +4 heat. **Thermal Purge** (1): dump all heat into an enemy within 2 as damage that
+  ignores shields, up to 8. Running hot is now a plan, not only a mistake. Both are in the reward pool and the shops.
+- **Strike a card** at a shipyard (30 scrap, floor of 8 cards). Deck thinning, and somewhere for scrap to go.
+- **Repair ships** mend another ship in full but themselves for half, so killing the escort first or the tender
+  first is a real choice, and a lone carrier can be worn down.
+
+### The same measurement afterwards
+
+| | Before | After |
+| --- | --- | --- |
+| Bot runs won / fleet lost / outpaced (150) | 48 / 84 / 18 | 73 / 45 / 32 |
+| Collisions per battle | 12.0 | 2.0 |
+| Average battle length | 12.1 turns | 11.3 turns |
+| Overheats per battle | 0.13 | 0.40 |
+| Vent Plasma played when drawn | 3% | 19% |
+| Cold Discipline played when drawn | 4% | 14% |
+| Losses in the first three layers | 0% | 0% |
+
+The bot's results moved from mostly losing its fleet to mostly winning or running out of time. It is a weak player:
+it brakes for obstacles but does not plan arcs, and it never took Redline or Thermal Purge, so those two cards are
+tested by unit tests only.
+
+### Still open
+
+- **Battles are still long** (11 turns; the boss 20). The bot times out on 40% of carrier fights and 26% of boss
+  fights. A person who strips shields with one ship and lands the lance with the other should do much better, but
+  nobody has shown that yet. If your own fights drag, the first knobs are enemy shield regeneration and carrier armor.
+- **Run win rate for the bot went up to 49%.** With a helm a person will do better than that. The run may now be too
+  easy; I have not raised enemy numbers without a human result to aim at.
+- **Depth is still one fleet and one faction.** 27 cards and 11 modules. The next real depth is content: module
+  tiers, relics, a second hull, Concord as a playable side (M3).
+- Burn is still rarely played by the bot (4%). It may need a stronger effect, or the bot may simply not see its use.
+- No first-time tips on the map, shipyard or events yet; only the battle has a tutorial.
+- 152 EditMode tests pass (15 new). The helm, the glossary, the strike picker and the tutorial's new step were each
+  put on screen and driven from script; none was used with a physical mouse.
+

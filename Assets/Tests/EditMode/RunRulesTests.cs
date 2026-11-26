@@ -197,7 +197,7 @@ namespace Silence.Tests
             var b = RunRules.BuildBattle(r, c);
             Assert.AreEqual(17, b.Flagship.Hull);
             Assert.AreEqual(30, b.Flagship.MaxHull);
-            Assert.AreEqual(10, b.Flagship.HeatCap, "base 8 plus the radiator stack");
+            Assert.AreEqual(8, b.Flagship.HeatCap, "base 6 plus the radiator stack");
             Assert.AreEqual(9, b.Ordinals);
             Assert.AreEqual(2, b.DartsInHangar);
             Assert.AreEqual(13, b.Deck.Count);
@@ -587,6 +587,43 @@ namespace Silence.Tests
             }
             TestContext.WriteLine($"bot runs: {wins} won, {defeats} lost, {outpaced} outpaced of {runs}");
             Assert.That(wins, Is.InRange(runs * 10 / 100, runs * 75 / 100), "the stand-in bot should win some runs, not most");
+        }
+
+        // ---------------------------------------------------------------- core review: striking a card
+
+        [Test]
+        public void ShipyardStrikesAChosenCardFromTheDeck()
+        {
+            var r = Reach(NodeKind.Shipyard);
+            r.Scrap = 100;
+            int index = r.Deck.FindIndex(d => d.Card == "burn");
+            int before = r.Deck.Count, purchases = r.Shop.Purchases;
+            Assert.IsNull(RunRules.RemoveCard(r, c, index));
+            Assert.AreEqual(before - 1, r.Deck.Count);
+            Assert.IsFalse(r.Deck.Any(d => d.Card == "burn"));
+            Assert.AreEqual(100 - c.Config.RemoveCardCost, r.Scrap);
+            Assert.AreEqual(purchases + 1, r.Shop.Purchases, "striking a card takes dock time like any service");
+        }
+
+        [Test]
+        public void StrikingACardHasLimits()
+        {
+            var r = Reach(NodeKind.Shipyard);
+            r.Scrap = 0;
+            Assert.IsNotNull(RunRules.RemoveCard(r, c, 0), "needs scrap");
+            r.Scrap = 1000;
+            r.Deck.Add(new DeckCard("hull_breach", -1));
+            Assert.IsNotNull(RunRules.RemoveCard(r, c, r.Deck.Count - 1), "junk has its own service");
+            Assert.IsNotNull(RunRules.RemoveCard(r, c, 99), "no such card");
+            while (r.Deck.Count(d => d.Ship >= 0) > c.Config.MinDeckSize) Assert.IsNull(RunRules.RemoveCard(r, c, 0));
+            Assert.IsNotNull(RunRules.RemoveCard(r, c, 0), "the deck has a floor");
+        }
+
+        [Test]
+        public void TheNewHeatCardsAreInTheRewardPool()
+        {
+            Assert.IsTrue(c.Rewards.Any(x => x.Card == "redline"));
+            Assert.IsTrue(c.Rewards.Any(x => x.Card == "thermal_purge"));
         }
     }
 }

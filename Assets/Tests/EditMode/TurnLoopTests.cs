@@ -126,7 +126,7 @@ namespace Silence.Tests
             flag.Heat = 7;
             escort.Heat = 1;
             b.EndTurn();
-            Assert.AreEqual(5, flag.Heat);
+            Assert.AreEqual(7 - flag.Vent, flag.Heat);
             Assert.AreEqual(0, escort.Heat);
         }
 

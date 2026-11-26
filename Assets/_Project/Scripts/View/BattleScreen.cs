@@ -183,6 +183,15 @@ namespace Silence.View
 
         public void ClickEndTurn() => OnEndTurn();
 
+        /// <summary>The - and + beside SPEED on a ship card: one step per ship per turn.</summary>
+        public void ClickThrottle(int unitId, int delta)
+        {
+            if (mode == Mode.Busy || mode == Mode.Over || mode == Mode.Intro || Battle == null) return;
+            string blocked = TutorialBlocksThrottle();
+            if (blocked != null) { Flash(blocked); Sfx.Play("sfx_deny"); return; }
+            Do(() => Battle.Throttle(unitId, delta));
+        }
+
         public void ClickExpend() => ToggleExpend();
 
         public string PromptLine => PromptText();
@@ -323,9 +332,9 @@ namespace Silence.View
             var moves = Battle.Deck.Hand
                 .Where(c => c.Def.Type == CardType.Maneuver && (c.Def.Target == TargetKind.AllyCapital || c.SourceId == ship.Id))
                 .Select(c => c.Def.Name).Distinct().ToList();
-            string drift = ship.Speed == 0 ? "She is holding position." : $"She drifts {ship.Speed} hex{(ship.Speed > 1 ? "es" : "")} ahead when you end the turn.";
-            string cards = moves.Count == 0 ? "No card in hand moves her this turn." : "In hand to move her: " + string.Join(", ", moves) + ".";
-            return $"{ship.Name} moves by card, not by hand. {drift} {cards}";
+            string drift = ship.Speed == 0 ? "holds position" : $"drifts {ship.Speed} hex{(ship.Speed > 1 ? "es" : "")} ahead at end of turn";
+            string cards = moves.Count == 0 ? "No card in hand turns her." : "Cards for her: " + string.Join(", ", moves) + ".";
+            return $"{ship.Name} {drift}. Set her speed with - and + on her card. {cards}";
         }
 
         static int TurnSteps(HexDirection from, HexDirection to)

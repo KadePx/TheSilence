@@ -132,7 +132,7 @@ Combat runs on a 9 × 7 pointy-top hex grid. Capital ships are played through ca
 | --- | --- | --- |
 | Control | Through cards | Moved directly each turn |
 | Facing | 6 hex facings; shields and armor per arc (Fore / Port / Starboard / Aft) | None |
-| Movement | Drifts straight ahead by Speed (0–3) each turn unless cards burn, turn or brake | Free move up to Speed |
+| Movement | Drifts straight ahead by Speed (0–3) each turn. The helm changes a ship's Speed by one step once a turn, for free (speeding up adds 1 Heat). Cards turn the ship or shove it a hex | Free move up to Speed |
 | Attacks | Weapon cards; target must be in the card's arc and range | Automatic attack on an adjacent target after moving |
 | Source | Bought, found, or rebuilt (flagship only) | Hangar modules; losses carry over between battles |
 
@@ -174,7 +174,7 @@ Each flagship has 4 slots with 3 module choices each, and every module has 3 tie
 
 ### Ascendancy: lance-cruiser "Sixth Verdict"
 
-Base: Hull 30 · Fore armor 3 · Shields 4 · Heat cap 10 · Speed 3 · Command 3. Hull cards: Burn (0) Speed +1, +1 Heat · Hard About (1) turn 60° (twice at speed 0–1) · Brace (1) +4 shields every arc.
+Base: Hull 30 · Fore armor 3 · Shields 4 · Heat cap 10 · Speed 3 · Command 3. Hull cards: Burn (0) move 1 hex ahead now, +1 Heat · Hard About (1) turn 60° (twice at speed 0–1) · Brace (1) +4 shields every arc.
 
 | Slot | Module | Stats | Cards (cost) | Tier visuals |
 | --- | --- | --- | --- | --- |
@@ -439,6 +439,10 @@ The next step is the paper prototype (M0); nothing goes into Unity until combat 
 - Concord redesigned as navy, ivory and copper trimarans (replaced the rust patchwork).
 - UI: one shared etched-gunmetal interface with faction-tinted accents.
 - Unity, Steam, solo developer, commissioned art.
+- Momentum: every capital ship has a helm (Speed up or down one step a turn, free; +1 Heat to speed up). Without a brake, ships drifted into rocks and enemies about eight times a battle.
+- Heat is a resource to spend: the flagship's cap is 6 (8 with the Radiator Stack) and she vents 1 a turn. Redline trades heat for command; Thermal Purge turns heat into damage.
+- Enemy repair ships mend another ship in full and themselves for half.
+- Shipyards can strike any card from the deck (30 scrap, floor of 8 cards).
 
 ### Open questions
 

@@ -63,6 +63,8 @@ namespace Silence.Tests
             CollectionAssert.AreEquivalent(
                 new[] { "hard_about", "broadside_battery", "launch_darts", "lance_volley", "vent_plasma" },
                 b.Deck.Hand.Select(c => c.Def.Id).ToArray());
+            Assert.IsNull(b.Throttle(flag.Id, -1), "all stop");
+            Assert.AreEqual(flag.Pos, b.PredictDrift(flag), "a stopped ship has no drift");
             Assert.IsNotNull(b.CheckPlay(Card("broadside_battery").Id, PlayTarget.At(picket.Id)), "dead ahead is not a side arc");
             Assert.IsNull(b.PlayCard(Card("hard_about").Id, PlayTarget.Turning(flag.Id, 1)));
             Assert.IsNull(b.PlayCard(Card("broadside_battery").Id, PlayTarget.At(picket.Id)));

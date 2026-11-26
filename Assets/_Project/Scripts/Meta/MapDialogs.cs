@@ -255,6 +255,9 @@ namespace Silence.Meta
             }
             Service(d, x, ref y, "Strip out junk", run.JunkCount() == 0 ? "No junk cards in the deck." : $"Removes one of {run.JunkCount()} junk cards for good.",
                 cfg.RemoveJunkCost, run.JunkCount() > 0, () => Shop(() => RunRules.RemoveJunk(run, content)));
+            int keep = run.Deck.Count(card => card.Ship >= 0);
+            Service(d, x, ref y, "Strike a card", keep > cfg.MinDeckSize ? "Remove any one card for good. A thin deck draws its best cards more often." : $"The deck is at its floor of {cfg.MinDeckSize} cards.",
+                cfg.RemoveCardCost, keep > cfg.MinDeckSize, ShowStrikePicker);
             Service(d, x, ref y, "Load a dart", $"Darts aboard {run.Darts}/{run.MaxDarts}. Takes no dock time.", cfg.DartCost,
                 run.Darts < run.MaxDarts, () => Shop(() => RunRules.BuyDart(run, content)));
             Service(d, x, ref y, $"Decant {cfg.OrdinalsPerPurchase} Ordinals", $"Ordinals {run.Ordinals}/{run.MaxOrdinals}.", cfg.OrdinalCost * cfg.OrdinalsPerPurchase,
@@ -318,6 +321,31 @@ namespace Silence.Meta
                 var fit = Ui.Btn(row.transform, "Fit", 954, 20, 170, 48, () => Shop(() => RunRules.FitModule(run, content, id)), 16);
                 fit.interactable = run.Scrap >= cfg.ModuleCost;
                 my += 94;
+            }
+        }
+
+        /// <summary>Pick the card to strike: the deck at full size, click one to remove it.</summary>
+        void ShowStrikePicker()
+        {
+            var cfg = content.Config;
+            var d = OpenDialog(1880, 1040, 0.85f);
+            Ui.Heading(d, "Strike a card", 32, 36, 26, 900, 36);
+            Ui.Body(d, $"Click a card to remove it from the deck for good. {cfg.RemoveCardCost} scrap; you have {run.Scrap}.", 16, 38, 70, 1200, 16, TextAlignmentOptions.TopLeft, Skin.Dim);
+            Ui.Btn(d, "Cancel", 1690, 26, 150, 48, Refresh, 16);
+            var entries = Enumerable.Range(0, run.Deck.Count).Where(i => run.Deck[i].Ship >= 0)
+                .OrderBy(i => run.Deck[i].Ship).ThenBy(i => PaperCards.Get(run.Deck[i].Card).Type).ThenBy(i => run.Deck[i].Card).ToList();
+            const int perRow = 8;
+            int rows = Mathf.Max(1, (entries.Count + perRow - 1) / perRow);
+            float cw = CardView.W + 6, top = 104, room = 1040 - top - 26 - CardView.H;
+            float rowStep = rows <= 1 ? 0 : Mathf.Min(CardView.H + 10, Mathf.Floor(room / (rows - 1)));
+            float x0 = Mathf.Round((1880 - perRow * cw) / 2f);
+            for (int n = 0; n < entries.Count; n++)
+            {
+                int index = entries[n];
+                var view = MakeCard(d, run.Deck[index], x0 + (n % perRow) * cw + CardView.W / 2f, top + (n / perRow) * rowStep + CardView.H);
+                view.Hovered = v => { v.transform.SetAsLastSibling(); v.SetSelected(true); };
+                view.Unhovered = v => v.SetSelected(false);
+                view.Clicked = _ => Shop(() => RunRules.RemoveCard(run, content, index));
             }
         }
 

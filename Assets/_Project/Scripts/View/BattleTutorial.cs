@@ -26,7 +26,7 @@ namespace Silence.View
             public Func<bool> Done;
             /// <summary>Id of the one card that may be played in this step.</summary>
             public string Card;
-            public bool Darts, EndTurn, Free;
+            public bool Darts, EndTurn, Throttle, Free;
             public Focus Focus;
         }
 
@@ -72,7 +72,7 @@ namespace Silence.View
             new TutorialStep
             {
                 Title = "Ships drift", Info = true, Focus = Focus.Flagship,
-                Text = "You never move a ship by hand. The <color=#7fdcf2>Sixth Verdict</color> drifts straight ahead by her Speed when the turn ends. " +
+                Text = "Ships are not moved hex by hex. The <color=#7fdcf2>Sixth Verdict</color> drifts straight ahead by her Speed when the turn ends. " +
                        "The faded copy marked <color=#7fdcf2>DRIFT</color> shows where she will be.\n\n" +
                        "She is 4 hexes from the picket now. Her drift carries her into its range.",
             },
@@ -102,6 +102,14 @@ namespace Silence.View
                 Text = "The broadside hit your fore arc and the shields took all of it.\n\n" +
                        "Each ship has four arcs: <color=#c9a24a>F</color>ore, <color=#c9a24a>P</color>ort, <color=#c9a24a>S</color>tarboard, <color=#c9a24a>A</color>ft. " +
                        "Each shows <color=#7fdcf2>shields</color> / <color=#8a90a0>armor</color>. A hit lands on the arc facing the attacker. Shields return a little each turn.",
+            },
+            new TutorialStep
+            {
+                Title = "All stop", Throttle = true, Focus = Focus.Fleet,
+                Done = () => Battle.Flagship != null && Battle.Flagship.Speed == 0,
+                Text = "You are in range now, and drifting on would only carry you closer.\n\n" +
+                       "On your ship card, top left, click <color=#7fdcf2>-</color> beside <color=#7fdcf2>SPEED</color>. She will hold position and the DRIFT marker goes.\n\n" +
+                       "Each ship can change speed one step a turn. Slowing is free; speeding up costs 1 heat.",
             },
             new TutorialStep
             {
@@ -140,7 +148,7 @@ namespace Silence.View
             new TutorialStep
             {
                 Title = "Heat", Info = true, Focus = Focus.Fleet,
-                Text = "Weapons heat the ship that fires them, and she vents 2 a turn.\n\n" +
+                Text = "Weapons heat the ship that fires them, and she only vents 1 a turn.\n\n" +
                        "End a turn with heat over the cap (the white tick on the <color=#f0a040>HEAT</color> bar) and a junk card, Fire on Deck, joins your deck. " +
                        "Vent Plasma dumps heat in a hurry.",
             },
@@ -172,6 +180,13 @@ namespace Silence.View
             return s.Info ? "Read the note on the right, then click Continue." : "Tutorial: " + NudgeFor(s);
         }
 
+        string TutorialBlocksThrottle()
+        {
+            var s = Step;
+            if (s == null || s.Free || s.Throttle) return null;
+            return s.Info ? "Read the note on the right, then click Continue." : "Tutorial: " + NudgeFor(s);
+        }
+
         string TutorialBlocksEndTurn()
         {
             var s = Step;
@@ -180,7 +195,7 @@ namespace Silence.View
         }
 
         static string NudgeFor(TutorialStep s)
-            => s.Card != null ? $"play {PaperCards.Get(s.Card).Name} first." : s.Darts ? "move a dart first." : s.EndTurn ? "end the turn." : "follow the note on the right.";
+            => s.Card != null ? $"play {PaperCards.Get(s.Card).Name} first." : s.Throttle ? "use the - beside SPEED on your ship card." : s.Darts ? "move a dart first." : s.EndTurn ? "end the turn." : "follow the note on the right.";
 
         // ---------------------------------------------------------------- display
 

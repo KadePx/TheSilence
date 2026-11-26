@@ -45,6 +45,7 @@ namespace Silence.Data
         class ConfigDto
         {
             public int startScrap, startOrdinals, maxOrdinals, startDarts, maxDarts, flagshipBaseHeatCap, layers;
+            public int removeCardCost, minDeckSize;
             public int repairCostPerHull, removeJunkCost, moduleCost, rebuildEscortCost, dartCost, ordinalCost, ordinalsPerPurchase;
             public int rewardCards, ordinalsPerVictory, fieldRepair, concordRate, chorusRate, rivalSpread, concordStart, chorusStart;
             public int withdrawalDelay, longBattleTurns, longBattleDelay, shipyardDelayPerPurchase;
@@ -74,6 +75,7 @@ namespace Silence.Data
             {
                 StartScrap = c.startScrap, StartOrdinals = c.startOrdinals, MaxOrdinals = c.maxOrdinals, StartDarts = c.startDarts, MaxDarts = c.maxDarts,
                 FlagshipBaseHeatCap = c.flagshipBaseHeatCap, Layers = c.layers,
+                RemoveCardCost = c.removeCardCost > 0 ? c.removeCardCost : 30, MinDeckSize = c.minDeckSize > 0 ? c.minDeckSize : 8,
                 RepairCostPerHull = c.repairCostPerHull, RemoveJunkCost = c.removeJunkCost, ModuleCost = c.moduleCost, RebuildEscortCost = c.rebuildEscortCost,
                 DartCost = c.dartCost, OrdinalCost = c.ordinalCost, OrdinalsPerPurchase = c.ordinalsPerPurchase,
                 RewardCards = c.rewardCards, OrdinalsPerVictory = c.ordinalsPerVictory, FieldRepair = c.fieldRepair,

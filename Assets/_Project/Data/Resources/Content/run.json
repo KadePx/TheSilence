@@ -5,7 +5,7 @@
   "maxOrdinals": 24,
   "startDarts": 6,
   "maxDarts": 6,
-  "flagshipBaseHeatCap": 8,
+  "flagshipBaseHeatCap": 6,
   "layers": 8,
   "repairCostPerHull": 2,
   "removeJunkCost": 20,
@@ -365,6 +365,20 @@
    "requiresModule": "",
    "weight": 6,
    "price": 40
+  },
+  {
+   "card": "redline",
+   "ship": 0,
+   "requiresModule": "",
+   "weight": 9,
+   "price": 40
+  },
+  {
+   "card": "thermal_purge",
+   "ship": 0,
+   "requiresModule": "",
+   "weight": 9,
+   "price": 45
   }
  ]
 }

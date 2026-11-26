@@ -128,6 +128,8 @@ namespace Silence.Core.Battle
         public bool NoBurnNextTurn;
 
         // ---- craft, reset at the start of each turn ----
+        /// <summary>This capital ship has changed speed with the throttle this turn.</summary>
+        public bool ThrottleUsed;
         public bool CraftActed;
         public int CraftBonusMove;
         public int CraftAttacks = 1;

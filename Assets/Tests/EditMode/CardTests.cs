@@ -114,12 +114,14 @@ namespace Silence.Tests
         public void Burn()
         {
             var c = T.Give(b, PaperCards.Burn, flag);
+            var start = flag.Pos;
             Assert.IsNull(b.PlayCard(c.Id, PlayTarget.At(flag.Id)));
-            Assert.AreEqual(1, flag.Speed);
+            Assert.AreEqual(start.Neighbor(HexDirection.E), flag.Pos, "moves one hex ahead at once");
+            Assert.AreEqual(0, flag.Speed, "speed is the throttle's business, not Burn's");
             Assert.AreEqual(1, flag.Heat);
-            flag.Speed = 3;
+            b.AddUnit(T.Dummy(), Side.Enemy, 0, 0, HexDirection.W, 0).Pos = flag.Pos.Neighbor(HexDirection.E);
             var c2 = T.Give(b, PaperCards.Burn, flag);
-            Assert.IsNotNull(b.PlayCard(c2.Id, PlayTarget.At(flag.Id)), "max speed 3");
+            Assert.IsNotNull(b.PlayCard(c2.Id, PlayTarget.At(flag.Id)), "blocked hex ahead");
         }
 
         [Test]

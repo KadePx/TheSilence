@@ -161,7 +161,10 @@ namespace Silence.View
                 lines.Add(darts > 0
                     ? $"<color=#7fdcf2>DARTS</color>  {darts} ready: click one to move it"
                     : "<color=#555b6a>DARTS  all have acted</color>");
-            lines.Add("<color=#8a90a0>SHIPS  move by card, then drift</color>");
+            int helms = Battle.LiveUnits(Side.Player).Count(u => u.IsCapital && !u.ThrottleUsed);
+            lines.Add(helms > 0
+                ? "<color=#7fdcf2>HELM</color>  set speed with - + on a ship card"
+                : "<color=#555b6a>HELM  speed is set for this turn</color>");
             actionsText.text = string.Join("\n", lines);
 
             bool nothingLeft = playable == 0 && darts == 0;
@@ -189,9 +192,9 @@ namespace Silence.View
             {
                 "Enemies show their orders before you act. A solid red line will hit; a faded one misses as things stand.",
                 "Cards cost command. A weapon needs its target inside the weapon's arc and range.",
-                "Your ships drift straight ahead by their Speed when you end the turn. Leave an arc and the shot misses.",
+                "Ships drift straight ahead by their Speed when you end the turn. Set Speed with - and + on a ship card, one step a turn. Cards turn the ship.",
                 "A hit lands on the arc facing the attacker: shields soak it first, then armor, then hull.",
-                "Heat over the cap adds Fire on Deck. Darts move by hand: click one, then a hex or an enemy.",
+                "Leave an enemy's arc or range and its shot misses. Heat over the cap adds Fire on Deck. Darts move by hand: click one, then a hex or an enemy.",
             };
             for (int i = 0; i < rules.Length; i++)
             {
@@ -268,8 +271,8 @@ namespace Silence.View
                 view.InstanceId = c.Id;
                 var card = c;
                 view.Clicked = _ => OnCardClicked(card);
-                view.Hovered = v => { hoveredCard = v; v.transform.SetAsLastSibling(); };
-                view.Unhovered = v => { if (hoveredCard == v) hoveredCard = null; };
+                view.Hovered = v => { hoveredCard = v; v.transform.SetAsLastSibling(); RefreshUnitPanel(); };
+                view.Unhovered = v => { if (hoveredCard == v) { hoveredCard = null; RefreshUnitPanel(); } };
                 handViews.Add(view);
             }
             LayoutHand(true);
@@ -350,7 +353,45 @@ namespace Silence.View
                 y += notes.Count * 18f + 10;
             }
 
+            if (hoveredCard != null && Glossary(hoveredCard.Def, y)) return;
             if (focus != null && focus.Alive && !(focus.Side == Side.Player && focus.IsCapital)) TargetCard(focus, y);
+        }
+
+        static readonly (string find, string term, string meaning)[] Keywords =
+        {
+            ("fore arc", "FORE ARC", "the hexes ahead of the ship, within 30 degrees of her heading"),
+            ("port or starboard", "SIDE ARCS", "the hexes to either flank of the ship"),
+            ("range", "RANGE", "counted in hexes from the ship that fires"),
+            ("Heat", "HEAT", "builds on the ship that plays the card; over the cap at end of turn adds Fire on Deck"),
+            ("Expend", "EXPEND", "an extra cost paid in Ordinals, the fleet's crew"),
+            ("Exhaust", "EXHAUST", "the card is gone for the rest of this battle"),
+            ("Unplayable", "UNPLAYABLE", "it only clogs your hand; remove it at a shipyard"),
+            ("shields", "SHIELDS", "soak damage on the arc that is hit, before armor and hull"),
+            ("armor", "ARMOR", "takes a fixed amount off each hit that gets past the shields"),
+            ("crits", "CRITICAL", "5 or more hull damage in one hit; adds junk or hits the engines"),
+            ("Speed", "SPEED", "how many hexes a ship drifts at end of turn"),
+            ("darts", "DARTS", "small craft you move by hand; each acts once a turn"),
+            ("intent", "INTENT", "the order an enemy has announced for this turn"),
+            ("command", "COMMAND", "what cards cost; 3 a turn, unspent command is lost"),
+        };
+
+        /// <summary>While a card is under the pointer, spell out the rules words on it. False if it has none.</summary>
+        bool Glossary(CardDef def, float y)
+        {
+            var lines = new List<string>();
+            foreach (var (find, term, meaning) in Keywords)
+                if (def.Text.IndexOf(find, System.StringComparison.OrdinalIgnoreCase) >= 0 && lines.Count < 5)
+                    lines.Add($"<color=#e8c870>{term}</color>  {meaning}.");
+            if (lines.Count == 0) return false;
+            var card = Ui.Panel(unitPanel, "Glossary", 0, y, FleetW, 100);
+            Ui.Stamp(card.transform, def.Name, 12, 16, 12, FleetW - 32, 14, TextAlignmentOptions.Left, Skin.BrassDark);
+            var text = Ui.Label(card.transform, string.Join("\n", lines), Skin.Stencil, 12, Skin.Text, 16, 32, FleetW - 32, 400, TextAlignmentOptions.TopLeft);
+            text.lineSpacing = 30f;
+            text.paragraphSpacing = 40f;
+            text.ForceMeshUpdate();
+            card.rectTransform.sizeDelta = new Vector2(FleetW, 32 + Mathf.Ceil(text.preferredHeight) + 16);
+            card.raycastTarget = false;
+            return true;
         }
 
         /// <summary>One of your capital ships at a glance: hull, heat, shields and armor per arc, speed and heading.</summary>
@@ -382,10 +423,26 @@ namespace Silence.View
             }
 
             ArcRow(t, u, 84);
-            Ui.Stamp(t, $"Speed {u.Speed}", 12, 16, 118, 100, 14, TextAlignmentOptions.Left, Skin.Dim);
+            // The helm: - and + change Speed one step, once a turn. Lit while this ship can still use it.
+            Ui.Stamp(t, $"Speed {u.Speed}", 12, 16, 118, 70, 14, TextAlignmentOptions.Left, u.ThrottleUsed ? Skin.Dim : Skin.Cyan);
             for (int i = 0; i < u.MaxSpeed; i++)
-                Ui.Img(t, "Chevron", Skin.Arrow, 84 + i * 16, 117, 14, 14, i < u.Speed ? Skin.Cyan : Skin.Hex("1c2a33"));
-            Ui.Stamp(t, "Heading " + u.Facing, 12, 170, 118, 114, 14, TextAlignmentOptions.Right, Skin.Dim);
+                Ui.Img(t, "Chevron", Skin.Arrow, 80 + i * 15, 117, 14, 14, i < u.Speed ? Skin.Cyan : Skin.Hex("1c2a33"));
+            int id = u.Id;
+            bool mine = mode != Mode.Busy && mode != Mode.Over && mode != Mode.Intro;
+            HelmButton(t, 130, 113, "-", mine && Battle.CheckThrottle(id, -1) == null, () => ClickThrottle(id, -1));
+            HelmButton(t, 162, 113, "+", mine && Battle.CheckThrottle(id, 1) == null, () => ClickThrottle(id, 1));
+            Ui.Stamp(t, "Heading " + u.Facing, 12, 196, 118, 88, 14, TextAlignmentOptions.Right, Skin.Dim);
+        }
+
+        /// <summary>A small square key for the helm: cyan when it can be pressed, dark when it can't.</summary>
+        static void HelmButton(Transform t, float x, float y, string glyph, bool enabled, System.Action onClick)
+        {
+            var edge = Ui.Fill(t, "Helm " + glyph, x, y, 28, 20, enabled ? Skin.Cyan : Skin.Hex("2c2f36"));
+            Ui.Fill(edge.transform, "Face", 1, 1, 26, 18, enabled ? Skin.Hex("12303a") : Skin.Hex("16171b"));
+            Ui.Heading(edge.transform, glyph, 16, 0, 0, 28, 20, TextAlignmentOptions.Center, enabled ? Skin.Cyan : Skin.Faint);
+            if (!enabled) return;
+            edge.raycastTarget = true;
+            edge.gameObject.AddComponent<PointerRelay>().Click = _ => { Sfx.Play("sfx_click"); onClick(); };
         }
 
         /// <summary>Shields (cyan) and armor (grey) for the four arcs in one row: F, P, S, A.</summary>

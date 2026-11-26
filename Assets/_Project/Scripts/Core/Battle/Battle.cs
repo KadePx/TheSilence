@@ -280,6 +280,40 @@ namespace Silence.Core.Battle
             return null;
         }
 
+        /// <summary>Heat for speeding up with the throttle.</summary>
+        public const int ThrottleHeat = 1;
+
+        /// <summary>Why this ship's throttle can't move by <paramref name="delta"/> (+1 or -1) right now, or null if it can.</summary>
+        public string CheckThrottle(int unitId, int delta)
+        {
+            if (Phase != BattlePhase.Command) return "speed can only be changed in the Command step";
+            var u = Get(unitId);
+            if (u == null || !u.Alive || u.Side != Side.Player || !u.IsCapital) return "choose one of your capital ships";
+            if (delta != 1 && delta != -1) return "the throttle moves one step at a time";
+            if (u.ThrottleUsed) return $"{u.Name} has already changed speed this turn";
+            if (delta > 0 && u.NoBurnThisTurn) return "engines are damaged: no speeding up this turn";
+            if (delta > 0 && u.Speed >= u.MaxSpeed) return "already at max speed";
+            if (delta < 0 && u.Speed <= 0) return "already stopped";
+            return null;
+        }
+
+        /// <summary>
+        /// The helm: each capital ship may change its Speed by one step once a turn, for free. Speeding up adds
+        /// <see cref="ThrottleHeat"/> heat; slowing down costs nothing. Speed decides how far the ship drifts.
+        /// </summary>
+        public string Throttle(int unitId, int delta)
+        {
+            string error = CheckThrottle(unitId, delta);
+            if (error != null) return error;
+            var u = Get(unitId);
+            int before = u.Speed;
+            u.Speed += delta;
+            u.ThrottleUsed = true;
+            Emit(EventKind.SpeedChanged, u.Id, -1, u.Speed, $"{u.Name} speed {before} -> {u.Speed}");
+            if (delta > 0) AddHeat(u, ThrottleHeat);
+            return null;
+        }
+
         /// <summary>Finish the Command step: Drift, Enemy action, End, then the next turn's Intent and draw.</summary>
         public string EndTurn()
         {
@@ -319,6 +353,7 @@ namespace Silence.Core.Battle
             {
                 u.NoBurnThisTurn = u.NoBurnNextTurn;
                 u.NoBurnNextTurn = false;
+                u.ThrottleUsed = false;
                 u.CraftActed = false;
                 u.CraftBonusMove = 0;
                 u.CraftAttacks = 1;

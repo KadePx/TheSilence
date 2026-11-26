@@ -52,7 +52,7 @@ namespace Silence.Meta
             Ui.Body(panel.transform, "The same seed gives the same map, fights and rewards. Click the box to type one.", 14, 54, y, 400, 40, TextAlignmentOptions.TopLeft, Skin.Dim);
             y += 56;
 
-            Ui.Btn(panel.transform, "Tutorial", 50, y, 400, 60, () => { BattleLauncher.Clear(); BattleLauncher.Tutorial = true; SceneManager.LoadScene(Game.BattleScene); }, 30);
+            Ui.Btn(panel.transform, "Tutorial", 50, y, 400, 60, () => { PlayerPrefs.SetInt(TutorialSeenKey, 1); BattleLauncher.Clear(); BattleLauncher.Tutorial = true; SceneManager.LoadScene(Game.BattleScene); }, 30);
             y += 70;
             Ui.Btn(panel.transform, "Skirmish", 50, y, 400, 60, () => { BattleLauncher.Clear(); SceneManager.LoadScene(Game.BattleScene); }, 30);
             y += 70;
@@ -96,6 +96,7 @@ namespace Silence.Meta
             if (error != null) message.text = $"<color=#d9573f>{error}</color>";
         }
 
+        public const string TutorialSeenKey = "silence_tutorial_seen";
         bool confirmedOverwrite;
 
         void OnNewRun()
@@ -104,6 +105,13 @@ namespace Silence.Meta
             {
                 confirmedOverwrite = true;
                 message.text = "<color=#f0a040>A run is in progress. Press New run again to abandon it and start over.</color>";
+                return;
+            }
+            if (PlayerPrefs.GetInt(TutorialSeenKey, 0) == 0)
+            {
+                // First time only: point at the tutorial, but never stand in the way of a second click.
+                PlayerPrefs.SetInt(TutorialSeenKey, 1);
+                message.text = "<color=#e8c870>New here? The Tutorial takes five minutes. Press New run again to skip it.</color>";
                 return;
             }
             if (!long.TryParse(seed, out long value) || seed.Length == 0) value = Game.RandomSeed();

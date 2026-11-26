@@ -656,6 +656,29 @@ namespace Silence.Core.Run
             return null;
         }
 
+        /// <summary>
+        /// Strike one chosen card from the deck for good: a thinner deck draws its best cards more often.
+        /// Junk has its own cheaper service; the deck can't go below <see cref="RunConfig.MinDeckSize"/>.
+        /// </summary>
+        public static string CheckRemoveCard(RunState r, RunContent c, int deckIndex)
+        {
+            if (r.Phase != RunPhase.Shipyard || !r.Shop.Active) return "not at a shipyard";
+            if (deckIndex < 0 || deckIndex >= r.Deck.Count) return "no such card";
+            if (r.Deck[deckIndex].Ship < 0) return "junk is stripped out by its own service";
+            if (r.Deck.Count(d => d.Ship >= 0) <= c.Config.MinDeckSize) return $"the deck can't go below {c.Config.MinDeckSize} cards";
+            if (r.Scrap < c.Config.RemoveCardCost) return $"needs {c.Config.RemoveCardCost} scrap";
+            return null;
+        }
+
+        public static string RemoveCard(RunState r, RunContent c, int deckIndex)
+        {
+            string err = CheckRemoveCard(r, c, deckIndex) ?? Pay(r, c.Config.RemoveCardCost);
+            if (err != null) return err;
+            r.Journal.Add($"Struck {PaperCards.Get(r.Deck[deckIndex].Card).Name} from the deck.");
+            r.Deck.RemoveAt(deckIndex);
+            return null;
+        }
+
         public static string BuyCard(RunState r, int index)
         {
             if (r.Phase != RunPhase.Shipyard) return "not at a shipyard";

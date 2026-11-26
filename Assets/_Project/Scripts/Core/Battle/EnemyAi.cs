@@ -104,9 +104,16 @@ namespace Silence.Core.Battle
                     switch (step.Kind)
                     {
                         case IntentKind.PatchUp:
-                            i.TargetId = LiveUnits(Side.Enemy).Where(e => e.IsCapital)
-                                .OrderByDescending(e => e.MaxHull - e.Hull).ThenBy(e => e.Id).First().Id;
+                        {
+                            // Repair crews work best on someone else's hull: the most damaged other ship gets the
+                            // full amount; a ship with nobody else to mend patches itself for half. (A repair ship
+                            // left alone could otherwise out-heal steady fire and stall the battle.)
+                            var other = LiveUnits(Side.Enemy).Where(e => e.IsCapital && e != u && e.Hull < e.MaxHull)
+                                .OrderByDescending(e => e.MaxHull - e.Hull).ThenBy(e => e.Id).FirstOrDefault();
+                            i.TargetId = other != null ? other.Id : u.Id;
+                            if (other == null) i.Damage = step.Amount / 2;
                             break;
+                        }
                         case IntentKind.JointFire:
                         {
                             var weakest = LiveUnits(Side.Player).Where(p => p.IsCapital).OrderBy(p => p.Hull).ThenBy(p => p.Id).FirstOrDefault();

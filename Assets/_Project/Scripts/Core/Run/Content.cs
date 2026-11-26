@@ -93,6 +93,7 @@ namespace Silence.Core.Run
         public int StartScrap = 30, StartOrdinals = 24, MaxOrdinals = 24, StartDarts = 6, MaxDarts = 6;
         public int FlagshipBaseHeatCap = 8;
         public int Layers = 8;
+        public int RemoveCardCost = 30, MinDeckSize = 8;
         public int RepairCostPerHull = 2, RemoveJunkCost = 20, ModuleCost = 50, RebuildEscortCost = 55;
         public int DartCost = 5, OrdinalCost = 3, OrdinalsPerPurchase = 4;
         public int RewardCards = 3;

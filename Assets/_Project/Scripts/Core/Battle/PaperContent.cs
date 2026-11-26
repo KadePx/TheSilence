@@ -11,7 +11,7 @@ namespace Silence.Core.Battle
     {
         const Arc Sides = Arc.Port | Arc.Starboard;
 
-        public static UnitSpec LanceCruiser => Named("asc_cruiser", UnitSpec.Capital("Sixth Verdict", 30, 3, 2, 2, 1, 4, 1, 10, 2, 3));
+        public static UnitSpec LanceCruiser => Named("asc_cruiser", UnitSpec.Capital("Sixth Verdict", 30, 3, 2, 2, 1, 4, 1, 10, 1, 3));
         public static UnitSpec Blade => Named("asc_blade", UnitSpec.Capital("Blade", 14, 1, 1, 1, 0, 2, 1, 6, 2, 3));
         public static UnitSpec Dart => Named("asc_dart", UnitSpec.Craft("Ordinal dart", 2, 4, 2));
 
@@ -116,8 +116,8 @@ namespace Silence.Core.Battle
         public static readonly CardDef Burn = new CardDef
         {
             Id = "burn", Name = "Burn", Cost = 0, Type = CardType.Maneuver, Module = "Bridge",
-            Text = "One capital ship: Speed +1 (max 3), +1 Heat.", Target = TargetKind.AllyCapital,
-            Effects = new Effect[] { new SpeedEffect { Delta = 1, Heat = 1 } },
+            Text = "One capital ship moves 1 hex straight ahead now. +1 Heat.", Target = TargetKind.AllyCapital,
+            Effects = new Effect[] { new AdvanceEffect { Heat = 1 } },
         };
 
         public static readonly CardDef HardAbout = new CardDef
@@ -282,6 +282,23 @@ namespace Silence.Core.Battle
 
         // ---- junk ----
 
+        // ---- heat as a resource (core review) ----
+
+        public static readonly CardDef Redline = new CardDef
+        {
+            Id = "redline", Name = "Redline", Cost = 0, Type = CardType.Reactor, Tags = "Reactor · Heat", Module = "Reactor",
+            Text = "+1 command. +4 Heat.",
+            Effects = new Effect[] { new GainCommandEffect { Amount = 1 }, new HeatSourceEffect { Amount = 4 } },
+        };
+
+        public static readonly CardDef ThermalPurge = new CardDef
+        {
+            Id = "thermal_purge", Name = "Thermal Purge", Cost = 1, Type = CardType.Reactor, Tags = "Reactor · Heat", Module = "Reactor",
+            Text = "Dump all Heat. An enemy within 2 takes that much damage (max 8), ignoring shields.",
+            Target = TargetKind.Enemy,
+            Effects = new Effect[] { new ThermalPurgeEffect { Range = 2, Max = 8 } },
+        };
+
         public static readonly CardDef HullBreach = new CardDef
         {
             Id = "hull_breach", Name = "Hull Breach", Cost = 0, Type = CardType.Junk, Unplayable = true,
@@ -326,6 +343,7 @@ namespace Silence.Core.Battle
             OverchargeLances, DecimationOrder, SacrificialRam, BoardingAction, WaymindTargeting, PrecisionEdict,
             ColdDiscipline, ScreeningManeuver, DartSortie, FlakLattice,
             ComeAbout, ShortLance, RakingBeam, PurgeTheirDecks, HoldTheLine, ScryTheVoid, SealTheDecks,
+            Redline, ThermalPurge,
             HullBreach, FireOnDeck, JammedMount,
         };
 

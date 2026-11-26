@@ -46,6 +46,10 @@ the sprint plan.
 - Regenerate the placeholder sound effects: `python Tools/make_sfx.py`
 - In Play Mode: F9 lets the bot play the current battle turn, F10 toggles the autopilot (whole runs).
 
+- Balance and mechanic-usage numbers: evaluate `Tools/sim/balance_sim.cs` in the editor (Unity pipeline `script_eval`
+  with `file`). 150 bot runs; reports win rates per encounter, battle length, dodges, heat, and how often each card is
+  played when drawn. Writes `Temp/sim.txt`. The bot is weak, so read trends, not absolutes.
+
 ## Art
 
 - Every PixelLab generation is logged in `ArtSource/pixellab-log.csv` (job ID, candidate index, seed).

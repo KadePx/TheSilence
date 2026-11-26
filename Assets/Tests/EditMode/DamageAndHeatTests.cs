@@ -129,11 +129,11 @@ namespace Silence.Tests
             var b = T.Fleet(out var flag, out _);
             b.AddUnit(T.Dummy(), Side.Enemy, 8, 0, HexDirection.W, 0);
             b.Start();
-            flag.Heat = 13; // vents 2 -> 11, over cap 10
+            flag.Heat = 13; // still over cap 10 after venting
             b.EndTurn();
             Assert.AreEqual(1, b.Deck.AllPiles().SelectMany(p => p).Count(c => c.Def == PaperCards.FireOnDeck));
             Assert.AreEqual(30, flag.Hull);
-            Assert.AreEqual(11, flag.Heat);
+            Assert.AreEqual(13 - flag.Vent, flag.Heat);
         }
 
         [Test]

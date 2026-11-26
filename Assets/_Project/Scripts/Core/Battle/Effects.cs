@@ -95,6 +95,61 @@ namespace Silence.Core.Battle
         }
     }
 
+    /// <summary>Burn: the chosen capital ship moves one hex straight ahead right now, for heat.</summary>
+    public sealed class AdvanceEffect : Effect
+    {
+        public int Heat;
+
+        public override string Validate(Battle b, PlayContext ctx)
+        {
+            var t = ctx.Target;
+            if (t.NoBurnThisTurn) return "engines are damaged: no Burn this turn";
+            if (!b.IsFree(t.Pos.Neighbor(t.Facing))) return "the hex ahead is blocked";
+            return null;
+        }
+
+        public override void Apply(Battle b, PlayContext ctx)
+        {
+            var t = ctx.Target;
+            var next = t.Pos.Neighbor(t.Facing);
+            b.Emit(EventKind.Moved, t.Id, -1, 1, $"{t.Name} burns ahead", t.Pos, next);
+            t.Pos = next;
+            b.AddHeat(t, Heat);
+        }
+    }
+
+    /// <summary>Heat on the card's own ship (Redline).</summary>
+    public sealed class HeatSourceEffect : Effect
+    {
+        public int Amount;
+        public override void Apply(Battle b, PlayContext ctx) => b.AddHeat(ctx.Source, Amount);
+    }
+
+    /// <summary>Thermal Purge: dump all of the source's heat into an enemy within range, as damage that ignores shields.</summary>
+    public sealed class ThermalPurgeEffect : Effect
+    {
+        public int Range, Max;
+
+        public override string Validate(Battle b, PlayContext ctx)
+        {
+            var t = ctx.Target;
+            if (t == null || !t.Alive || t.Side != Side.Enemy) return "needs an enemy target";
+            if (ctx.Source.Pos.DistanceTo(t.Pos) > Range) return $"target must be within {Range} hexes";
+            if (ctx.Source.Heat <= 0) return "no heat to purge";
+            return null;
+        }
+
+        public int DamageFrom(Unit source) => System.Math.Min(Max, source.Heat);
+
+        public override void Apply(Battle b, PlayContext ctx)
+        {
+            var s = ctx.Source;
+            int dmg = DamageFrom(s);
+            b.AddHeat(s, -s.Heat);
+            b.DealDamage(ctx.Target, dmg, s.Pos, new DamageFlags { IgnoreShields = true }, s);
+        }
+    }
+
     /// <summary>Hard About: turn 60 degrees, or up to 120 at Speed 0-1. The choice is in <see cref="PlayTarget.Turn"/>.</summary>
     public sealed class TurnEffect : Effect
     {
