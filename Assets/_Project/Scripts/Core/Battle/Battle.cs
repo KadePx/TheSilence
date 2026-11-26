@@ -51,6 +51,8 @@ namespace Silence.Core.Battle
         public int DartsInHangar = -1;
         /// <summary>Shown on the battle screen ("Intercept at the Ring").</summary>
         public string Title = "";
+        /// <summary>False keeps the draw pile in the order the cards were added (the tutorial's fixed opening hands).</summary>
+        public bool ShuffleAtStart = true;
         /// <summary>After this many turns the fleets disengage (Withdrawal). Placeholder until the spec decides; 0 = no limit.</summary>
         public int TurnLimit = 25;
 
@@ -96,7 +98,7 @@ namespace Silence.Core.Battle
         public void Start()
         {
             if (Phase != BattlePhase.Setup) throw new InvalidOperationException("battle already started");
-            Rng.Shuffle(Deck.DrawPile);
+            if (ShuffleAtStart) Rng.Shuffle(Deck.DrawPile);
             Emit(EventKind.BattleStarted, -1, -1, 0, $"Battle starts: {Units.Count} units, {Deck.Count} cards");
             BeginTurn();
         }

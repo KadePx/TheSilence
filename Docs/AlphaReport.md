@@ -291,3 +291,33 @@ states were driven from script, not with a mouse, so hover (card lift, order row
 - Buttons brighten on hover by tint; painted hover and pressed states were not commissioned.
 - The pixel fonts have no degree sign, so card text says "60 deg".
 
+## Clarity pass and tutorial
+
+Kade's feedback on the UI pass: better, but it is not clear when you can move and what you can do.
+
+### What you can do, on screen
+
+- The top bar says whose move it is: YOUR ORDERS, DRIFT, ENEMY ACTS.
+- Bottom left lists what is still open this turn: how many cards you can afford, how many darts are ready, and that
+  ships move by card and then drift. Under End Turn it says what is still unused, and End Turn blinks once nothing is.
+- Each ship's drift ghost is labelled DRIFT with the distance. Darts that can still act are labelled READY.
+- Clicking one of your own ships explains that ships are not moved by hand and names the cards in hand that move it.
+- Hard About goes straight to the heading arrows when there is only one ship to turn.
+- Card types are colour-coded in the footer: cyan moves, red shoots, green defends, orange is the reactor.
+
+### Tutorial
+
+Main menu > Tutorial, or the Tutorial button in the skirmish menu. One flagship against a moored Concord picket
+(`Scenarios.Tutorial`), with an unshuffled deck so the first two hands are always the same. Thirteen steps:
+enemy orders, drift, the lance (arc and range), Brace and shields, ending the turn, arcs on the ship card, Hard
+About, the side guns, launching darts, moving a dart, heat, then two or three turns of free play to finish the
+picket. While a step is up only the action it asks for is accepted; anything else gets a one-line nudge.
+
+### How it was checked
+
+137 EditMode tests pass, 5 of them new: the fixed first hand, the picket never moving, and every action the
+tutorial asks for being legal and having the stated result (the lance leaves the picket on 6 hull, braced shields
+take the whole broadside, either turn direction brings the side guns to bear). The tutorial was then played start
+to finish in Play Mode through the same entry points the mouse uses, including two deliberately wrong inputs, with a
+screenshot at every step (`ArtSource/Screenshots/tutorial_*.png`). It was not played with a physical mouse.
+

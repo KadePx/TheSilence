@@ -38,11 +38,13 @@ namespace Silence.View
             }
             Ui.Clear(chipRoot);
             endTurnButton.interactable = false;
+            RefreshTutorial();
 
             while (logCursor < Battle.Log.Count)
             {
                 var e = Battle.Log[logCursor++];
                 AddLog(e);
+                if (e.Kind == EventKind.PhaseChanged) ShowPhase(e.Text);
                 yield return Animate(e);
             }
 

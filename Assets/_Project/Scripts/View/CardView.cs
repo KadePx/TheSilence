@@ -75,7 +75,7 @@ namespace Silence.View
             var foot = Ui.Stamp(rt, source, 12, 20, 276, 120, 12, TextAlignmentOptions.Left, Skin.Dim);
             foot.textWrappingMode = TextWrappingModes.NoWrap;
             foot.overflowMode = TextOverflowModes.Truncate;
-            var type = Ui.Stamp(rt, def.Type.ToString(), 12, 120, 276, 82, 12, TextAlignmentOptions.Right, junk ? Skin.Rust : Skin.BrassDark);
+            var type = Ui.Stamp(rt, def.Type.ToString(), 12, 120, 276, 82, 12, TextAlignmentOptions.Right, junk ? Skin.Rust : TypeColor(def.Type));
             type.textWrappingMode = TextWrappingModes.NoWrap;
 
             view.frame = Ui.Img(rt, "Frame", Skin.Frame, -2, -2, W + 4, H + 4, Skin.BrassLight, true);
@@ -83,6 +83,19 @@ namespace Silence.View
             view.dim = Ui.Img(rt, "Dim", frameSprite != null ? frameSprite : Skin.Plate, 0, 0, W, H, new Color(0, 0, 0, 0.55f), frameSprite == null);
             view.dim.enabled = false;
             return view;
+        }
+
+        /// <summary>Card types by colour, so a hand reads at a glance: cyan moves the ship, red shoots, green protects.</summary>
+        public static Color TypeColor(CardType type)
+        {
+            switch (type)
+            {
+                case CardType.Maneuver: return Skin.Cyan;
+                case CardType.Weapon: return Skin.Bad;
+                case CardType.Defense: return Skin.Good;
+                case CardType.Reactor: return Skin.Warn;
+                default: return Skin.Brass;
+            }
         }
 
         /// <summary>Where on an east-facing ship sprite a module sits, as a fraction of its width and height from the top-left.</summary>

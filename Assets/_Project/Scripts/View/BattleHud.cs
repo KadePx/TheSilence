@@ -23,7 +23,8 @@ namespace Silence.View
         static Vector2 BoardCentre => new Vector2((BoardCentrePx.x - Ui.RefW / 2f) / 32f, (Ui.RefH / 2f - BoardCentrePx.y) / 32f);
 
         RectTransform root, chipRoot, floatRoot, handRoot, unitPanel, intentRoot, overlay, logPanel;
-        TextMeshProUGUI turnText, titleText, ordinalsText, dartsText, phaseText, promptText, logText, pilesText;
+        TextMeshProUGUI turnText, titleText, ordinalsText, dartsText, phaseText, promptText, logText, pilesText, actionsText, endHint;
+        Image endGlow;
         readonly List<Image> pips = new List<Image>();
         readonly List<Image> pipFills = new List<Image>();
         Button endTurnButton, expendButton;
@@ -55,7 +56,7 @@ namespace Silence.View
             var top = Ui.Img(root, "TopBar", Skin.Header, 0, 0, Ui.RefW, TopH, Color.white, true);
             top.raycastTarget = true;
             turnText = Ui.Heading(top.transform, "TURN 1", 16, 28, 18, 140, 20);
-            phaseText = Ui.Stamp(top.transform, "", 12, 150, 20, 220, 14, TextAlignmentOptions.Left, Skin.BrassDark);
+            phaseText = Ui.Heading(top.transform, "", 16, 160, 18, 260, 20, TextAlignmentOptions.Left, Skin.BrassLight);
             titleText = Ui.Heading(top.transform, "", 16, 460, 18, 1000, 20, TextAlignmentOptions.Center, Skin.Dim);
             Ui.Stamp(top.transform, "Ordinals", 12, 1330, 20, 70, 14, TextAlignmentOptions.Right, Skin.Dim);
             ordinalsText = Ui.Number(top.transform, "24", 24, 1408, 14, 50, 24, TextAlignmentOptions.Left, Skin.Cyan);
@@ -95,15 +96,80 @@ namespace Silence.View
                 pips.Add(socket);
                 pipFills.Add(fill);
             }
-            pilesText = Ui.Label(bottom.transform, "", Skin.Stencil, 12, Skin.Dim, 30, 106, 260, 60, TextAlignmentOptions.TopLeft);
+            // What you can still do this turn, in plain words, so nothing has to be guessed.
+            actionsText = Ui.Label(bottom.transform, "", Skin.Stencil, 12, Skin.Text, 30, 108, 340, 120, TextAlignmentOptions.TopLeft);
+            actionsText.lineSpacing = 50f;
+            pilesText = Ui.Label(bottom.transform, "", Skin.Stencil, 12, Skin.Faint, 30, 264, 340, 30, TextAlignmentOptions.TopLeft);
             pilesText.lineSpacing = 40f;
 
             handRoot = Ui.Box(bottom.transform, "Hand", 300, 0, 1320, Ui.RefH - BottomY);
 
             endTurnButton = Ui.Btn(bottom.transform, "End turn", 1660, 112, 232, 84, OnEndTurn, 32);
+            endGlow = Ui.Img(endTurnButton.transform, "Glow", Skin.Frame, -4, -4, 240, 92, Skin.BrassLight, true);
+            endGlow.gameObject.AddComponent<Blink>();
+            endGlow.enabled = false;
+            endHint = Ui.Stamp(bottom.transform, "", 12, 1620, 206, 312, 30, TextAlignmentOptions.Top, Skin.Dim);
 
+            tutorialRoot = Ui.Box(root, "Tutorial", 0, 0, Ui.RefW, Ui.RefH);
             overlay = Ui.Box(root, "Overlay", 0, 0, Ui.RefW, Ui.RefH);
             overlay.gameObject.SetActive(false);
+        }
+
+        /// <summary>The top bar says whose move it is: yours, the drift, or the enemy's.</summary>
+        void ShowPhase(string phase)
+        {
+            if (phaseText == null) return;
+            switch (phase)
+            {
+                case "Drift": phaseText.text = "DRIFT"; phaseText.color = Skin.Cyan; break;
+                case "EnemyAction": phaseText.text = "ENEMY ACTS"; phaseText.color = Skin.Bad; break;
+                case "End": phaseText.text = "END OF TURN"; phaseText.color = Skin.Dim; break;
+                case "Command": phaseText.text = "YOUR ORDERS"; phaseText.color = Skin.BrassLight; break;
+            }
+        }
+
+        /// <summary>
+        /// Bottom left: what is still open this turn (cards you can afford, darts that have not acted), how ships
+        /// move, and under End Turn whether anything is left. End Turn blinks once nothing is.
+        /// </summary>
+        void RefreshActions()
+        {
+            if (actionsText == null || Battle == null) return;
+            bool mine = mode != Mode.Busy && mode != Mode.Over && mode != Mode.Intro;
+            if (!mine)
+            {
+                actionsText.text = mode == Mode.Busy ? "<color=#8a90a0>Wait: orders are being carried out.</color>" : "";
+                endHint.text = "";
+                endGlow.enabled = false;
+                return;
+            }
+            ShowPhase("Command");
+            int playable = 0;
+            foreach (var c in Battle.Deck.Hand)
+            {
+                bool alive = c.SourceId < 0 || (Battle.Get(c.SourceId) != null && Battle.Get(c.SourceId).Alive);
+                if (!c.Def.Unplayable && alive && Battle.CostOf(c) <= Battle.Command) playable++;
+            }
+            int darts = Battle.LiveUnits(Side.Player).Count(u => u.Kind == UnitKind.Craft && !u.CraftActed);
+            int dartsOut = Battle.PlayerCraftCount();
+
+            var lines = new List<string>();
+            lines.Add(playable > 0
+                ? $"<color=#e8c870>CARDS</color>  {playable} you can play"
+                : "<color=#555b6a>CARDS  none you can afford</color>");
+            if (dartsOut > 0)
+                lines.Add(darts > 0
+                    ? $"<color=#7fdcf2>DARTS</color>  {darts} ready: click one to move it"
+                    : "<color=#555b6a>DARTS  all have acted</color>");
+            lines.Add("<color=#8a90a0>SHIPS  move by card, then drift</color>");
+            actionsText.text = string.Join("\n", lines);
+
+            bool nothingLeft = playable == 0 && darts == 0;
+            var parts = new List<string>();
+            if (playable > 0) parts.Add($"{playable} card{(playable > 1 ? "s" : "")}");
+            if (darts > 0) parts.Add($"{darts} dart{(darts > 1 ? "s" : "")}");
+            endHint.text = nothingLeft ? "<color=#e8c870>Nothing left to do</color>" : string.Join(" and ", parts) + " still open";
+            endGlow.enabled = nothingLeft || (InTutorial && Step.EndTurn && !Step.Darts);
         }
 
         void ToggleLog()
@@ -144,7 +210,6 @@ namespace Silence.View
             turnText.text = $"TURN {Battle.Turn}";
             titleText.text = (string.IsNullOrEmpty(Battle.Title) ? "" : Battle.Title.ToUpperInvariant()) +
                              (string.IsNullOrEmpty(BattleLauncher.Subtitle) ? "" : "  -  " + BattleLauncher.Subtitle.ToUpperInvariant());
-            phaseText.text = mode == Mode.Busy ? Battle.Phase.ToString().ToUpperInvariant() : "";
             ordinalsText.text = Battle.Ordinals.ToString();
             ordinalsText.color = Battle.Ordinals <= 0 ? Skin.Bad : Skin.Cyan;
             dartsText.text = Battle.DartsInHangar < 0 ? "-" : Battle.DartsInHangar.ToString();
@@ -155,6 +220,7 @@ namespace Silence.View
                 pipFills[i].enabled = i < Battle.Command;
             }
             int left = Battle.TurnLimit - Battle.Turn;
+            RefreshActions();
             pilesText.text = $"DECK {Battle.Deck.DrawPile.Count}    DISCARD {Battle.Deck.Discard.Count}" +
                              (Battle.Deck.Exhausted.Count > 0 ? $"    EXHAUST {Battle.Deck.Exhausted.Count}" : "") +
                              (left <= 5 ? $"\n<color=#f0a040>{Mathf.Max(0, left)} TURNS UNTIL BOTH FLEETS WITHDRAW</color>" : "");
@@ -168,6 +234,7 @@ namespace Silence.View
             RefreshPrompt();
             endTurnButton.interactable = mode != Mode.Busy && mode != Mode.Over && mode != Mode.Intro;
             if (mode == Mode.Idle) RefreshSelection();
+            else RefreshTutorial();
         }
 
         void RefreshPrompt()
@@ -512,6 +579,15 @@ namespace Silence.View
             }
         }
 
+        /// <summary>A small dark tab with a coloured underline, centred above a board position.</summary>
+        void Tab(Vector2 p, float dy, string text, Color color)
+        {
+            float w = 12f + text.Length * 7.2f;
+            var chip = Ui.Fill(chipRoot, "Tab", Mathf.Round(p.x - w / 2f), Mathf.Round(p.y + dy), w, 16, new Color(0.02f, 0.02f, 0.04f, 0.9f));
+            Ui.Fill(chip.transform, "Edge", 0, 14, w, 2, color);
+            Ui.Label(chip.transform, text, Skin.Stencil, 12, color, 0, 1, w, 14, TextAlignmentOptions.Center).textWrappingMode = TextWrappingModes.NoWrap;
+        }
+
         /// <summary>"Concord frigate" reads as FRIGATE in a narrow row.</summary>
         static string ShortName(Unit u)
         {
@@ -525,6 +601,19 @@ namespace Silence.View
         {
             Ui.Clear(chipRoot);
             if (Battle == null || Battle.Outcome != BattleOutcome.Ongoing) return;
+
+            // Your side: where each ship will drift to, and which darts can still be moved.
+            foreach (var u in Battle.LiveUnits(Side.Player))
+            {
+                if (u.IsCapital && u.Speed > 0)
+                {
+                    var dest = Battle.PredictDrift(u);
+                    if (dest != u.Pos) Tab(WorldToRef(board.World(dest)), -58f, $"DRIFT {u.Pos.DistanceTo(dest)}", Skin.Cyan);
+                }
+                else if (u.Kind == UnitKind.Craft && !u.CraftActed && mode != Mode.Busy && board.Views.TryGetValue(u.Id, out var dv))
+                    Tab(WorldToRef(dv.Root.position), -34f, "READY", Skin.Cyan);
+            }
+
             foreach (var i in Battle.Intents)
             {
                 var u = Battle.Get(i.UnitId);
@@ -657,6 +746,7 @@ namespace Silence.View
         void ShowSkirmishMenu()
         {
             mode = Mode.Intro;
+            EndTutorial();
             var d = OpenOverlay(880, 560, Battle == null ? 1f : 0.8f);
             Ui.Label(d, "The Silence", Skin.Logo, 64, Skin.Text, 0, 30, 880, 80, TextAlignmentOptions.Center);
             Ui.Stamp(d, "Combat skirmish - paper prototype scenarios", 15, 0, 118, 880, 20, TextAlignmentOptions.Center, Skin.Brass);
@@ -676,15 +766,16 @@ namespace Silence.View
                     : "The carrier and a frigate, with two reward cards added. Win scenario 1 first to carry your damage over.",
                 16, 454, 366, 370, 66, TextAlignmentOptions.TopLeft, Skin.Dim);
 
+            Ui.Btn(d, "Tutorial", 60, 470, 370, 54, StartTutorial, 16);
             if (Application.CanStreamedLevelBeLoaded("Menu"))
-                Ui.Btn(d, "Main menu", 330, 470, 220, 54, () => SceneManager.LoadScene("Menu"), 16);
+                Ui.Btn(d, "Main menu", 600, 470, 220, 54, () => SceneManager.LoadScene("Menu"), 16);
         }
 
         void ShowEndScreen()
         {
             mode = Mode.Over;
             var d = OpenOverlay(760, 470, 0.66f);
-            string title = Battle.Outcome == BattleOutcome.Victory ? "Victory" : Battle.Outcome == BattleOutcome.Defeat ? "Defeat" : "Withdrawal";
+            string title = tutorialBattle && Battle.Outcome == BattleOutcome.Victory ? "Tutorial complete" : Battle.Outcome == BattleOutcome.Victory ? "Victory" : Battle.Outcome == BattleOutcome.Defeat ? "Defeat" : "Withdrawal";
             var color = Battle.Outcome == BattleOutcome.Victory ? Skin.Brass : Battle.Outcome == BattleOutcome.Defeat ? Skin.Bad : Skin.Warn;
             Ui.Label(d, title, Skin.Logo, 64, color, 0, 36, 760, 80, TextAlignmentOptions.Center);
             string line = Battle.Outcome == BattleOutcome.Victory ? "Every enemy capital ship is destroyed."
@@ -705,6 +796,12 @@ namespace Silence.View
                 return;
             }
             bool won = Battle.Outcome == BattleOutcome.Victory;
+            if (tutorialBattle)
+            {
+                Ui.Btn(d, won ? "Play a skirmish" : "Try again", 110, 330, 260, 74, () => { if (won) StartSkirmish(1, false); else StartTutorial(); }, 16);
+                Ui.Btn(d, "Scenarios", 390, 330, 260, 74, LeaveBattle, 16);
+                return;
+            }
             if (won && skirmishScenario == 1)
                 Ui.Btn(d, "On to scenario 2", 110, 330, 260, 74, () => { previousSkirmish = Battle; StartSkirmish(2, true); }, 16);
             else

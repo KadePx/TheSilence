@@ -19,6 +19,11 @@ namespace Silence.Core.Battle
             UnitSpec.Capital("Concord frigate", 18, 1, 1, 1, 1, 3, 1, 0, 0, 2, AiProfile.Frigate),
             IntentStep.Of(IntentKind.Maneuver), IntentStep.Fire("Broadside", 9, Sides, 3), IntentStep.Of(IntentKind.LaunchTorpedo));
 
+        /// <summary>Tutorial target: a moored Concord picket that never moves and fires a light broadside every turn.</summary>
+        public static UnitSpec Picket => Cycled("con_outrider",
+            UnitSpec.Capital("Concord picket", 12, 1, 1, 1, 1, 2, 1, 0, 0, 0, AiProfile.Frigate),
+            IntentStep.Fire("Broadside", 4, Sides, 3));
+
         public static UnitSpec Gunship => Named("con_gunship", UnitSpec.Craft("Gunship", 3, 4, 3, AiProfile.Gunship));
 
         public static UnitSpec Carrier => Cycled("con_trimaran",
@@ -358,6 +363,28 @@ namespace Silence.Core.Battle
             if (extraCards != null) AddDeck(b, extraCards, flag, escort);
             return b;
         }
+
+        /// <summary>
+        /// The tutorial: the flagship alone against one stationary Concord picket whose only order is a light
+        /// broadside. The deck is not shuffled, so the first two hands are fixed: turn 1 teaches orders, drift,
+        /// the lance and Brace; turn 2 teaches turning, side arcs and darts; after that the discard reshuffles
+        /// and the player finishes the picket unaided. Units: 1 flagship, 2 picket.
+        /// </summary>
+        public static Battle Tutorial(ulong seed = 1)
+        {
+            var b = new Battle(seed) { Title = "Tutorial: first contact", ShuffleAtStart = false, DartsInHangar = 4 };
+            var flag = b.AddUnit(PaperUnits.LanceCruiser, Side.Player, 1, 3, HexDirection.E, 1, flagship: true);
+            b.AddUnit(PaperUnits.Picket, Side.Enemy, 5, 3, HexDirection.NW, 0);
+            foreach (var card in TutorialDeck) b.AddCard(card, flag.Id);
+            return b;
+        }
+
+        /// <summary>Draw order of the tutorial deck: the first five cards are turn 1's hand, the next five turn 2's.</summary>
+        public static readonly CardDef[] TutorialDeck =
+        {
+            PaperCards.LanceVolley, PaperCards.Brace, PaperCards.Burn, PaperCards.BroadsideBattery, PaperCards.HardAbout,
+            PaperCards.HardAbout, PaperCards.BroadsideBattery, PaperCards.LaunchDarts, PaperCards.LanceVolley, PaperCards.VentPlasma,
+        };
 
         /// <summary>Scenario 2, The Long Promise: the carrier and one frigate.</summary>
         public static Battle TheLongPromise(ulong seed, IEnumerable<(CardDef card, int source)> extraCards = null)

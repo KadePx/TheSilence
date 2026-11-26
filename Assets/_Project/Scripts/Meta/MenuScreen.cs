@@ -33,7 +33,7 @@ namespace Silence.Meta
             logo.fontMaterial.SetFloat("_UnderlaySoftness", 0.25f);
             Ui.Stamp(root, "It was broadcast to everyone at once", 24, 0, 300, Ui.RefW, 28, TextAlignmentOptions.Center, Skin.Brass);
 
-            var panel = Ui.Plate(root, "Panel", 710, 420, 500, 520);
+            var panel = Ui.Plate(root, "Panel", 710, 400, 500, 590);
             float y = 34;
             var cont = Ui.Btn(panel.transform, "Continue run", 50, y, 400, 70, OnContinue, 34);
             cont.interactable = Game.HasSave;
@@ -52,6 +52,8 @@ namespace Silence.Meta
             Ui.Body(panel.transform, "The same seed gives the same map, fights and rewards. Click the box to type one.", 14, 54, y, 400, 40, TextAlignmentOptions.TopLeft, Skin.Dim);
             y += 56;
 
+            Ui.Btn(panel.transform, "Tutorial", 50, y, 400, 60, () => { BattleLauncher.Clear(); BattleLauncher.Tutorial = true; SceneManager.LoadScene(Game.BattleScene); }, 30);
+            y += 70;
             Ui.Btn(panel.transform, "Skirmish", 50, y, 400, 60, () => { BattleLauncher.Clear(); SceneManager.LoadScene(Game.BattleScene); }, 30);
             y += 70;
             Ui.Btn(panel.transform, "Quit", 50, y, 400, 60, Quit, 30);

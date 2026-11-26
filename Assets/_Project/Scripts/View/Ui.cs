@@ -306,6 +306,23 @@ namespace Silence.View
         }
     }
 
+    /// <summary>Fades a graphic in and out, to draw the eye without scaling anything.</summary>
+    public sealed class Blink : MonoBehaviour
+    {
+        public float Speed = 3f, Min = 0.3f;
+        Graphic graphic;
+
+        void Awake() => graphic = GetComponent<Graphic>();
+
+        void Update()
+        {
+            if (graphic == null) return;
+            var c = graphic.color;
+            c.a = Min + (1f - Min) * Mathf.Abs(Mathf.Sin(Time.unscaledTime * Speed));
+            graphic.color = c;
+        }
+    }
+
     /// <summary>Brass label on steel; dark label when the button turns brass under the pointer; grey when disabled.</summary>
     public sealed class ButtonLabelTint : MonoBehaviour, IPointerEnterHandler, IPointerExitHandler
     {

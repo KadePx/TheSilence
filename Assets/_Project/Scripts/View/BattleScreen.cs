@@ -25,9 +25,12 @@ namespace Silence.View
         /// <summary>Called when the player quits mid-battle. Null: back to the skirmish menu.</summary>
         public static Action Quit;
         public static string Subtitle = "";
+        /// <summary>Set by the main menu: open the Battle scene straight into the tutorial.</summary>
+        public static bool Tutorial;
 
         public static void Clear()
         {
+            Tutorial = false;
             Create = null;
             Finished = null;
             Quit = null;
@@ -85,6 +88,11 @@ namespace Silence.View
         void Start()
         {
             if (BattleLauncher.Create != null) Begin(BattleLauncher.Create());
+            else if (BattleLauncher.Tutorial)
+            {
+                BattleLauncher.Tutorial = false;
+                StartTutorial();
+            }
             else ShowSkirmishMenu();
         }
 
@@ -182,7 +190,7 @@ namespace Silence.View
         /// <summary>Let the stand-in bot play the rest of this turn, then animate what happened (F9).</summary>
         public void BotTurn()
         {
-            if (mode == Mode.Busy || mode == Mode.Over || mode == Mode.Intro) return;
+            if (mode == Mode.Busy || mode == Mode.Over || mode == Mode.Intro || InTutorial) return;
             ClearSelection();
             SimpleBot.PlayTurn(Battle);
             mode = Mode.Busy;
@@ -297,13 +305,27 @@ namespace Silence.View
                     if (unit.Side == Side.Player && unit.Kind == UnitKind.Craft)
                     {
                         if (unit.CraftActed) { Flash("That dart has already acted this turn."); return; }
+                        string blocked = TutorialBlocksDart();
+                        if (blocked != null) { Flash(blocked); return; }
                         SelectDart(unit);
                         return;
                     }
                     panelUnitId = unit.Id;
                     RefreshUnitPanel();
+                    if (unit.Side == Side.Player && unit.IsCapital) Flash(HowToMove(unit));
                     return;
             }
+        }
+
+        /// <summary>What clicking one of your own ships answers: ships are not moved by hand, and which cards in hand move this one.</summary>
+        string HowToMove(Unit ship)
+        {
+            var moves = Battle.Deck.Hand
+                .Where(c => c.Def.Type == CardType.Maneuver && (c.Def.Target == TargetKind.AllyCapital || c.SourceId == ship.Id))
+                .Select(c => c.Def.Name).Distinct().ToList();
+            string drift = ship.Speed == 0 ? "She is holding position." : $"She drifts {ship.Speed} hex{(ship.Speed > 1 ? "es" : "")} ahead when you end the turn.";
+            string cards = moves.Count == 0 ? "No card in hand moves her this turn." : "In hand to move her: " + string.Join(", ", moves) + ".";
+            return $"{ship.Name} moves by card, not by hand. {drift} {cards}";
         }
 
         static int TurnSteps(HexDirection from, HexDirection to)
@@ -330,6 +352,8 @@ namespace Silence.View
                 Cancel();
                 return;
             }
+            string tutorialBlock = TutorialBlocksCard(def);
+            if (tutorialBlock != null) { Flash(tutorialBlock); Sfx.Play("sfx_deny"); return; }
             if (def.Unplayable) { Flash($"{def.Name} is unplayable. It leaves at a shipyard."); return; }
             if (Battle.CostOf(card) > Battle.Command) { Flash($"{def.Name} needs {Battle.CostOf(card)} command; you have {Battle.Command}."); return; }
             if (card.SourceId >= 0 && (Battle.Get(card.SourceId) == null || !Battle.Get(card.SourceId).Alive)) { Flash("That card's ship is gone."); return; }
@@ -344,6 +368,16 @@ namespace Silence.View
             {
                 EnterFacing(Battle.Get(card.SourceId));
                 return;
+            }
+            if (def.Target == TargetKind.AllyCapital && NeedsFacing(def))
+            {
+                // With one capital ship there is nothing to choose: go straight to the heading arrows.
+                var ships = Battle.LiveUnits(Side.Player).Where(u => u.IsCapital).ToList();
+                if (ships.Count == 1)
+                {
+                    EnterFacing(ships[0]);
+                    return;
+                }
             }
             if (def.Target == TargetKind.AllyCapital && !NeedsFacing(def))
             {
@@ -444,6 +478,8 @@ namespace Silence.View
         void OnEndTurn()
         {
             if (mode == Mode.Busy || mode == Mode.Over || mode == Mode.Intro) return;
+            string blocked = TutorialBlocksEndTurn();
+            if (blocked != null) { Flash(blocked); Sfx.Play("sfx_deny"); return; }
             Do(() => Battle.EndTurn());
         }
 
@@ -467,7 +503,7 @@ namespace Silence.View
             else if (mode == Mode.Dart && selectedDart != null)
             {
                 var reach = Battle.Reachable(selectedDart.Pos, selectedDart.Move + selectedDart.CraftBonusMove);
-                foreach (var h in reach) board.Highlight(h, Skin.Alpha(Skin.Cyan, 0.05f), Skin.Alpha(Skin.Cyan, 0.5f));
+                foreach (var h in reach) board.Highlight(h, Skin.Alpha(Skin.Cyan, 0.02f), Skin.Alpha(Skin.Cyan, 0.4f));
                 board.SetRing(selectedDart.Id, Skin.Cyan);
                 foreach (var en in Battle.LiveUnits(Side.Enemy))
                     if (reach.Any(h => h.DistanceTo(en.Pos) == 1)) board.SetRing(en.Id, Skin.Bad);
@@ -480,6 +516,7 @@ namespace Silence.View
             }
             RefreshHandState();
             RefreshPrompt();
+            RefreshTutorial();
         }
 
         void HighlightCard(CardInstance card)
@@ -620,6 +657,8 @@ namespace Silence.View
                 ? Scenarios.InterceptAtTheRing(skirmishSeed)
                 : Scenarios.TheLongPromise(skirmishSeed + 1000, SkirmishRewards);
             b.DartsInHangar = 6;
+            EndTutorial();
+            tutorialBattle = false;
             if (carry && previousSkirmish != null) Scenarios.CarryOver(previousSkirmish, b);
             skirmishScenario = scenario;
             Begin(b);
