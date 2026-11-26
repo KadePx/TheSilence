@@ -1,0 +1,390 @@
+{
+ "encounters": [
+  {
+   "id": "picket",
+   "name": "Reef Picket",
+   "tier": 0,
+   "scrap": 22,
+   "intro": "A lone Concord frigate and its gunships watch the lane.",
+   "units": [
+    {
+     "unit": "frigate",
+     "col": 8,
+     "row": 3,
+     "speed": 2,
+     "facing": "W"
+    },
+    {
+     "unit": "gunship",
+     "col": 8,
+     "row": 1,
+     "speed": 0,
+     "facing": "W"
+    },
+    {
+     "unit": "gunship",
+     "col": 8,
+     "row": 5,
+     "speed": 0,
+     "facing": "W"
+    }
+   ],
+   "terrain": [],
+   "scatterAsteroids": 2,
+   "scatterDebris": 1
+  },
+  {
+   "id": "scouts",
+   "name": "Outrider Scouts",
+   "tier": 0,
+   "scrap": 22,
+   "intro": "Two skiffs break from the reef, fast and thin-skinned.",
+   "units": [
+    {
+     "unit": "skiff",
+     "col": 8,
+     "row": 2,
+     "speed": 2,
+     "facing": "W"
+    },
+    {
+     "unit": "skiff",
+     "col": 8,
+     "row": 4,
+     "speed": 2,
+     "facing": "W"
+    },
+    {
+     "unit": "gunship",
+     "col": 8,
+     "row": 6,
+     "speed": 0,
+     "facing": "W"
+    }
+   ],
+   "terrain": [],
+   "scatterAsteroids": 2,
+   "scatterDebris": 1
+  },
+  {
+   "id": "patrol",
+   "name": "Intercept at the Ring",
+   "tier": 1,
+   "scrap": 30,
+   "intro": "A full patrol: two frigates and a gunship wing.",
+   "units": [
+    {
+     "unit": "frigate",
+     "col": 8,
+     "row": 2,
+     "speed": 2,
+     "facing": "W"
+    },
+    {
+     "unit": "frigate",
+     "col": 8,
+     "row": 4,
+     "speed": 2,
+     "facing": "W"
+    },
+    {
+     "unit": "gunship",
+     "col": 8,
+     "row": 1,
+     "speed": 0,
+     "facing": "W"
+    },
+    {
+     "unit": "gunship",
+     "col": 8,
+     "row": 3,
+     "speed": 0,
+     "facing": "W"
+    },
+    {
+     "unit": "gunship",
+     "col": 8,
+     "row": 5,
+     "speed": 0,
+     "facing": "W"
+    }
+   ],
+   "terrain": [
+    {
+     "col": 4,
+     "row": 2,
+     "asteroid": true
+    },
+    {
+     "col": 4,
+     "row": 4,
+     "asteroid": true
+    }
+   ],
+   "scatterAsteroids": 0,
+   "scatterDebris": 0
+  },
+  {
+   "id": "wolfpack",
+   "name": "Skiff Wolfpack",
+   "tier": 1,
+   "scrap": 30,
+   "intro": "A frigate holds the centre while two skiffs run the flanks.",
+   "units": [
+    {
+     "unit": "frigate",
+     "col": 8,
+     "row": 3,
+     "speed": 2,
+     "facing": "W"
+    },
+    {
+     "unit": "skiff",
+     "col": 7,
+     "row": 1,
+     "speed": 2,
+     "facing": "W"
+    },
+    {
+     "unit": "skiff",
+     "col": 7,
+     "row": 5,
+     "speed": 2,
+     "facing": "W"
+    }
+   ],
+   "terrain": [],
+   "scatterAsteroids": 3,
+   "scatterDebris": 1
+  },
+  {
+   "id": "tender_group",
+   "name": "Repair Convoy",
+   "tier": 1,
+   "scrap": 32,
+   "intro": "A tender keeps its escort alive. Kill it first, or kill fast.",
+   "units": [
+    {
+     "unit": "tender",
+     "col": 8,
+     "row": 3,
+     "speed": 1,
+     "facing": "W"
+    },
+    {
+     "unit": "frigate",
+     "col": 7,
+     "row": 2,
+     "speed": 2,
+     "facing": "W"
+    },
+    {
+     "unit": "gunship",
+     "col": 8,
+     "row": 5,
+     "speed": 0,
+     "facing": "W"
+    },
+    {
+     "unit": "gunship",
+     "col": 7,
+     "row": 5,
+     "speed": 0,
+     "facing": "W"
+    }
+   ],
+   "terrain": [],
+   "scatterAsteroids": 2,
+   "scatterDebris": 2
+  },
+  {
+   "id": "gun_line",
+   "name": "Concord Gun Line",
+   "tier": 1,
+   "scrap": 32,
+   "intro": "Two frigates holding station with crossing broadsides. Do not sail between them.",
+   "units": [
+    {
+     "unit": "frigate",
+     "col": 8,
+     "row": 1,
+     "speed": 1,
+     "facing": "W"
+    },
+    {
+     "unit": "frigate",
+     "col": 8,
+     "row": 5,
+     "speed": 1,
+     "facing": "W"
+    }
+   ],
+   "terrain": [
+    {
+     "col": 4,
+     "row": 3,
+     "asteroid": true
+    }
+   ],
+   "scatterAsteroids": 1,
+   "scatterDebris": 1
+  },
+  {
+   "id": "carrier_group",
+   "name": "The Long Promise's Wake",
+   "tier": 2,
+   "scrap": 52,
+   "intro": "A fleet carrier and her frigate. Gunships will keep coming until she dies.",
+   "units": [
+    {
+     "unit": "carrier",
+     "col": 8,
+     "row": 3,
+     "speed": 1,
+     "facing": "W"
+    },
+    {
+     "unit": "frigate",
+     "col": 7,
+     "row": 1,
+     "speed": 2,
+     "facing": "W"
+    }
+   ],
+   "terrain": [
+    {
+     "col": 4,
+     "row": 3,
+     "asteroid": true
+    },
+    {
+     "col": 5,
+     "row": 1,
+     "asteroid": false
+    }
+   ],
+   "scatterAsteroids": 0,
+   "scatterDebris": 0
+  },
+  {
+   "id": "hunters",
+   "name": "Hunter Squadron",
+   "tier": 2,
+   "scrap": 56,
+   "intro": "Sent for you by name: two frigates, a tender and a skiff.",
+   "units": [
+    {
+     "unit": "frigate",
+     "col": 8,
+     "row": 2,
+     "speed": 2,
+     "facing": "W"
+    },
+    {
+     "unit": "frigate",
+     "col": 8,
+     "row": 4,
+     "speed": 2,
+     "facing": "W"
+    },
+    {
+     "unit": "tender",
+     "col": 8,
+     "row": 6,
+     "speed": 1,
+     "facing": "W"
+    }
+   ],
+   "terrain": [],
+   "scatterAsteroids": 3,
+   "scatterDebris": 1
+  },
+  {
+   "id": "venn",
+   "name": "Marshal Venn at the Gate",
+   "tier": 3,
+   "scrap": 0,
+   "turnLimit": 35,
+   "intro": "The Long Promise holds the Ion Reef gate. Leave the Mass Driver's fore arc before it fires.",
+   "units": [
+    {
+     "unit": "venn",
+     "col": 8,
+     "row": 3,
+     "speed": 1,
+     "facing": "W"
+    },
+    {
+     "unit": "frigate",
+     "col": 7,
+     "row": 1,
+     "speed": 2,
+     "facing": "W"
+    }
+   ],
+   "terrain": [
+    {
+     "col": 4,
+     "row": 3,
+     "asteroid": true
+    },
+    {
+     "col": 3,
+     "row": 6,
+     "asteroid": false
+    }
+   ],
+   "scatterAsteroids": 1,
+   "scatterDebris": 1,
+   "reinforcements": [
+    {
+     "unit": "skiff",
+     "col": 7,
+     "row": 5,
+     "speed": 2,
+     "facing": "W"
+    }
+   ]
+  },
+  {
+   "id": "convoy_escort",
+   "name": "The Convoy's Escort",
+   "tier": 4,
+   "scrap": 34,
+   "intro": "The haulers scatter. Their escort does not.",
+   "units": [
+    {
+     "unit": "skiff",
+     "col": 7,
+     "row": 2,
+     "speed": 2,
+     "facing": "W"
+    },
+    {
+     "unit": "skiff",
+     "col": 7,
+     "row": 4,
+     "speed": 2,
+     "facing": "W"
+    },
+    {
+     "unit": "gunship",
+     "col": 8,
+     "row": 1,
+     "speed": 0,
+     "facing": "W"
+    },
+    {
+     "unit": "gunship",
+     "col": 8,
+     "row": 5,
+     "speed": 0,
+     "facing": "W"
+    }
+   ],
+   "terrain": [],
+   "scatterAsteroids": 2,
+   "scatterDebris": 3
+  }
+ ]
+}

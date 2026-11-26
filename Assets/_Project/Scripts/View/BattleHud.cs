@@ -344,6 +344,18 @@ namespace Silence.View
                 if (u.NoBurnThisTurn) notes.Add("Engines hit: no Burn this turn");
                 if (Battle.WaymindPrimed) notes.Add("Waymind: next weapon ignores armor, crits");
                 if (notes.Count > 0) Ui.Body(t, string.Join("\n", notes), 15, 20, y, 296, 80, TextAlignmentOptions.TopLeft, Skin.Brass);
+
+                // Standing orders: the rules a new player needs, always in view.
+                float hy = BottomY - TopH - 172;
+                Ui.Well(t, "HelpWell", 12, hy, LeftW - 24, 160);
+                Ui.Stamp(t, "Standing orders", 12, 22, hy + 8, 280, 16, TextAlignmentOptions.Left, Skin.BrassDark);
+                var help = Ui.Body(t,
+                    "<color=#c9a24a>1</color> Enemies show their plan first. Solid red lines will hit.\n" +
+                    "<color=#c9a24a>2</color> Play cards with command. Weapons need the target in their arc and range.\n" +
+                    "<color=#c9a24a>3</color> Ships drift by Speed when you end the turn. Leave an arc and the shot misses.\n" +
+                    "<color=#c9a24a>4</color> Shields soak a hit on the arc it lands on, then armor, then hull.",
+                    13.5f, 22, hy + 28, LeftW - 46, 128, TextAlignmentOptions.TopLeft, Skin.Dim);
+                help.lineSpacing = -14f;
             }
         }
 

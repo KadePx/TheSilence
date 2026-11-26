@@ -1,0 +1,302 @@
+{
+ "events": [
+  {
+   "id": "silent_colony",
+   "title": "The Silent Colony",
+   "art": "event_colony",
+   "body": "Tithe-world Kessane IV stopped answering Lumen two cycles ago. From orbit the reason is plain: the vats are intact, the growth halls are lit, and nobody is left who remembers how to be afraid of you.\n\nThe Prime's standing instruction covers this. It does not say how.",
+   "choices": [
+    {
+     "label": "Harvest the colony.",
+     "tag": "+8 Ordinals, costs time",
+     "result": "The growth halls are emptied into your holds in nine hours. The Ordinals that come out of them have never seen a sky. They will not need to.",
+     "outcomes": [
+      {
+       "kind": "Ordinals",
+       "amount": 8,
+       "id": "",
+       "ship": 0
+      },
+      {
+       "kind": "RivalsAdvance",
+       "amount": 4,
+       "id": "",
+       "ship": 0
+      }
+     ]
+    },
+    {
+     "label": "Strip the orbital yards and go.",
+     "tag": "+40 scrap",
+     "result": "Cutters take the yards apart while the colony watches from below. Nobody hails you. Nobody ever does.",
+     "outcomes": [
+      {
+       "kind": "Scrap",
+       "amount": 40,
+       "id": "",
+       "ship": 0
+      }
+     ]
+    },
+    {
+     "label": "Log the lapse for the Inquisition. Hold course.",
+     "tag": "No effect",
+     "result": "A line in the record, a number against a name. Kessane IV will be someone else's efficiency.",
+     "outcomes": []
+    }
+   ]
+  },
+  {
+   "id": "derelict",
+   "title": "Derelict in the Reef",
+   "art": "event_derelict",
+   "body": "A hulk hangs in the static, older than the Ascendancy and black as a pulled tooth. Its hull carries no faction mark. Something inside it is still drawing power.\n\nYour Waymind will not look at it directly.",
+   "choices": [
+    {
+     "label": "Send a boarding party.",
+     "tag": "Expend 4 Ordinals",
+     "result": "Four go in. A targeting lattice comes out, still warm, wired to nothing. The Waymind accepts it the way a mouth accepts a hook.",
+     "outcomes": [
+      {
+       "kind": "Ordinals",
+       "amount": -4,
+       "id": "",
+       "ship": 0
+      },
+      {
+       "kind": "AddCard",
+       "amount": 0,
+       "id": "waymind_targeting",
+       "ship": 0
+      }
+     ]
+    },
+    {
+     "label": "Cut it up from a distance.",
+     "tag": "+34 scrap, hull damage",
+     "result": "The hulk comes apart along seams nobody built. A slab of it finds your flank before the cutters are clear.",
+     "outcomes": [
+      {
+       "kind": "Scrap",
+       "amount": 34,
+       "id": "",
+       "ship": 0
+      },
+      {
+       "kind": "HullFlagship",
+       "amount": -5,
+       "id": "",
+       "ship": 0
+      }
+     ]
+    },
+    {
+     "label": "Leave it. Mark the position.",
+     "tag": "No effect",
+     "result": "You leave it where it is. On the plot it stays exactly as far behind you as it was, for longer than it should.",
+     "outcomes": []
+    }
+   ]
+  },
+  {
+   "id": "waymind",
+   "title": "The Waymind's Request",
+   "art": "event_waymind",
+   "body": "The navigation Waymind has asked for something, which it is not built to do. It wants to take the fleet through the ion shear instead of around it. It says the lane is survivable. It says this several times.",
+   "choices": [
+    {
+     "label": "Permit it.",
+     "tag": "Rivals lose ground, hull damage",
+     "result": "The shear takes paint, plating and one sensor mast. It also takes a day off the crossing. The Waymind does not say thank you. It was not built to.",
+     "outcomes": [
+      {
+       "kind": "RivalsAdvance",
+       "amount": -9,
+       "id": "",
+       "ship": 0
+      },
+      {
+       "kind": "HullAll",
+       "amount": -4,
+       "id": "",
+       "ship": 0
+      }
+     ]
+    },
+    {
+     "label": "Overclock it and brace the reactor.",
+     "tag": "Expend 3 Ordinals: rivals lose more ground",
+     "result": "Three Ordinals hold the coolant lines by hand through the worst of it. Two of them are still holding when the lines are checked.",
+     "outcomes": [
+      {
+       "kind": "Ordinals",
+       "amount": -3,
+       "id": "",
+       "ship": 0
+      },
+      {
+       "kind": "RivalsAdvance",
+       "amount": -14,
+       "id": "",
+       "ship": 0
+      },
+      {
+       "kind": "HullFlagship",
+       "amount": -3,
+       "id": "",
+       "ship": 0
+      }
+     ]
+    },
+    {
+     "label": "Deny it. Hold the charted lane.",
+     "tag": "No effect",
+     "result": "The request is purged from its memory. Its plots are perfect for the rest of the sector, and a little slower.",
+     "outcomes": []
+    }
+   ]
+  },
+  {
+   "id": "edict",
+   "title": "Edict of the Prime",
+   "art": "event_edict",
+   "body": "A sealed transmission, burst-coded, addressed to you by hull number.\n\nTHE PRIME NOTES THE PACE OF THE SIXTH VERDICT. THE PRIME EXPECTS IT TO IMPROVE.\n\nAn Edict is not a question. Only the method is yours.",
+   "choices": [
+    {
+     "label": "Decimate the slowest watch.",
+     "tag": "Lose 5 Ordinals: gain Decimation Order, +20 scrap",
+     "result": "One in ten, by lot, on the hangar deck. The other nine work very quickly afterwards. Their effects are inventoried.",
+     "outcomes": [
+      {
+       "kind": "Ordinals",
+       "amount": -5,
+       "id": "",
+       "ship": 0
+      },
+      {
+       "kind": "AddCard",
+       "amount": 0,
+       "id": "decimation_order",
+       "ship": 0
+      },
+      {
+       "kind": "Scrap",
+       "amount": 20,
+       "id": "",
+       "ship": 0
+      }
+     ]
+    },
+    {
+     "label": "Run the engines past the line.",
+     "tag": "Rivals lose ground, hull damage",
+     "result": "The drive spine sings for six hours. When it stops, things that were attached to it are no longer attached.",
+     "outcomes": [
+      {
+       "kind": "RivalsAdvance",
+       "amount": -10,
+       "id": "",
+       "ship": 0
+      },
+      {
+       "kind": "HullAll",
+       "amount": -3,
+       "id": "",
+       "ship": 0
+      },
+      {
+       "kind": "AddJunk",
+       "amount": 1,
+       "id": "fire_on_deck",
+       "ship": 0
+      }
+     ]
+    },
+    {
+     "label": "Send tithe with your reply.",
+     "tag": "Pay 35 scrap: remove a junk card, +4 Ordinals",
+     "result": "The reply goes out heavy with salvage. What comes back is a work detail in white, who fix what is broken and then stay.",
+     "outcomes": [
+      {
+       "kind": "Scrap",
+       "amount": -35,
+       "id": "",
+       "ship": 0
+      },
+      {
+       "kind": "RemoveJunk",
+       "amount": 1,
+       "id": "",
+       "ship": 0
+      },
+      {
+       "kind": "Ordinals",
+       "amount": 4,
+       "id": "",
+       "ship": 0
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "convoy",
+   "title": "The Refugee Convoy",
+   "art": "event_convoy",
+   "body": "Eleven haulers under a Concord transponder, running dark and slow. They are carrying people out of the Reef ahead of all three fleets. Their lead ship opens a channel and asks, politely, to pass.",
+   "choices": [
+    {
+     "label": "Seize the convoy.",
+     "tag": "+45 scrap, +4 Ordinals. Venn will hear of it",
+     "result": "The haulers are emptied and their crews pressed. Somewhere ahead, Marshal Venn reads the last message the convoy sent and calls in another ship.",
+     "outcomes": [
+      {
+       "kind": "Scrap",
+       "amount": 45,
+       "id": "",
+       "ship": 0
+      },
+      {
+       "kind": "Ordinals",
+       "amount": 4,
+       "id": "",
+       "ship": 0
+      },
+      {
+       "kind": "EnrageBoss",
+       "amount": 0,
+       "id": "",
+       "ship": 0
+      }
+     ]
+    },
+    {
+     "label": "Let them pass in exchange for their charts.",
+     "tag": "Rivals lose ground",
+     "result": "They pay in the only coin they have: every safe lane they know. One of them thanks you. You have the channel closed.",
+     "outcomes": [
+      {
+       "kind": "RivalsAdvance",
+       "amount": -8,
+       "id": "",
+       "ship": 0
+      }
+     ]
+    },
+    {
+     "label": "Shadow them to their escort and take it.",
+     "tag": "Battle, richer salvage",
+     "result": "You follow at the edge of their sensors until the escort comes back for them.",
+     "outcomes": [
+      {
+       "kind": "StartBattle",
+       "amount": 150,
+       "id": "convoy_escort",
+       "ship": 0
+      }
+     ]
+    }
+   ]
+  }
+ ]
+}

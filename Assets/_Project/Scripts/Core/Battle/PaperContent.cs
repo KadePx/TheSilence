@@ -37,9 +37,9 @@ namespace Silence.Core.Battle
 
         /// <summary>Sector boss: Marshal Oru Venn's flagship. The Mass Driver is dodged by leaving its fore arc.</summary>
         public static UnitSpec VennFlagship => Cycled("con_trimaran",
-            UnitSpec.Capital("Long Promise", 46, 2, 2, 2, 1, 5, 2, 0, 0, 1, AiProfile.Carrier),
+            UnitSpec.Capital("Long Promise", 40, 2, 2, 2, 1, 4, 1, 0, 0, 1, AiProfile.Carrier),
             IntentStep.Of(IntentKind.LaunchCraft, 2), IntentStep.Fire("Mass Driver", 12, Arc.Fore, 6),
-            IntentStep.Of(IntentKind.Maneuver), IntentStep.Of(IntentKind.JointFire), IntentStep.Of(IntentKind.PatchUp, 6));
+            IntentStep.Of(IntentKind.Maneuver), IntentStep.Of(IntentKind.JointFire), IntentStep.Of(IntentKind.PatchUp, 4));
 
         public static UnitSpec Torpedo
         {

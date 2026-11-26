@@ -1,0 +1,369 @@
+{
+ "config": {
+  "startScrap": 30,
+  "startOrdinals": 24,
+  "maxOrdinals": 24,
+  "startDarts": 6,
+  "maxDarts": 6,
+  "flagshipBaseHeatCap": 8,
+  "layers": 8,
+  "repairCostPerHull": 2,
+  "removeJunkCost": 20,
+  "moduleCost": 50,
+  "rebuildEscortCost": 55,
+  "dartCost": 5,
+  "ordinalCost": 3,
+  "ordinalsPerPurchase": 4,
+  "rewardCards": 3,
+  "ordinalsPerVictory": 3,
+  "concordRate": 8,
+  "chorusRate": 7,
+  "rivalSpread": 2,
+  "concordStart": 0,
+  "chorusStart": 0,
+  "withdrawalDelay": 10,
+  "longBattleTurns": 12,
+  "longBattleDelay": 4,
+  "shipyardDelayPerPurchase": 1,
+  "flagshipRebuildOrdinals": 8,
+  "flagshipRebuildMaxHullLoss": 4,
+  "slots": [
+   "Prow",
+   "Broadside",
+   "Dorsal",
+   "Aft"
+  ],
+  "starterModules": [
+   "spinal_lance",
+   "macro_batteries",
+   "radiator_stack",
+   "dart_hangar"
+  ],
+  "starterCards": [
+   {
+    "card": "burn",
+    "ship": 0
+   },
+   {
+    "card": "hard_about",
+    "ship": 0
+   },
+   {
+    "card": "hard_about",
+    "ship": 0
+   },
+   {
+    "card": "brace",
+    "ship": 0
+   },
+   {
+    "card": "escort_guns",
+    "ship": 1
+   },
+   {
+    "card": "come_about",
+    "ship": 1
+   }
+  ]
+ },
+ "modules": [
+  {
+   "id": "spinal_lance",
+   "slot": "Prow",
+   "name": "Spinal Lance",
+   "text": "One long gun the whole ship is built around. Two Lance Volleys.",
+   "cards": [
+    "lance_volley",
+    "lance_volley"
+   ],
+   "hull": 0,
+   "heatCap": 0,
+   "maxSpeed": 0,
+   "shields": 0,
+   "armorFore": 0
+  },
+  {
+   "id": "lance_battery",
+   "slot": "Prow",
+   "name": "Lance Battery",
+   "text": "Three short lances in place of the spinal mount: cheaper shots, shorter reach.",
+   "cards": [
+    "short_lance",
+    "short_lance",
+    "short_lance"
+   ],
+   "hull": 0,
+   "heatCap": 0,
+   "maxSpeed": 0,
+   "shields": 0,
+   "armorFore": 0
+  },
+  {
+   "id": "macro_batteries",
+   "slot": "Broadside",
+   "name": "Macro Batteries",
+   "text": "Turret sponsons on both flanks. Two Broadside Batteries.",
+   "cards": [
+    "broadside_battery",
+    "broadside_battery"
+   ],
+   "hull": 0,
+   "heatCap": 0,
+   "maxSpeed": 0,
+   "shields": 0,
+   "armorFore": 0
+  },
+  {
+   "id": "beam_galleries",
+   "slot": "Broadside",
+   "name": "Beam Galleries",
+   "text": "A raking beam that hits everything abeam, and runs hot. Heat cap -1.",
+   "cards": [
+    "raking_beam",
+    "broadside_battery"
+   ],
+   "hull": 0,
+   "heatCap": -1,
+   "maxSpeed": 0,
+   "shields": 0,
+   "armorFore": 0
+  },
+  {
+   "id": "flak_arrays",
+   "slot": "Broadside",
+   "name": "Flak Arrays",
+   "text": "Point defence domes: kills craft and torpedoes alongside. Shields +1.",
+   "cards": [
+    "flak_lattice",
+    "broadside_battery"
+   ],
+   "hull": 0,
+   "heatCap": 0,
+   "maxSpeed": 0,
+   "shields": 1,
+   "armorFore": 0
+  },
+  {
+   "id": "radiator_stack",
+   "slot": "Dorsal",
+   "name": "Radiator Stack",
+   "text": "Fins that dump reactor heat. Heat cap +2, Vent Plasma.",
+   "cards": [
+    "vent_plasma"
+   ],
+   "hull": 0,
+   "heatCap": 2,
+   "maxSpeed": 0,
+   "shields": 0,
+   "armorFore": 0
+  },
+  {
+   "id": "command_spire",
+   "slot": "Dorsal",
+   "name": "Command Spire",
+   "text": "The Prime's voice aboard. Precision Edict and a Decimation Order.",
+   "cards": [
+    "precision_edict",
+    "decimation_order"
+   ],
+   "hull": 0,
+   "heatCap": 0,
+   "maxSpeed": 0,
+   "shields": 0,
+   "armorFore": 0
+  },
+  {
+   "id": "waymind_crown",
+   "slot": "Dorsal",
+   "name": "Waymind Crown",
+   "text": "A second Waymind grown for targeting. Waymind Targeting and Scry the Void.",
+   "cards": [
+    "waymind_targeting",
+    "scry_the_void"
+   ],
+   "hull": 0,
+   "heatCap": 0,
+   "maxSpeed": 0,
+   "shields": 0,
+   "armorFore": 0
+  },
+  {
+   "id": "dart_hangar",
+   "slot": "Aft",
+   "name": "Dart Hangar",
+   "text": "Launch rails for Ordinal darts.",
+   "cards": [
+    "launch_darts"
+   ],
+   "hull": 0,
+   "heatCap": 0,
+   "maxSpeed": 0,
+   "shields": 0,
+   "armorFore": 0
+  },
+  {
+   "id": "boarding_pods",
+   "slot": "Aft",
+   "name": "Boarding Pods",
+   "text": "Ordinals as ammunition. Boarding Action and Purge Their Decks.",
+   "cards": [
+    "boarding_action",
+    "purge_their_decks"
+   ],
+   "hull": 0,
+   "heatCap": 0,
+   "maxSpeed": 0,
+   "shields": 0,
+   "armorFore": 0
+  },
+  {
+   "id": "armored_plating",
+   "slot": "Aft",
+   "name": "Armored Plating",
+   "text": "Layered ceramic over the drive. Hull +8, max Speed -1, Hold the Line.",
+   "cards": [
+    "hold_the_line"
+   ],
+   "hull": 8,
+   "heatCap": 0,
+   "maxSpeed": -1,
+   "shields": 0,
+   "armorFore": 0
+  }
+ ],
+ "rewards": [
+  {
+   "card": "overcharge_lances",
+   "ship": 0,
+   "requiresModule": "",
+   "weight": 10,
+   "price": 45
+  },
+  {
+   "card": "decimation_order",
+   "ship": 0,
+   "requiresModule": "",
+   "weight": 7,
+   "price": 50
+  },
+  {
+   "card": "sacrificial_ram",
+   "ship": 1,
+   "requiresModule": "",
+   "weight": 5,
+   "price": 55
+  },
+  {
+   "card": "boarding_action",
+   "ship": 0,
+   "requiresModule": "",
+   "weight": 10,
+   "price": 50
+  },
+  {
+   "card": "waymind_targeting",
+   "ship": 0,
+   "requiresModule": "",
+   "weight": 10,
+   "price": 45
+  },
+  {
+   "card": "precision_edict",
+   "ship": 0,
+   "requiresModule": "",
+   "weight": 10,
+   "price": 45
+  },
+  {
+   "card": "cold_discipline",
+   "ship": 0,
+   "requiresModule": "",
+   "weight": 10,
+   "price": 40
+  },
+  {
+   "card": "screening_maneuver",
+   "ship": 1,
+   "requiresModule": "",
+   "weight": 10,
+   "price": 35
+  },
+  {
+   "card": "dart_sortie",
+   "ship": 0,
+   "requiresModule": "dart_hangar",
+   "weight": 10,
+   "price": 40
+  },
+  {
+   "card": "flak_lattice",
+   "ship": 1,
+   "requiresModule": "",
+   "weight": 10,
+   "price": 40
+  },
+  {
+   "card": "seal_the_decks",
+   "ship": 0,
+   "requiresModule": "",
+   "weight": 10,
+   "price": 45
+  },
+  {
+   "card": "hold_the_line",
+   "ship": 0,
+   "requiresModule": "",
+   "weight": 10,
+   "price": 40
+  },
+  {
+   "card": "scry_the_void",
+   "ship": 0,
+   "requiresModule": "",
+   "weight": 10,
+   "price": 35
+  },
+  {
+   "card": "broadside_battery",
+   "ship": 0,
+   "requiresModule": "macro_batteries",
+   "weight": 6,
+   "price": 35
+  },
+  {
+   "card": "escort_guns",
+   "ship": 1,
+   "requiresModule": "",
+   "weight": 8,
+   "price": 35
+  },
+  {
+   "card": "brace",
+   "ship": 0,
+   "requiresModule": "",
+   "weight": 6,
+   "price": 30
+  },
+  {
+   "card": "hard_about",
+   "ship": 0,
+   "requiresModule": "",
+   "weight": 6,
+   "price": 30
+  },
+  {
+   "card": "vent_plasma",
+   "ship": 0,
+   "requiresModule": "",
+   "weight": 6,
+   "price": 30
+  },
+  {
+   "card": "short_lance",
+   "ship": 0,
+   "requiresModule": "",
+   "weight": 6,
+   "price": 40
+  }
+ ]
+}
