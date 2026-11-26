@@ -133,6 +133,7 @@ namespace Silence.View
             RefreshLog();
             RefreshPrompt();
             endTurnButton.interactable = mode != Mode.Busy && mode != Mode.Over && mode != Mode.Intro;
+            if (mode == Mode.Idle) RefreshSelection();
         }
 
         void RefreshPrompt()
@@ -545,7 +546,18 @@ namespace Silence.View
                 case EventKind.CardsRemoved: color = "8a90a0"; break;
                 default: return; // phases, draws, drift steps, regen and the like stay out of the log
             }
-            logLines.Add($"<color=#{color}>{e.Text}</color>");
+            string text = e.Text;
+            if (e.Kind == EventKind.Damage)
+            {
+                // Core's damage line is complete but long; the log keeps the part a player scans for.
+                var hit = Battle.Get(e.UnitId);
+                string who = hit != null ? hit.Name : "Target";
+                int open = text.IndexOf('('), close = text.IndexOf(')');
+                string arc = hit != null && hit.IsCapital && open >= 0 && close > open && close - open < 14 ? " " + text.Substring(open, close - open + 1) : "";
+                text = e.Amount > 0 ? $"{who}{arc}: -{e.Amount} hull" : $"{who}{arc}: hit absorbed";
+                if (e.Amount == 0) color = "7fdcf2";
+            }
+            logLines.Add($"<color=#{color}>{text}</color>");
             if (logLines.Count > 80) logLines.RemoveAt(0);
         }
 

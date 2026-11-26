@@ -169,7 +169,7 @@ namespace Silence.Core.Battle
         public static readonly CardDef SacrificialRam = new CardDef
         {
             Id = "sacrificial_ram", Name = "Sacrificial Ram", Cost = 2, Type = CardType.Maneuver, Module = "Engines",
-            Text = "Escort rams an enemy straight ahead within Speed + 2: the enemy is destroyed, and so is the escort. Exhaust.",
+            Text = "Escort rams an enemy straight ahead within Speed + 2: twice its remaining hull as damage, ignoring shields and armor. The escort is lost. Exhaust.",
             Target = TargetKind.Enemy, Exhaust = true,
             Effects = new Effect[] { new RamEffect { ExtraRange = 2 } },
         };

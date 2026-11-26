@@ -19,8 +19,12 @@ namespace Silence.Meta
         {
             var enc = content.Encounter(run.PendingEncounter);
             bool boss = enc.Tier == 3;
-            var d = OpenDialog(boss ? 1180 : 980, boss ? 700 : 600);
+            var roster = new List<EncounterUnit>(enc.Units);
+            if (boss && (RunRules.ConcordAhead(run) || run.VennEnraged)) roster.AddRange(enc.Reinforcements);
+            int rows = roster.Select(u => u.Unit).Distinct().Count();
             float w = boss ? 1180 : 980;
+            float h = 116 + (boss ? (run.VennEnraged ? 236 : 190) + 36 : 0) + 64 + 22 + rows * 48 + 130;
+            var d = OpenDialog(w, h);
             string tier = boss ? "Sector boss" : enc.Tier == 2 ? "Elite battle" : enc.Tier == 4 ? "Ambush" : "Battle";
             Ui.Stamp(d, tier, 14, 40, 26, 400, 20, TextAlignmentOptions.Left, enc.Tier >= 2 ? Skin.Bad : Skin.Brass);
             Ui.Heading(d, enc.Name, 46, 38, 44, w - 80, 60);
@@ -80,7 +84,6 @@ namespace Silence.Meta
                 y += 48;
             }
 
-            float h = boss ? 700 : 600;
             Ui.Btn(d, "Engage", (w - 300) / 2f, h - 104, 300, 74, Engage, 40);
         }
 

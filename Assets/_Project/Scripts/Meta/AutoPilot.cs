@@ -19,6 +19,9 @@ namespace Silence.Meta
         public bool StopAtRunOver = true;
         float nextStep;
 
+        [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
+        static void ResetStatics() => Instance = null;
+
         [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.AfterSceneLoad)]
         static void Create()
         {

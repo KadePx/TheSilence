@@ -33,7 +33,7 @@ namespace Silence.Meta
             logo.fontMaterial.SetFloat("_UnderlaySoftness", 0.25f);
             Ui.Stamp(root, "It was broadcast to everyone at once", 20, 0, 292, Ui.RefW, 28, TextAlignmentOptions.Center, Skin.Brass);
 
-            var panel = Ui.Plate(root, "Panel", 710, 420, 500, 560);
+            var panel = Ui.Plate(root, "Panel", 710, 420, 500, 520);
             float y = 34;
             var cont = Ui.Btn(panel.transform, "Continue run", 50, y, 400, 70, OnContinue, 34);
             cont.interactable = Game.HasSave;
@@ -94,8 +94,16 @@ namespace Silence.Meta
             if (error != null) message.text = $"<color=#d9573f>{error}</color>";
         }
 
+        bool confirmedOverwrite;
+
         void OnNewRun()
         {
+            if (Game.HasSave && !confirmedOverwrite)
+            {
+                confirmedOverwrite = true;
+                message.text = "<color=#f0a040>A run is in progress. Press New run again to abandon it and start over.</color>";
+                return;
+            }
             if (!long.TryParse(seed, out long value) || seed.Length == 0) value = Game.RandomSeed();
             Game.AbandonRun();
             Game.NewRun(value);

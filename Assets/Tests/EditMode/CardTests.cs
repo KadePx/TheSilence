@@ -228,6 +228,19 @@ namespace Silence.Tests
         }
 
         [Test]
+        public void SacrificialRamDealsTwiceTheEscortsHullAndCannotOneShotABigShip()
+        {
+            escort.Speed = 1;
+            escort.Hull = 9;
+            var big = b.AddUnit(T.Dummy(40, 5, 3), Side.Enemy, 5, 5, HexDirection.W, 0);
+            var c = T.Give(b, PaperCards.SacrificialRam, escort);
+            Assert.IsNull(b.PlayCard(c.Id, PlayTarget.At(big.Id)));
+            Assert.IsTrue(big.Alive);
+            Assert.AreEqual(40 - 18, big.Hull, "9 hull x 2, straight to hull");
+            Assert.IsFalse(escort.Alive);
+        }
+
+        [Test]
         public void SacrificialRamNeedsAClearStraightPath()
         {
             escort.Speed = 1;

@@ -471,6 +471,12 @@ namespace Silence.View
                 foreach (var en in Battle.LiveUnits(Side.Enemy))
                     if (reach.Any(h => h.DistanceTo(en.Pos) == 1)) board.SetRing(en.Id, Skin.Bad);
             }
+            else if (mode == Mode.Idle)
+            {
+                // Darts that can still act this turn carry a faint ring, so they are not forgotten.
+                foreach (var dart in Battle.LiveUnits(Side.Player))
+                    if (dart.Kind == UnitKind.Craft && !dart.CraftActed) board.SetRing(dart.Id, Skin.Alpha(Skin.Cyan, 0.55f));
+            }
             RefreshHandState();
             RefreshPrompt();
         }
@@ -559,6 +565,12 @@ namespace Silence.View
                     if (error != null) return head + $"<color=#d9573f>{hov.Name}: {error}.</color>";
                     var atk = def.Effects.OfType<AttackEffect>().FirstOrDefault();
                     var source = Battle.Get(selectedCard.SourceId);
+                    var ram = def.Effects.OfType<RamEffect>().FirstOrDefault();
+                    if (ram != null && source != null)
+                    {
+                        int dmg = ram.DamageFrom(source);
+                        return head + $"{hov.Name}: {dmg} damage straight to hull" + (dmg >= hov.Hull ? "  <color=#8cc47a>DESTROYS IT</color>" : $" (it has {hov.Hull})") + $".  <color=#d9573f>{source.Name} is lost.</color>";
+                    }
                     if (atk != null && source != null)
                     {
                         var (dmg, flags) = atk.Resolve(Battle, source, hov, expend && def.ExpendCost > 0);
@@ -640,9 +652,12 @@ namespace Silence.View
         [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.AfterSceneLoad)]
         static void Init()
         {
-            SceneManager.sceneLoaded += (scene, _) => Ensure(scene);
+            SceneManager.sceneLoaded -= OnSceneLoaded;
+            SceneManager.sceneLoaded += OnSceneLoaded;
             Ensure(SceneManager.GetActiveScene());
         }
+
+        static void OnSceneLoaded(Scene scene, LoadSceneMode mode) => Ensure(scene);
 
         static void Ensure(Scene scene)
         {

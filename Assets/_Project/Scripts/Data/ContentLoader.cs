@@ -27,6 +27,9 @@ namespace Silence.Data
             return content;
         }
 
+        /// <summary>Forget the loaded content so the next <see cref="Load"/> reads the files again.</summary>
+        public static void Invalidate() => cached = null;
+
         static string Text(string path)
         {
             var asset = Resources.Load<TextAsset>(path);

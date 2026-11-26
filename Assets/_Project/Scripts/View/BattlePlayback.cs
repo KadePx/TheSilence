@@ -38,7 +38,6 @@ namespace Silence.View
             }
             Ui.Clear(chipRoot);
             endTurnButton.interactable = false;
-            pendingRefresh = false;
 
             while (logCursor < Battle.Log.Count)
             {
@@ -57,8 +56,6 @@ namespace Silence.View
                 ShowEndScreen();
             }
         }
-
-        bool pendingRefresh;
 
         IEnumerator Animate(BattleEvent e)
         {

@@ -204,11 +204,15 @@ namespace Silence.Core.Battle
 
     /// <summary>
     /// Sacrificial Ram: the source escort rams an enemy straight ahead within Speed + extra hexes, with a
-    /// clear path. The enemy takes damage equal to its remaining hull (destroyed) and the escort is lost.
+    /// clear path. The enemy takes the escort's remaining hull times a multiplier, straight to hull, and
+    /// the escort is lost. (It no longer destroys any target outright: that one-shot the sector boss.)
     /// </summary>
     public sealed class RamEffect : Effect
     {
         public int ExtraRange;
+        public int HullMultiplier = 2;
+
+        public int DamageFrom(Unit source) => source.Hull * HullMultiplier;
 
         public override string Validate(Battle b, PlayContext ctx)
         {
@@ -232,7 +236,8 @@ namespace Silence.Core.Battle
             var t = ctx.Target;
             var from = t.Pos.Neighbor(s.Facing.Opposite());
             b.Emit(EventKind.Moved, s.Id, -1, 0, $"{s.Name} rams {t.Name}", s.Pos, t.Pos);
-            b.DealDamage(t, t.Hull, from, new DamageFlags { Direct = true }, s);
+            b.Emit(EventKind.Attack, s.Id, t.Id, DamageFrom(s), $"{s.Name} storms into {t.Name}");
+            b.DealDamage(t, DamageFrom(s), from, new DamageFlags { Direct = true }, s);
             b.Destroy(s);
         }
     }

@@ -21,6 +21,15 @@ namespace Silence.Meta
         public static RunState Run { get; private set; }
         public static RunContent Content => ContentLoader.Load();
 
+        /// <summary>The editor can enter Play Mode without reloading code, so statics are cleared by hand.</summary>
+        [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
+        static void ResetStatics()
+        {
+            Run = null;
+            BattleLauncher.Clear();
+            ContentLoader.Invalidate();
+        }
+
         public static string SavePath => Path.Combine(Application.persistentDataPath, "silence_run.json");
 
         public static bool HasSave => File.Exists(SavePath);
@@ -141,9 +150,12 @@ namespace Silence.Meta
         [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.AfterSceneLoad)]
         static void Init()
         {
-            SceneManager.sceneLoaded += (scene, _) => Ensure(scene);
+            SceneManager.sceneLoaded -= OnSceneLoaded;
+            SceneManager.sceneLoaded += OnSceneLoaded;
             Ensure(SceneManager.GetActiveScene());
         }
+
+        static void OnSceneLoaded(Scene scene, LoadSceneMode mode) => Ensure(scene);
 
         static void Ensure(Scene scene)
         {
