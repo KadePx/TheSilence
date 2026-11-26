@@ -13,11 +13,22 @@ the sprint plan.
 
 - `Silence.Core` is pure, deterministic C#: no `UnityEngine`, no `System.Random`, no floats in rules, no
   `DateTime`, no static mutable state. All randomness goes through `Silence.Core.Random.Pcg32` held in the
-  battle or run state, so battles can be replayed from a seed and a list of actions.
+  battle or run state, so battles and whole runs can be replayed from a seed and a list of actions.
+- Core has two halves: `Core/Battle` (one fight) and `Core/Run` (the run loop: map, travel, rewards, events,
+  shipyard, in `RunRules`; the saved state is `RunState`). The run rules live in Core, not Meta, so tests
+  and balance sims can play whole runs headless (`RunBot`).
 - The view never mutates state. It sends an action to Core; Core applies it and emits events; the view
-  animates those events.
-- Dependencies flow Core ← Data ← View/Meta ← Editor. Tests reference Core and Data only.
-- C# 9 (Unity's language level). Keep `DotnetTests/DotnetTests.csproj` at `LangVersion 9.0`.
+  animates those events. The same holds for the map: every click is a `RunRules` call.
+- Dependencies flow Core <- Data <- View <- Meta <- Editor. Meta uses View's UI kit (`Ui`, `Skin`,
+  `CardView`) and hands battles to the Battle scene through `BattleLauncher`. Tests reference Core and Data only.
+- Content: cards and unit templates are code in Core (`PaperCards`, `PaperUnits`; their effects and AI are
+  code). Encounters, events, modules, the reward pool and run tuning are JSON in
+  `Assets/_Project/Data/Resources/Content/`, loaded by `Silence.Data.ContentLoader`.
+- Screens build their UI in code at runtime (no scene wiring). Scenes hold only a camera and a light; a
+  `RuntimeInitializeOnLoadMethod` adds the right screen object by scene name.
+- Sprites, fonts and sounds are looked up by name through `ArtLibrary` (`Resources/ArtLibrary.asset`).
+  After adding art or audio run **Silence > Rebuild Art Library**; after adding a font, **Silence > Bake Fonts**.
+- C# 9 (Unity's language level).
 
 ## Hex conventions
 
@@ -28,16 +39,20 @@ the sprint plan.
 
 ## Commands
 
-- Run Core tests without Unity: `dotnet test DotnetTests`
-- Run all tests in Unity (batch): `Unity -batchmode -projectPath . -runTests -testPlatform EditMode -testResults results.xml`
-- Rotate a sprite to a hex facing: `python3 Tools/rotsprite.py in.png out.png 60 160`
+- There is no .NET SDK on the dev machine and no `DotnetTests/` project: run tests through Unity.
+- All EditMode tests, short summary: menu **Silence > Run Tests (summary)**, result in `Temp/test-summary.txt`.
+- All tests in batch mode (editor closed): `Unity -batchmode -projectPath . -runTests -testPlatform EditMode -testResults results.xml`
+- Rotate a sprite to a hex facing: `python Tools/rotsprite.py in.png out.png 60 <canvas>` (canvas = 1.25x the sprite; -60 for SE)
+- Regenerate the placeholder sound effects: `python Tools/make_sfx.py`
+- In Play Mode: F9 lets the bot play the current battle turn, F10 toggles the autopilot (whole runs).
 
 ## Art
 
 - Every PixelLab generation is logged in `ArtSource/pixellab-log.csv` (job ID, candidate index, seed).
 - Naming: `<faction>_<unit>_<facing>[_<variant>].png`, faction prefixes `asc`, `con`, `cho`; normal maps end `_n`.
 - Faction palettes and prompts are in `Docs/FleetAndAssetPlan.md`.
-- Art and audio are in Git LFS; keep PNGs out of `Docs/`.
+- Art and audio are in Git LFS; keep PNGs out of `Docs/` (screenshots go in `ArtSource/Screenshots/`).
+- Effect sheets from the PixelLab VFX workbench are square cells in rows; their layout JSON is in `ArtSource/`.
 
 ## Workflow
 

@@ -133,6 +133,7 @@ namespace Silence.View
             RefreshLog();
             RefreshPrompt();
             endTurnButton.interactable = mode != Mode.Busy && mode != Mode.Over && mode != Mode.Intro;
+            if (mode == Mode.Idle) RefreshSelection();
         }
 
         void RefreshPrompt()
@@ -344,6 +345,18 @@ namespace Silence.View
                 if (u.NoBurnThisTurn) notes.Add("Engines hit: no Burn this turn");
                 if (Battle.WaymindPrimed) notes.Add("Waymind: next weapon ignores armor, crits");
                 if (notes.Count > 0) Ui.Body(t, string.Join("\n", notes), 15, 20, y, 296, 80, TextAlignmentOptions.TopLeft, Skin.Brass);
+
+                // Standing orders: the rules a new player needs, always in view.
+                float hy = BottomY - TopH - 172;
+                Ui.Well(t, "HelpWell", 12, hy, LeftW - 24, 160);
+                Ui.Stamp(t, "Standing orders", 12, 22, hy + 8, 280, 16, TextAlignmentOptions.Left, Skin.BrassDark);
+                var help = Ui.Body(t,
+                    "<color=#c9a24a>1</color> Enemies show their plan first. Solid red lines will hit.\n" +
+                    "<color=#c9a24a>2</color> Play cards with command. Weapons need the target in their arc and range.\n" +
+                    "<color=#c9a24a>3</color> Ships drift by Speed when you end the turn. Leave an arc and the shot misses.\n" +
+                    "<color=#c9a24a>4</color> Shields soak a hit on the arc it lands on, then armor, then hull.",
+                    13.5f, 22, hy + 28, LeftW - 46, 128, TextAlignmentOptions.TopLeft, Skin.Dim);
+                help.lineSpacing = -14f;
             }
         }
 
@@ -533,7 +546,18 @@ namespace Silence.View
                 case EventKind.CardsRemoved: color = "8a90a0"; break;
                 default: return; // phases, draws, drift steps, regen and the like stay out of the log
             }
-            logLines.Add($"<color=#{color}>{e.Text}</color>");
+            string text = e.Text;
+            if (e.Kind == EventKind.Damage)
+            {
+                // Core's damage line is complete but long; the log keeps the part a player scans for.
+                var hit = Battle.Get(e.UnitId);
+                string who = hit != null ? hit.Name : "Target";
+                int open = text.IndexOf('('), close = text.IndexOf(')');
+                string arc = hit != null && hit.IsCapital && open >= 0 && close > open && close - open < 14 ? " " + text.Substring(open, close - open + 1) : "";
+                text = e.Amount > 0 ? $"{who}{arc}: -{e.Amount} hull" : $"{who}{arc}: hit absorbed";
+                if (e.Amount == 0) color = "7fdcf2";
+            }
+            logLines.Add($"<color=#{color}>{text}</color>");
             if (logLines.Count > 80) logLines.RemoveAt(0);
         }
 

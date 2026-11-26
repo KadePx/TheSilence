@@ -47,6 +47,7 @@ namespace Silence.View
 
         public static void EnsureEventSystem()
         {
+            if (UnityEngine.Object.FindAnyObjectByType<AudioListener>() == null && Camera.main != null) Camera.main.gameObject.AddComponent<AudioListener>();
             if (UnityEngine.Object.FindAnyObjectByType<EventSystem>() != null) return;
             var go = new GameObject("EventSystem");
             go.AddComponent<EventSystem>();
@@ -89,7 +90,11 @@ namespace Silence.View
         }
 
         public static Image Well(Transform parent, string name, float x, float y, float w, float h)
-            => Img(parent, name, Skin.Well, x, y, w, h, Color.white, true);
+        {
+            var img = Img(parent, name, Skin.Well, x, y, w, h, Color.white, true);
+            img.type = Image.Type.Tiled;
+            return img;
+        }
 
         public static Image Fill(Transform parent, string name, float x, float y, float w, float h, Color color)
             => Img(parent, name, Skin.Pixel, x, y, w, h, color);

@@ -1,0 +1,385 @@
+using System.Collections.Generic;
+using System.Linq;
+using Silence.Core.Battle;
+using Silence.Core.Run;
+using Silence.Data;
+using Silence.View;
+using TMPro;
+using UnityEngine;
+using UnityEngine.UI;
+
+namespace Silence.Meta
+{
+    /// <summary>The dialogs the map opens: pre-battle briefing, reward, event, shipyard and the run-over screen.</summary>
+    public sealed partial class MapScreen
+    {
+        // ---------------------------------------------------------------- pre-battle
+
+        void ShowBattlePrompt()
+        {
+            var enc = content.Encounter(run.PendingEncounter);
+            bool boss = enc.Tier == 3;
+            var roster = new List<EncounterUnit>(enc.Units);
+            if (boss && (RunRules.ConcordAhead(run) || run.VennEnraged)) roster.AddRange(enc.Reinforcements);
+            int rows = roster.Select(u => u.Unit).Distinct().Count();
+            float w = boss ? 1180 : 980;
+            float h = 116 + (boss ? (run.VennEnraged ? 236 : 190) + 36 : 0) + 64 + 22 + rows * 48 + 130;
+            var d = OpenDialog(w, h);
+            string tier = boss ? "Sector boss" : enc.Tier == 2 ? "Elite battle" : enc.Tier == 4 ? "Ambush" : "Battle";
+            Ui.Stamp(d, tier, 14, 40, 26, 400, 20, TextAlignmentOptions.Left, enc.Tier >= 2 ? Skin.Bad : Skin.Brass);
+            Ui.Heading(d, enc.Name, 46, 38, 44, w - 80, 60);
+
+            float textX = 40, textW = w - 80, y = 116;
+            if (boss)
+            {
+                var well = Ui.Well(d, "Comms", 40, 116, 272, 272);
+                var portrait = Ui.Art(well.transform, "portrait_venn", 8, 8, 2f);
+                if (!portrait.enabled) Ui.Body(well.transform, "NO SIGNAL", 20, 0, 120, 272, 30, TextAlignmentOptions.Center, Skin.Faint);
+                Ui.Stamp(d, "Marshal Oru Venn", 14, 40, 394, 272, 18, TextAlignmentOptions.Center, Skin.Hex("ffc46a"));
+                Ui.Stamp(d, "Concord - Long Promise", 11, 40, 414, 272, 16, TextAlignmentOptions.Center, Skin.Dim);
+                textX = 340;
+                textW = w - 380;
+                string hail = "\"Sixth Verdict. I know that hull. You took my eye at Kessane and logged it as efficiency.\"\n\n" +
+                              "\"The Long Promise holds this gate. Behind me are eleven worlds that will never hear your Prime's name. Come and be counted.\"";
+                if (run.VennEnraged) hail += "\n\n\"And I have read the convoy's last message. All of it.\"";
+                Ui.Body(d, hail, 21, textX, y, textW, 200, TextAlignmentOptions.TopLeft, Skin.Hex("ffe0b0"));
+                y += run.VennEnraged ? 236 : 190;
+            }
+
+            Ui.Body(d, enc.Intro, 20, textX, y, textW, 70, TextAlignmentOptions.TopLeft, Skin.Text);
+            y += 64;
+
+            var units = new List<EncounterUnit>(enc.Units);
+            bool reinforced = boss && (RunRules.ConcordAhead(run) || run.VennEnraged);
+            if (reinforced) units.AddRange(enc.Reinforcements);
+            if (boss)
+            {
+                string race = RunRules.ConcordAhead(run)
+                    ? "<color=#d9573f>The Concord fleet reached the gate before you. Its guard is reinforced.</color>"
+                    : run.VennEnraged ? "<color=#d9573f>Venn has called in another ship.</color>"
+                    : "<color=#8cc47a>You are ahead of the Concord fleet. The gate has only its standing guard.</color>";
+                Ui.Body(d, race, 18, textX, y, textW, 26);
+                y += 36;
+            }
+
+            Ui.Stamp(d, "Enemy fleet", 12, textX, y, 300, 16, TextAlignmentOptions.Left, Skin.Brass);
+            y += 22;
+            foreach (var group in units.GroupBy(u => u.Unit))
+            {
+                var spec = UnitLibrary.Get(group.Key);
+                var row = Ui.Well(d, "Unit", textX, y, textW, 44);
+                var icon = ArtLibrary.Instance.Sprite(spec.Id + "_E") ?? ArtLibrary.Instance.Sprite("con_outrider_E");
+                if (icon != null)
+                {
+                    float s = 40f / Mathf.Max(icon.rect.width, icon.rect.height);
+                    s = icon.rect.height <= 40 ? 1f : s;
+                    Ui.Img(row.transform, "Icon", icon, 8 + (40 - icon.rect.width * s) / 2f, 2 + (40 - icon.rect.height * s) / 2f, icon.rect.width * s, icon.rect.height * s);
+                }
+                string cycle = spec.Cycle.Length > 0
+                    ? string.Join(" > ", spec.Cycle.Select(StepName))
+                    : spec.Kind == UnitKind.Craft ? $"goes for the aft, {spec.AttackDamage} damage" : "";
+                Ui.Label(row.transform, $"{group.Count()} x {spec.Name.ToUpperInvariant()}", Skin.Heading, 22, Skin.Text, 60, 8, 300, 28);
+                Ui.Body(row.transform, (spec.IsCapitalSpec() ? $"Hull {spec.Hull}   " : $"Hull {spec.Hull}   ") + cycle, 15, 300, 12, textW - 310, 22, TextAlignmentOptions.TopLeft, Skin.Dim)
+                    .textWrappingMode = TextWrappingModes.NoWrap;
+                y += 48;
+            }
+
+            Ui.Btn(d, "Engage", (w - 300) / 2f, h - 104, 300, 74, Engage, 40);
+        }
+
+        static string StepName(IntentStep s)
+        {
+            switch (s.Kind)
+            {
+                case IntentKind.Broadside: return $"{s.Label ?? "Broadside"} {s.Amount}";
+                case IntentKind.Maneuver: return "Maneuver";
+                case IntentKind.LaunchTorpedo: return "Torpedo";
+                case IntentKind.LaunchCraft: return $"Launch {s.Amount}";
+                case IntentKind.PatchUp: return $"Repair {s.Amount}";
+                case IntentKind.JointFire: return "Joint Fire";
+                default: return s.Kind.ToString();
+            }
+        }
+
+        // ---------------------------------------------------------------- reward
+
+        void ShowReward()
+        {
+            var offer = run.Reward;
+            var d = OpenDialog(1040, 640);
+            Ui.Stamp(d, "After action", 14, 40, 26, 400, 20, TextAlignmentOptions.Left, Skin.Brass);
+            Ui.Heading(d, "Salvage", 46, 38, 44, 600, 60);
+            Ui.Body(d, offer.Note, 18, 40, 108, 960, 26, TextAlignmentOptions.TopLeft, Skin.Dim);
+            Ui.Art(d, "res_scrap", 640, 40, 1f);
+            Ui.Number(d, $"+{offer.Scrap} scrap", 26, 696, 48, 200, 34, TextAlignmentOptions.Left, Skin.Brass);
+            if (offer.Ordinals > 0)
+            {
+                Ui.Art(d, "res_ordinals", 850, 40, 1f);
+                Ui.Number(d, $"+{offer.Ordinals}", 26, 906, 48, 120, 34, TextAlignmentOptions.Left, Skin.Cyan);
+            }
+            Ui.Stamp(d, "Take one card for the command deck, or patch the fleet up", 13, 40, 150, 800, 18);
+
+            int n = offer.Cards.Count;
+            float step = CardView.W + 28, x0 = (1040 - (step * (n - 1) + CardView.W)) / 2f + CardView.W / 2f;
+            for (int i = 0; i < n; i++)
+            {
+                int index = i;
+                var card = MakeCard(d, offer.Cards[i], x0 + i * step, 186 + CardView.H);
+                card.Clicked = _ => PickReward(index);
+                card.Hovered = v => v.SetSelected(true);
+                card.Unhovered = v => v.SetSelected(false);
+            }
+            bool hurt = run.Ships.Any(s => s.Alive && s.Hull < s.MaxHull);
+            var repair = Ui.Btn(d, $"Field repairs instead: +{content.Config.FieldRepair} hull each", 150, 540, 460, 60, FieldRepair, 26);
+            repair.interactable = hurt;
+            Ui.Btn(d, "Take nothing", 650, 540, 240, 60, () => PickReward(-1), 26);
+        }
+
+        // ---------------------------------------------------------------- events
+
+        void ShowEvent()
+        {
+            var ev = content.Event(run.EventId);
+            var d = OpenDialog(1500, 880);
+            EventArt(d, ev);
+            Ui.Stamp(d, "Event", 14, 760, 34, 300, 20, TextAlignmentOptions.Left, Skin.Brass);
+            Ui.Heading(d, ev.Title, 48, 758, 54, 700, 62);
+            Ui.Body(d, ev.Body, 21, 760, 130, 700, 300, TextAlignmentOptions.TopLeft);
+
+            float y = 470;
+            if (!string.IsNullOrEmpty(notice))
+            {
+                Ui.Body(d, $"<color=#f0a040>{notice}</color>", 18, 40, 436, 1400, 26);
+            }
+            for (int i = 0; i < ev.Choices.Count; i++)
+            {
+                var choice = ev.Choices[i];
+                string blocked = RunRules.CanChoose(run, choice);
+                int index = i;
+                var b = Ui.Btn(d, "", 40, y, 1420, 104, () => Choose(index));
+                b.interactable = blocked == null;
+                Ui.Number(b.transform, (i + 1).ToString(), 34, 22, 28, 40, 48, TextAlignmentOptions.Center, blocked == null ? Skin.Brass : Skin.Faint);
+                Ui.Label(b.transform, choice.Label, Skin.BodyBold, 25, blocked == null ? Skin.Text : Skin.Faint, 80, 16, 1300, 36);
+                string tag = Summary(choice) + (blocked != null ? $"   <color=#d9573f>({blocked})</color>" : "");
+                Ui.Stamp(b.transform, tag, 14, 82, 62, 1300, 22, TextAlignmentOptions.Left, blocked == null ? Skin.Brass : Skin.Faint).characterSpacing = 3f;
+                y += 116;
+            }
+        }
+
+        /// <summary>What a choice does, in numbers, built from its outcomes so the text can never drift from the rules.</summary>
+        string Summary(EventChoice choice)
+        {
+            var parts = new List<string>();
+            foreach (var o in choice.Outcomes)
+            {
+                string sign = o.Amount >= 0 ? "+" + o.Amount : o.Amount.ToString();
+                switch (o.Kind)
+                {
+                    case OutcomeKind.Scrap: parts.Add(o.Amount < 0 ? $"Pay {-o.Amount} scrap" : $"{sign} scrap"); break;
+                    case OutcomeKind.Ordinals: parts.Add(o.Amount < 0 ? $"Expend {-o.Amount} Ordinals" : $"{sign} Ordinals"); break;
+                    case OutcomeKind.HullFlagship: parts.Add($"Flagship {sign} hull"); break;
+                    case OutcomeKind.HullAll: parts.Add($"Every ship {sign} hull"); break;
+                    case OutcomeKind.MaxHullFlagship: parts.Add($"Flagship {sign} max hull"); break;
+                    case OutcomeKind.Darts: parts.Add($"{sign} darts"); break;
+                    case OutcomeKind.AddCard: parts.Add($"Gain {PaperCards.Get(o.Id).Name}"); break;
+                    case OutcomeKind.AddJunk: parts.Add($"Adds {PaperCards.Get(o.Id).Name}"); break;
+                    case OutcomeKind.RemoveJunk: parts.Add("Removes a junk card"); break;
+                    case OutcomeKind.RivalsAdvance:
+                        parts.Add(o.Amount > 0 ? $"Rivals gain {o.Amount / 10f:0.0} node" : $"Rivals lose {-o.Amount / 10f:0.0} node");
+                        break;
+                    case OutcomeKind.EnrageBoss: parts.Add("The gate guard is reinforced"); break;
+                    case OutcomeKind.StartBattle:
+                        parts.Add($"Battle: {content.Encounter(o.Id).Name}" + (o.Amount > 100 ? $", salvage x{o.Amount / 100f:0.0}" : ""));
+                        break;
+                }
+            }
+            return parts.Count == 0 ? "No effect" : string.Join("   /   ", parts);
+        }
+
+        void EventArt(RectTransform d, EventDef ev)
+        {
+            var well = Ui.Well(d, "ArtWell", 34, 34, 700, 396);
+            var art = ArtLibrary.Instance.Sprite(ev.Art);
+            if (art != null) Ui.Img(well.transform, "Art", art, 6, 6, art.rect.width * 2f, art.rect.height * 2f);
+            else Ui.Art(well.transform, "icon_derelict", 302, 150, 2f);
+        }
+
+        void ShowEventResult()
+        {
+            var ev = content.Event(run.EventId);
+            var d = OpenDialog(1500, 640);
+            EventArt(d, ev);
+            Ui.Stamp(d, "Event", 14, 760, 34, 300, 20, TextAlignmentOptions.Left, Skin.Brass);
+            Ui.Heading(d, ev.Title, 48, 758, 54, 700, 62);
+            string text = run.EventResult;
+            int split = text.LastIndexOf("\n\n", System.StringComparison.Ordinal);
+            if (split > 0) text = text.Substring(0, split) + "\n\n<color=#c9a24a>" + text.Substring(split + 2) + "</color>";
+            Ui.Body(d, text, 21, 760, 130, 700, 300, TextAlignmentOptions.TopLeft);
+            Ui.Btn(d, "Continue", 600, 520, 300, 74, CloseEvent, 36);
+        }
+
+        // ---------------------------------------------------------------- shipyard
+
+        void ShowShipyard()
+        {
+            var cfg = content.Config;
+            var shop = run.Shop;
+            var d = OpenDialog(1760, 960, 0.6f, "shipyard_bg");
+            Ui.Stamp(d, "Shipyard", 14, 40, 24, 400, 20, TextAlignmentOptions.Left, Skin.Brass);
+            Ui.Heading(d, "Drydock", 46, 38, 40, 500, 60);
+            Ui.Art(d, "res_scrap", 1080, 30, 1f);
+            Ui.Number(d, $"{run.Scrap} scrap", 30, 1136, 36, 260, 40, TextAlignmentOptions.Left, Skin.Brass);
+            Ui.Body(d, $"Every service keeps you in dock: the rivals gain {cfg.ShipyardDelayPerPurchase / 10f:0.0} node per purchase. Services bought: {shop.Purchases}.",
+                16, 560, 96, 800, 24, TextAlignmentOptions.TopLeft, Skin.Dim);
+            if (!string.IsNullOrEmpty(notice)) Ui.Body(d, $"<color=#f0a040>{notice}</color>", 18, 40, 96, 500, 26);
+            Ui.Btn(d, "Leave dock", 1460, 26, 260, 66, LeaveShipyard, 32);
+
+            // ---- services
+            float x = 40, y = 140;
+            Ui.Stamp(d, "Services", 13, x, y, 300, 18, TextAlignmentOptions.Left, Skin.Brass);
+            y += 26;
+            for (int i = 0; i < run.Ships.Count; i++)
+            {
+                var ship = run.Ships[i];
+                int index = i;
+                if (!ship.Alive)
+                {
+                    Service(d, x, ref y, $"Rebuild {ship.Name}", "A new escort from the yard's own stock.", cfg.RebuildEscortCost,
+                        true, () => Shop(() => RunRules.RebuildEscort(run, content)));
+                    continue;
+                }
+                int missing = ship.MaxHull - ship.Hull;
+                int cost = Mathf.Min(missing * cfg.RepairCostPerHull, run.Scrap / Mathf.Max(1, cfg.RepairCostPerHull) * cfg.RepairCostPerHull);
+                Service(d, x, ref y, $"Repair {ship.Name}", missing == 0 ? "Hull is whole." : $"Hull {ship.Hull}/{ship.MaxHull}. {cfg.RepairCostPerHull} scrap a point, as far as the scrap goes.",
+                    Mathf.Max(cost, missing > 0 ? cfg.RepairCostPerHull : 0), missing > 0, () => Shop(() => RunRules.Repair(run, content, index)));
+            }
+            Service(d, x, ref y, "Strip out junk", run.JunkCount() == 0 ? "No junk cards in the deck." : $"Removes one of {run.JunkCount()} junk cards for good.",
+                cfg.RemoveJunkCost, run.JunkCount() > 0, () => Shop(() => RunRules.RemoveJunk(run, content)));
+            Service(d, x, ref y, "Load a dart", $"Darts aboard {run.Darts}/{run.MaxDarts}. Takes no dock time.", cfg.DartCost,
+                run.Darts < run.MaxDarts, () => Shop(() => RunRules.BuyDart(run, content)));
+            Service(d, x, ref y, $"Decant {cfg.OrdinalsPerPurchase} Ordinals", $"Ordinals {run.Ordinals}/{run.MaxOrdinals}.", cfg.OrdinalCost * cfg.OrdinalsPerPurchase,
+                run.Ordinals < run.MaxOrdinals, () => Shop(() => RunRules.BuyOrdinals(run, content)));
+
+            // ---- cards
+            float cx = 600;
+            Ui.Stamp(d, "Cards for sale", 13, cx, 140, 300, 18, TextAlignmentOptions.Left, Skin.Brass);
+            for (int i = 0; i < shop.Cards.Count; i++)
+            {
+                int index = i;
+                float ccx = cx + CardView.W / 2f + i * (CardView.W + 16);
+                var card = MakeCard(d, shop.Cards[i], ccx, 170 + CardView.H);
+                card.Clicked = _ => Shop(() => RunRules.BuyCard(run, index));
+                card.Hovered = v => v.SetSelected(true);
+                card.Unhovered = v => v.SetSelected(false);
+                var buy = Ui.Btn(d, $"{shop.CardPrices[i]} scrap", ccx - 90, 456, 180, 44, () => Shop(() => RunRules.BuyCard(run, index)), 24);
+                buy.interactable = run.Scrap >= shop.CardPrices[i];
+            }
+            if (shop.Cards.Count == 0) Ui.Body(d, "Sold out.", 18, cx, 180, 300, 26, TextAlignmentOptions.TopLeft, Skin.Dim);
+
+            // ---- the fleet as it stands
+            float fx = 1280, fy = 140;
+            Ui.Stamp(d, "In dock", 13, fx, fy, 300, 18, TextAlignmentOptions.Left, Skin.Brass);
+            fy += 28;
+            foreach (var ship in run.Ships)
+            {
+                Ui.Heading(d, ship.Name, 24, fx, fy, 300, 30, TextAlignmentOptions.Left, ship.Alive ? Skin.Text : Skin.Faint);
+                Ui.Number(d, ship.Alive ? $"{ship.Hull}/{ship.MaxHull}" : "LOST", 19, fx + 300, fy + 4, 140, 24, TextAlignmentOptions.Right, ship.Alive ? Skin.Text : Skin.Bad);
+                Ui.Well(d, "HullWell", fx, fy + 32, 440, 18);
+                float frac = ship.Alive ? Mathf.Clamp01(ship.Hull / (float)ship.MaxHull) : 0f;
+                Ui.Fill(d, "HullFill", fx + 3, fy + 35, 434 * frac, 12, frac > 0.34f ? Skin.Good : Skin.Bad);
+                fy += 66;
+            }
+            Ui.Body(d, $"Ordinals {run.Ordinals}/{run.MaxOrdinals}     Darts {run.Darts}/{run.MaxDarts}\nDeck {run.Deck.Count} cards, {run.JunkCount()} junk", 17, fx, fy, 440, 50, TextAlignmentOptions.TopLeft, Skin.Dim);
+            fy += 58;
+            for (int slot = 0; slot < run.Modules.Count; slot++)
+            {
+                var fitted = content.Module(run.Modules[slot]);
+                Ui.Stamp(d, fitted.Slot, 11, fx, fy + 3, 110, 16);
+                Ui.Body(d, fitted.Name, 16, fx + 120, fy, 320, 22);
+                fy += 23;
+            }
+
+            // ---- refits
+            float mx = 600, my = 524;
+            Ui.Stamp(d, $"Refit a module - {cfg.ModuleCost} scrap each. The old module's cards leave the deck, the new one's join it.", 13, mx, my, 1100, 18, TextAlignmentOptions.Left, Skin.Brass);
+            my += 26;
+            for (int i = 0; i < shop.Modules.Count && i < 4; i++)
+            {
+                var m = content.Module(shop.Modules[i]);
+                int slot = cfg.Slots.IndexOf(m.Slot);
+                var old = slot >= 0 && slot < run.Modules.Count ? content.Module(run.Modules[slot]) : null;
+                var row = Ui.Well(d, "Module", mx, my, 1120, 92);
+                Ui.Stamp(row.transform, m.Slot, 12, 16, 10, 140, 16, TextAlignmentOptions.Left, Skin.Brass);
+                Ui.Heading(row.transform, m.Name, 26, 14, 26, 300, 34);
+                Ui.Body(row.transform, m.Text, 15, 16, 62, 620, 22, TextAlignmentOptions.TopLeft, Skin.Dim).textWrappingMode = TextWrappingModes.NoWrap;
+                string adds = string.Join(", ", m.Cards.Select(c => PaperCards.Get(c).Name));
+                string loses = old != null ? string.Join(", ", old.Cards.Select(c => PaperCards.Get(c).Name)) : "";
+                Ui.Body(row.transform, $"<color=#8cc47a>Adds:</color> {adds}\n<color=#d9573f>Replaces {(old != null ? old.Name : "")}:</color> {loses}", 15, 330, 12, 560, 46, TextAlignmentOptions.TopLeft);
+                string id = m.Id;
+                var fit = Ui.Btn(row.transform, "Fit", 930, 22, 170, 48, () => Shop(() => RunRules.FitModule(run, content, id)), 26);
+                fit.interactable = run.Scrap >= cfg.ModuleCost;
+                my += 100;
+            }
+        }
+
+        void Service(RectTransform d, float x, ref float y, string title, string detail, int cost, bool available, System.Action onClick)
+        {
+            var row = Ui.Well(d, "Service", x, y, 520, 84);
+            Ui.Heading(row.transform, title, 26, 16, 8, 340, 34, TextAlignmentOptions.Left, available ? Skin.Text : Skin.Faint);
+            Ui.Body(row.transform, detail, 15, 16, 44, 340, 40, TextAlignmentOptions.TopLeft, Skin.Dim);
+            var b = Ui.Btn(row.transform, $"{cost} scrap", 364, 18, 140, 48, onClick, 22);
+            b.interactable = available && run.Scrap >= cost && cost > 0;
+            y += 92;
+        }
+
+        // ---------------------------------------------------------------- run over
+
+        void ShowRunOver()
+        {
+            var d = OpenDialog(1100, 760, 0.82f);
+            bool won = run.Result == RunResult.Victory;
+            string title = won ? "The Gate Is Yours" : run.Result == RunResult.Outpaced ? "Outpaced" : "The Fleet Is Lost";
+            var color = won ? Skin.Brass : run.Result == RunResult.Outpaced ? Skin.Warn : Skin.Bad;
+            Ui.Label(d, title, Skin.Logo, 84, color, 0, 30, 1100, 110, TextAlignmentOptions.Center);
+
+            string story;
+            if (won)
+            {
+                story = RunRules.ConcordAhead(run)
+                    ? "The Long Promise burns behind you, but the Concord's main fleet went through the gate while Venn held you here. You are through the Ion Reef, and you are second."
+                    : "The Long Promise burns behind you and the gate stands open. No other fleet has passed it. The Prime will be informed that the Sixth Verdict leads the race to the Silence.";
+                if (RunRules.ChorusAhead(run)) story += " Something else came through first, though. The gate's sensors logged it as weather.";
+            }
+            else if (run.Result == RunResult.Outpaced)
+                story = "Venn did not need to win. He needed to hold the gate until everyone else had gone through it, and he has. The Sixth Verdict is recalled to Lumen to explain the delay in person.";
+            else
+                story = RunRules.ConcordAhead(run)
+                    ? "The last signal from the Sixth Verdict is logged, numbered and filed. The Concord reaches the gate unopposed."
+                    : "The last signal from the Sixth Verdict is logged, numbered and filed. Another hull is already being fitted with her name.";
+            Ui.Body(d, story, 22, 80, 156, 940, 130, TextAlignmentOptions.Top);
+
+            var stats = new[]
+            {
+                ("Nodes crossed", run.NodesVisited.ToString()), ("Battles won", run.BattlesWon.ToString()), ("Turns fought", run.TurnsFought.ToString()),
+                ("Scrap", run.Scrap.ToString()), ("Ordinals left", run.Ordinals.ToString()), ("Score", RunRules.Score(run).ToString()),
+            };
+            for (int i = 0; i < stats.Length; i++)
+            {
+                float x = 110 + (i % 3) * 300, y = 310 + (i / 3) * 86;
+                Ui.Stamp(d, stats[i].Item1, 13, x, y, 280, 18);
+                Ui.Number(d, stats[i].Item2, 38, x, y + 20, 280, 46, TextAlignmentOptions.Left, i == stats.Length - 1 ? Skin.Brass : Skin.Text);
+            }
+            Ui.Stamp(d, $"Seed {run.Seed}", 13, 110, 500, 400, 18);
+            var lines = run.Journal.Skip(System.Math.Max(0, run.Journal.Count - 4));
+            Ui.Body(d, string.Join("\n", lines), 15, 110, 524, 880, 90, TextAlignmentOptions.TopLeft, Skin.Dim);
+
+            Ui.Btn(d, "New run", 250, 650, 280, 70, () => { long seed = Game.RandomSeed(); Game.AbandonRun(); Game.NewRun(seed); }, 34);
+            Ui.Btn(d, "Main menu", 570, 650, 280, 70, () => { Game.AbandonRun(); Game.ToMenu(); }, 34);
+        }
+    }
+
+    static class UnitSpecExtensions
+    {
+        public static bool IsCapitalSpec(this UnitSpec s) => s.Kind == UnitKind.Capital;
+    }
+}

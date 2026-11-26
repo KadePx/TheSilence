@@ -67,7 +67,7 @@ namespace Silence.View
         public static Sprite Plate => Get("plate", () => MakePlate(128, 12, PlateHi, PlateLo, true, Hex("4a4e59"), 24));
 
         /// <summary>Recessed dark well for data. 9-sliced.</summary>
-        public static Sprite Well => Get("well", () => MakePlate(32, 5, WellColor, Hex("101116"), false, Hex("05060a"), 10));
+        public static Sprite Well => Get("well", () => MakePlate(64, 5, WellColor, Hex("101116"), false, Hex("05060a"), 10));
 
         /// <summary>Chamfered steel button, tinted by state. 9-sliced, drawn in greys so Image.color sets the metal.</summary>
         public static Sprite Button => Get("button", () => MakePlate(40, 8, Hex("ffffff"), Hex("b9b9b9"), false, Hex("ffffff"), 14));
