@@ -83,9 +83,113 @@ namespace Silence.Core.Run
                 PlaceNemesis(r, c, rng, 2);
                 if (r.Nemesis.FellBack) r.ConcordProgress = before; // a map with no lane for them: no head start for it
             }
+            // The Prime's orders for this sector: two are read out, one is taken.
+            r.Edict = new EdictState();
+            r.EdictChoices.Clear();
+            if (c.Edicts.Count > 0)
+            {
+                var pool = c.Edicts.Where(e => e.Kind != "kill_commander" || r.Nemesis.Hunting).ToList();
+                rng.Shuffle(pool);
+                r.EdictChoices = pool.Take(2).Select(e => e.Id).ToList();
+            }
             // Hazards: some of the fights past the opening are in a storm, a nebula or a dense field, and pay more for it.
             foreach (var n in r.Nodes)
                 if ((n.Kind == NodeKind.Battle || n.Kind == NodeKind.Elite) && n.Layer >= 2 && rng.Chance(cfg.HazardChance)) n.Hazard = rng.Pick(Hazards.All);
+        }
+
+        // ================================================================ edicts
+
+        /// <summary>Take one of the Edicts read out for this sector. There is no declining both.</summary>
+        public static string AcceptEdict(RunState r, RunContent c, int index)
+        {
+            if (index < 0 || index >= r.EdictChoices.Count) return "no such Edict";
+            r.Edict = new EdictState { Id = r.EdictChoices[index] };
+            r.EdictChoices.Clear();
+            r.Journal.Add($"Edict of the Prime: {c.Edict(r.Edict.Id).Name}.");
+            return null;
+        }
+
+        /// <summary>How the Edict in force stands, for the screen: "6 of 10 Ordinals expended", "Broken", "So far obeyed".</summary>
+        public static string EdictProgress(RunState r, RunContent c)
+        {
+            if (string.IsNullOrEmpty(r.Edict.Id)) return "";
+            var e = c.Edict(r.Edict.Id);
+            if (r.Edict.Verdict == 1) return "Obeyed";
+            if (r.Edict.Verdict == 2 || r.Edict.Failed) return "Broken";
+            switch (e.Kind)
+            {
+                case "expend": return $"{Math.Min(r.Edict.Progress, e.Amount)} of {e.Amount} Ordinals expended";
+                case "austerity": return $"{r.Edict.Progress} of {e.Amount} yard services used";
+                case "win_elite": return r.Edict.Progress > 0 ? "Done" : "No elite beaten yet";
+                case "kill_commander": return CommanderDead(r) ? "Done" : "The commander lives";
+                case "arrive_first": return ConcordAhead(r) ? $"The {c.Faction.RivalName} is ahead" : "You are ahead";
+                default: return "So far obeyed";
+            }
+        }
+
+        /// <summary>This sector's commander has been destroyed (not dodged, not driven off).</summary>
+        static bool CommanderDead(RunState r) => !string.IsNullOrEmpty(r.Nemesis.Id) && !r.Nemesis.Alive;
+
+        /// <summary>Would the Edict be judged obeyed if the fleet reached the gate now?</summary>
+        public static bool EdictObeyed(RunState r, RunContent c)
+        {
+            if (string.IsNullOrEmpty(r.Edict.Id) || r.Edict.Failed) return false;
+            var e = c.Edict(r.Edict.Id);
+            switch (e.Kind)
+            {
+                case "expend": return r.Edict.Progress >= e.Amount;
+                case "austerity": return r.Edict.Progress <= e.Amount;
+                case "win_elite": return r.Edict.Progress > 0;
+                case "kill_commander": return CommanderDead(r);
+                case "arrive_first": return !ConcordAhead(r);
+                default: return true; // no_standoff, keep_escort: obeyed unless broken
+            }
+        }
+
+        /// <summary>The gate is reached: the Edict is judged, and paid for either way.</summary>
+        static void JudgeEdict(RunState r, RunContent c)
+        {
+            if (!r.Edict.InForce) return;
+            var e = c.Edict(r.Edict.Id);
+            if (EdictObeyed(r, c))
+            {
+                r.Edict.Verdict = 1;
+                r.Scrap += e.RewardScrap;
+                if (e.RewardMaxOrdinals > 0)
+                {
+                    r.MaxOrdinals += e.RewardMaxOrdinals;
+                    r.Ordinals = r.MaxOrdinals;
+                }
+                if (e.RewardHull > 0)
+                {
+                    r.Flagship.MaxHull += e.RewardHull;
+                    r.Flagship.Hull += e.RewardHull;
+                }
+                if (e.RewardRelic)
+                {
+                    var pool = c.Relics.Where(x => !x.Trophy && !r.Relics.Contains(x.Id)).ToList();
+                    if (pool.Count > 0) GainRelic(r, c, pool[(int)(((ulong)r.Seed + (ulong)r.Sector * 17UL + (ulong)r.Relics.Count) % (ulong)pool.Count)].Id);
+                }
+                r.Journal.Add($"The Edict was obeyed: {e.Name}. Lumen is pleased, in the way that it is.");
+            }
+            else
+            {
+                r.Edict.Verdict = 2;
+                r.Ordinals = Math.Max(0, r.Ordinals - c.Config.EdictPenaltyOrdinals);
+                r.Deck.Add(new DeckCard("inquisitor_aboard", -1));
+                r.Journal.Add($"The Edict was broken: {e.Name}. An Inquisitor has come aboard to find out why.");
+            }
+        }
+
+        /// <summary>What obeying the Edict earns, in a line.</summary>
+        public static string EdictReward(RunContent c, EdictDef e)
+        {
+            var parts = new List<string>();
+            if (e.RewardScrap > 0) parts.Add($"+{e.RewardScrap} scrap");
+            if (e.RewardMaxOrdinals > 0) parts.Add($"+{e.RewardMaxOrdinals} maximum Ordinals, vats refilled");
+            if (e.RewardHull > 0) parts.Add($"flagship +{e.RewardHull} max hull");
+            if (e.RewardRelic) parts.Add("a relic");
+            return string.Join(", ", parts);
         }
 
         // ================================================================ between sectors
@@ -231,10 +335,10 @@ namespace Silence.Core.Run
                 switch (n.Kind)
                 {
                     case NodeKind.Battle:
-                        n.Encounter = PickEncounter(c, rng, n.Layer <= 1 ? 0 : 1);
+                        n.Encounter = PickEncounter(c, rng, n.Layer <= 1 ? 0 : 1, r.Sector);
                         break;
                     case NodeKind.Elite:
-                        n.Encounter = PickEncounter(c, rng, 2);
+                        n.Encounter = PickEncounter(c, rng, 2, r.Sector);
                         break;
                     case NodeKind.Boss:
                         n.Encounter = PickGate(c, rng, r.Sector);
@@ -348,9 +452,11 @@ namespace Silence.Core.Run
             return rng.Pick(pool).Id;
         }
 
-        static string PickEncounter(RunContent c, Pcg32 rng, int tier)
+        static string PickEncounter(RunContent c, Pcg32 rng, int tier, int sector = 1)
         {
-            var pool = c.Encounters.Where(e => e.Tier == tier).ToList();
+            // Fights written for this sector first; a sector with none of its own at this tier borrows the first sector's.
+            var pool = c.Encounters.Where(e => e.Tier == tier && Math.Max(1, e.Sector) == sector).ToList();
+            if (pool.Count == 0) pool = c.Encounters.Where(e => e.Tier == tier && e.Sector <= 1).ToList();
             if (pool.Count == 0) pool = c.Encounters.Where(e => e.Tier <= 1).ToList();
             return rng.Pick(pool).Id;
         }
@@ -404,6 +510,7 @@ namespace Silence.Core.Run
         public static string Travel(RunState r, RunContent c, int nodeId)
         {
             if (r.Phase != RunPhase.Map) return "finish what is in front of you first";
+            if (r.EdictChoices.Count > 0) AcceptEdict(r, c, 0); // an Edict not chosen is chosen for you
             var node = Choices(r).Find(n => n.Id == nodeId);
             if (node == null) return "that node is not connected to your position";
 
@@ -454,6 +561,8 @@ namespace Silence.Core.Run
                 PlaceNemesis(r, c, rng, node.Layer + 2);
                 r.Journal.Add($"{c.Nemesis(nem.Id).Name} was left behind, and has moved to cut you off.");
             }
+
+            if (node.Kind == NodeKind.Boss) JudgeEdict(r, c);
 
             switch (node.Kind)
             {
@@ -785,6 +894,14 @@ namespace Silence.Core.Run
             r.Reward = new RewardOffer();
             r.BattleNumber++;
             r.TurnsFought += b.Turn;
+            if (r.Edict.InForce)
+            {
+                string order = c.Edict(r.Edict.Id).Kind;
+                if (order == "expend") r.Edict.Progress += b.OrdinalsExpended;
+                if (order == "no_standoff" && b.Outcome == BattleOutcome.Withdrawal) r.Edict.Failed = true;
+                if (order == "win_elite" && b.Outcome == BattleOutcome.Victory && enc.Tier == 2) r.Edict.Progress++;
+                if (order == "keep_escort" && b.Units.Any(u => u.Side == Side.Player && u.IsCapital && !u.IsFlagship && !u.Alive)) r.Edict.Failed = true;
+            }
             r.Ordinals = Math.Max(0, b.Ordinals);
             if (b.DartsInHangar >= 0) r.Darts = Math.Min(r.MaxDarts, b.DartsInHangar + b.PlayerCraftCount());
 
@@ -1378,6 +1495,7 @@ namespace Silence.Core.Run
         public static string LeaveShipyard(RunState r, RunContent c)
         {
             if (r.Phase != RunPhase.Shipyard) return "not at a shipyard";
+            if (r.Edict.InForce && c.Edict(r.Edict.Id).Kind == "austerity") r.Edict.Progress += r.Shop.Purchases;
             int delay = r.Shop.Purchases * c.Config.ShipyardDelayPerPurchase;
             r.ConcordProgress += delay;
             r.ChorusProgress += delay;

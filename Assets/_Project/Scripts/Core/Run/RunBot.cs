@@ -32,6 +32,17 @@ namespace Silence.Core.Run
             {
                 case RunPhase.Map:
                 {
+                    if (r.EdictChoices.Count > 0)
+                    {
+                        string[] easiest = { "expend", "keep_escort", "no_standoff", "win_elite", "arrive_first", "austerity", "kill_commander" };
+                        int pick = 0, best = int.MaxValue;
+                        for (int i = 0; i < r.EdictChoices.Count; i++)
+                        {
+                            int rank = System.Array.IndexOf(easiest, c.Edict(r.EdictChoices[i]).Kind);
+                            if (rank >= 0 && rank < best) { best = rank; pick = i; }
+                        }
+                        RunRules.AcceptEdict(r, c, pick);
+                    }
                     // The Council first: mend the fleet when it is hurt, see to the wounded, otherwise bank the approval.
                     for (int i = 0; i < c.Motions.Count; i++)
                     {

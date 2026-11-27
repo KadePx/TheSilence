@@ -224,6 +224,8 @@ namespace Silence.Core.Run
         public int Sectors = 1, SectorHullPercent = 25, SectorDamage = 1;
         /// <summary>Percent of missing hull every ship gets back in the gate yards between sectors.</summary>
         public int SectorRepairPercent = 60;
+        /// <summary>Failing an Edict: Ordinals taken for the audit, and an Inquisitor comes aboard (a junk card).</summary>
+        public int EdictPenaltyOrdinals = 4;
         /// <summary>Shipyard service: the sickbay returns one wounded officer to duty.</summary>
         public int HealOfficerCost = 15;
         public List<string> StarterModules = new List<string>();
@@ -255,6 +257,25 @@ namespace Silence.Core.Run
         /// <summary>Commission a new officer from those not aboard.</summary>
         public bool Officer;
         public bool HealOfficers;
+    }
+
+    /// <summary>
+    /// An order from the Prime for one sector. It is always obeyed or failed, never declined: two are read out and
+    /// the fleet takes one. It is judged on arriving at the gate.
+    /// </summary>
+    public sealed class EdictDef
+    {
+        public string Id;
+        public string Name;
+        /// <summary>The order as the Prime words it, and what it means in play.</summary>
+        public string Decree = "", Text = "";
+        /// <summary>"expend" (Ordinals spent in battle), "no_standoff", "kill_commander", "arrive_first",
+        /// "austerity" (at most Amount yard services), "win_elite", "keep_escort".</summary>
+        public string Kind = "";
+        public int Amount;
+        /// <summary>On success: scrap, more room in the vats (and they are filled), flagship hull, a relic.</summary>
+        public int RewardScrap, RewardMaxOrdinals, RewardHull;
+        public bool RewardRelic;
     }
 
     /// <summary>A sector after the first: its name, its look, who holds its gate and what is said on arriving.</summary>
@@ -322,9 +343,11 @@ namespace Silence.Core.Run
         public List<HailReply> HailReplies = new List<HailReply>();
         public List<OfficerDef> Officers = new List<OfficerDef>();
         public List<MotionDef> Motions = new List<MotionDef>();
+        public List<EdictDef> Edicts = new List<EdictDef>();
 
         public EncounterDef Encounter(string id) => Encounters.Find(e => e.Id == id) ?? throw new ArgumentException($"unknown encounter '{id}'");
         public EventDef Event(string id) => Events.Find(e => e.Id == id) ?? throw new ArgumentException($"unknown event '{id}'");
+        public EdictDef Edict(string id) => Edicts.Find(x => x.Id == id) ?? throw new ArgumentException($"unknown edict '{id}'");
         public OfficerDef Officer(string id) => Officers.Find(x => x.Id == id) ?? throw new ArgumentException($"unknown officer '{id}'");
         public RelicDef Relic(string id) => Relics.Find(x => x.Id == id) ?? throw new ArgumentException($"unknown relic '{id}'");
         public NemesisDef Nemesis(string id) => Nemeses.Find(x => x.Id == id) ?? throw new ArgumentException($"unknown nemesis '{id}'");

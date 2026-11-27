@@ -26,6 +26,8 @@ namespace Silence.Core.Battle
         EndOfTurnLoseOrdinals,
         /// <summary>Jammed Mount: when drawn, a weapon card in hand costs +1 this turn.</summary>
         OnDrawJamWeapon,
+        /// <summary>Inquisitor Aboard: when drawn, lose 1 command this turn.</summary>
+        OnDrawLoseCommand,
     }
 
     /// <summary>Static definition of a card: cost, targeting and a list of composable effect blocks.</summary>

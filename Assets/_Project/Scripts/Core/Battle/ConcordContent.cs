@@ -179,6 +179,18 @@ namespace Silence.Core.Battle
             IntentStep.Of(IntentKind.LaunchCraft, 2), IntentStep.Fire("Grand Lance", 14, Arc.Fore, 5),
             IntentStep.Of(IntentKind.Maneuver), IntentStep.Of(IntentKind.JointFire), IntentStep.Fire("Broadside", 8, Sides, 3));
 
+        // ---- the Kessane Drift: the Prime's second line ----
+
+        /// <summary>A Blade refitted with a short lance: it reaches a hex further than you expect a Blade to.</summary>
+        public static UnitSpec EnemyLancer => Named("asc_blade",
+            UnitSpec.Capital("Blade lancer", 12, 1, 1, 1, 0, 2, 1, 0, 0, 3, AiProfile.Frigate),
+            IntentStep.Of(IntentKind.Maneuver), IntentStep.Fire("Short lance", 8, Arc.Fore, 4));
+
+        /// <summary>A bastion cruiser: slow, plated all round, and it fires its broadside two turns in three.</summary>
+        public static UnitSpec EnemyBastion => Named("asc_cruiser",
+            UnitSpec.Capital("Bastion cruiser", 26, 3, 3, 3, 1, 4, 1, 0, 0, 1, AiProfile.Frigate),
+            IntentStep.Fire("Broadside", 8, Sides, 3), IntentStep.Fire("Broadside", 8, Sides, 3), IntentStep.Of(IntentKind.Maneuver));
+
         /// <summary>Gate of the second sector on the Concord's route: the Archon's own ship. Its lance reaches most of the field.</summary>
         public static UnitSpec HandOfThePrime => Named("asc_handoftheprime",
             UnitSpec.Capital("Hand of the Prime", 46, 3, 2, 2, 1, 4, 1, 0, 0, 1, AiProfile.Carrier),
@@ -213,6 +225,8 @@ namespace Silence.Core.Battle
                 case "asc_cruiser": return EnemyCruiser;
                 case "asc_warden": return EnemyWarden;
                 case "asc_dart": return EnemyDart;
+                case "asc_lancer": return EnemyLancer;
+                case "asc_bastion": return EnemyBastion;
                 case "ninth_sentence": return NinthSentence;
                 case "hand_of_the_prime": return HandOfThePrime;
                 case "final_tally": return FinalTally;

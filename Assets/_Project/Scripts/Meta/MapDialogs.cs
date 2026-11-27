@@ -22,7 +22,7 @@ namespace Silence.Meta
             var roster = RunRules.Roster(run, content, enc);
             int rows = roster.Select(u => u.Unit).Distinct().Count();
             float w = boss ? 1180 : 980;
-            float h = 116 + (boss ? Mathf.Max((run.VennEnraged ? 150 : 110) + 36 + 64 + 22 + rows * 48, 340) : 64 + 22 + rows * 48 + (enc.Tier == 5 ? 44 : 0) + (run.PendingHazard != "" && enc.Tier <= 2 ? 48 : 0)) + 130;
+            float h = 116 + (boss ? Mathf.Max((run.VennEnraged ? 150 : 110) + 36 + 64 + 22 + rows * 48 + (EdictVerdictLine() != "" ? 48 : 0), 340) : 64 + 22 + rows * 48 + (enc.Tier == 5 ? 44 : 0) + (run.PendingHazard != "" && enc.Tier <= 2 ? 48 : 0)) + 130;
             var d = OpenDialog(w, h);
             string tier = boss ? "Sector boss" : enc.Tier == 5 ? "Nemesis" : enc.Tier == 2 ? "Elite battle" : enc.Tier == 4 ? "Ambush" : "Battle";
             Ui.Stamp(d, tier, 14, 40, 26, 400, 20, TextAlignmentOptions.Left, enc.Tier >= 2 ? Skin.Bad : Skin.Brass);
@@ -65,6 +65,11 @@ namespace Silence.Meta
                     Ui.Body(d, $"<color=#c9a24a>{reply.Tag}:</color> {RunRules.HailEffect(content, reply)}.", 16, textX, y, textW, 40);
                     y += 44;
                 }
+            }
+            if (boss && EdictVerdictLine() != "")
+            {
+                Ui.Body(d, EdictVerdictLine(), 16, textX, y, textW, 40);
+                y += 48;
             }
             if (boss)
             {

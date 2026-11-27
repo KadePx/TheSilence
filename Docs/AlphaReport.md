@@ -746,3 +746,55 @@ old robed ranks). 50 generations; 829.6 of the 1,000 are spent.
 
 Not checked in the running game: the editor was in Play Mode when the files were swapped, so they were left to
 re-import on their own. Both replace existing files under the same names.
+
+## Edicts of the Prime, and the Drift's own fights
+
+### Edicts
+
+The Concord has its Council; the Ascendancy now has the thing the spec gives it: orders it cannot refuse.
+
+- At the start of each sector two Edicts are read out and you take one. Leaving without choosing takes the first.
+- There are seven: expend 10 Ordinals in battle, end no battle in a stand-off, destroy the commander who hunts you,
+  reach the gate ahead of the Concord, buy no more than 2 shipyard services, win an elite, do not lose the escort.
+  Each is written twice: the Prime's wording, and what it means in play.
+- The Edict in force sits under the fleet cards with how it stands (for example "6 of 10 Ordinals expended"), in green,
+  amber or red. Hovering it gives the order, the reward and the penalty.
+- It is **judged on arriving at the gate**, before that fight. Obeyed, it pays: scrap, more room in the vats, flagship
+  hull or a relic, depending on the Edict. Broken, 4 Ordinals are taken and an **Inquisitor comes aboard**: a junk card
+  that costs 1 command every time it is drawn, until a shipyard strips it out. The gate briefing says which it was.
+- The second sector brings a new pair.
+
+### The Kessane Drift's own fights
+
+The second sector no longer reuses the first sector's battles with more hull. It has eight fights of its own for each
+faction, with their own briefings and aftermath lines, built around four new ship types (on existing hulls):
+
+- Against the Ascendancy: the Concord **line frigate** (two broadsides in three turns, no torpedo) and **torpedo skiff**.
+- Against the Concord: the Ascendancy **Blade lancer** (a Blade that reaches 4 hexes) and **bastion cruiser** (slow,
+  plated on every side, two broadsides in three turns).
+
+The flat 12 percent hull bonus in the second sector is gone: the Drift is harder because of what is in it.
+
+### Numbers (200 bot runs each, two sectors)
+
+| | Ascendancy | Concord |
+| --- | --- | --- |
+| Runs won / fleet lost / outpaced | 38 / 111 / 51 | 60 / 90 / 50 |
+
+About where they were before this round (44 and 64). The Ascendancy is still the harder side for the bot: 27 fleets
+die at Dray's gate and 20 at Venn's.
+
+### How it was checked
+
+225 EditMode tests pass, 10 of them new (`EdictTests.cs`): each kind of Edict is counted and judged as it says, the
+penalty and the Inquisitor card, a new Edict per sector, every Drift fight opening in reach and playable to an end, and
+neither sector borrowing the other's fights. On screen: the Edict choice, and the Edict panel with its tooltip
+(`ArtSource/Screenshots/m5_edict_*.png`). The autopilot played a run through both sectors with an Edict in force and
+no errors. The redrawn Ordinals icon was seen in the top bar in the same session.
+
+### Still open
+
+- The new ship types reuse the frigate, skiff, Blade and cruiser sprites.
+- An Edict is judged only at the gate; nothing tells you mid-sector that one has just become impossible beyond the
+  panel turning red.
+- The bot picks the Edict it is most likely to keep and does not play toward it, so how often a person keeps one is unknown.

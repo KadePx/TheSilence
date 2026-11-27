@@ -46,6 +46,8 @@ namespace Silence.Core.Battle
         public int HandSize = 5;
         /// <summary>Fleet-wide Ascendancy crew. At 0 nothing can be Expended and every card costs +1.</summary>
         public int Ordinals = 24;
+        /// <summary>Ordinals spent on Expend costs this battle (an Edict can ask for them).</summary>
+        public int OrdinalsExpended;
         public bool WaymindPrimed;
         /// <summary>Darts left aboard to launch. Losses carry over between battles; -1 = unlimited.</summary>
         public int DartsInHangar = -1;
@@ -275,6 +277,7 @@ namespace Silence.Core.Battle
             if (expend)
             {
                 Ordinals -= def.ExpendCost;
+                OrdinalsExpended += def.ExpendCost;
                 Emit(EventKind.Ordinals, -1, -1, -def.ExpendCost, $"Expend {def.ExpendCost} Ordinals ({Ordinals} left)");
             }
             Deck.Hand.Remove(card);
@@ -535,6 +538,11 @@ namespace Silence.Core.Battle
                 Deck.Hand.Add(c);
                 Emit(EventKind.CardDrawn, c.SourceId, -1, c.Id, $"Draw {c.Def.Name}");
                 if (c.Def.Junk == JunkTrigger.OnDrawJamWeapon) jams++;
+                if (c.Def.Junk == JunkTrigger.OnDrawLoseCommand && Command > 0)
+                {
+                    Command--;
+                    Emit(EventKind.Command, -1, -1, -1, $"{c.Def.Name}: 1 command lost to the audit ({Command} left)");
+                }
             }
 
             for (int j = 0; j < jams; j++)

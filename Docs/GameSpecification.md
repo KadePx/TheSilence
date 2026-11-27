@@ -454,6 +454,8 @@ The next step is the paper prototype (M0); nothing goes into Unity until combat 
 - A commander who has met you before can be taunted: they do not break off and hit 1 harder. Commanders with a scar show a scarred portrait.
 - Music is four synthesized loops (menu, map, battle, hunt), cross-faded by screen; volume is in Settings.
 - A run is two sectors (the Ion Reef, then the Kessane Drift); `sectors` in the run file sets how many. Between sectors the fleet is fully mended and takes one of three relics; the race carries over as a lead of at most 1.5 nodes; a surviving commander follows, a dead one is replaced. Enemy capital ships have 12 percent more hull per sector past the first; gate fights are written per sector and not scaled.
+- Edicts (Ascendancy): two are read out at the start of each sector and one is taken. Judged on arriving at the gate: obeyed pays the Edict's reward; broken costs 4 Ordinals and adds Inquisitor Aboard (junk: lose 1 command when drawn).
+- A sector uses the encounters written for it (`sector` on the encounter) and borrows the first sector's only where it has none at that tier. The flat hull bonus per sector is 0 now that the Drift has its own fights.
 - Each faction's run is its own set of content files; rules that differ between factions are data in the `faction` block, not branches in code.
 
 ### Open questions

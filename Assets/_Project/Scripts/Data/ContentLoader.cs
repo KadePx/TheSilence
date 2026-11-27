@@ -63,7 +63,7 @@ namespace Silence.Data
             public int withdrawalDelay, longBattleTurns, longBattleDelay, shipyardDelayPerPurchase;
             public int flagshipRebuildOrdinals, flagshipRebuildMaxHullLoss;
             public int jumpLanes, jumpHullCost, mineLead, mineDamage, nemesisSlow, nemesisDodgeDelay, nemesisFleePercent, nemesisRankHull;
-            public int hailEdictDamage, hailEdictScrapPercent, hailBoardTurns, sabotageCost, sabotageAmount, healOfficerCost, hazardChance, hazardScrapPercent, eventsPerSector, sectors, sectorHullPercent, sectorDamage, sectorRepairPercent;
+            public int hailEdictDamage, hailEdictScrapPercent, hailBoardTurns, sabotageCost, sabotageAmount, healOfficerCost, hazardChance, hazardScrapPercent, eventsPerSector, edictPenaltyOrdinals, sectors, sectorHullPercent, sectorDamage, sectorRepairPercent;
             public string[] slots;
             public string[] starterModules;
             public CardDto[] starterCards;
@@ -97,7 +97,15 @@ namespace Silence.Data
 
         [Serializable] class SectorDto { public string name, mapArt, battleArt, bossName, bossShip, bossPortrait, bossHail, bossHailEnraged, arrival, winAhead, winBehind, outpaced; }
 
-        [Serializable] class RunDto { public FactionDto faction; public ConfigDto config; public ModuleDto[] modules; public RewardDto[] rewards; public OfficerDto[] officers; public MotionDto[] motions; }
+        [Serializable]
+        class EdictDto
+        {
+            public string id, name, decree, text, kind;
+            public int amount, rewardScrap, rewardMaxOrdinals, rewardHull;
+            public bool rewardRelic;
+        }
+
+        [Serializable] class RunDto { public EdictDto[] edicts; public FactionDto faction; public ConfigDto config; public ModuleDto[] modules; public RewardDto[] rewards; public OfficerDto[] officers; public MotionDto[] motions; }
 
         static void ReadRun(string json, RunContent content)
         {
@@ -128,6 +136,12 @@ namespace Silence.Data
                     Id = o.id, Name = o.name, Role = o.role ?? "", Text = o.text ?? "", RepairBonus = o.repairBonus, WeaponBonus = o.weaponBonus,
                     CraftBonus = o.craftBonus, FirstTurnDraw = o.firstTurnDraw, CrewPerVictory = o.crewPerVictory, ShieldBonus = o.shieldBonus,
                 });
+            foreach (var e in dto.edicts ?? new EdictDto[0])
+                content.Edicts.Add(new EdictDef
+                {
+                    Id = e.id, Name = e.name, Decree = e.decree ?? "", Text = e.text ?? "", Kind = e.kind ?? "", Amount = e.amount,
+                    RewardScrap = e.rewardScrap, RewardMaxOrdinals = e.rewardMaxOrdinals, RewardHull = e.rewardHull, RewardRelic = e.rewardRelic,
+                });
             foreach (var m in dto.motions ?? new MotionDto[0])
                 content.Motions.Add(new MotionDef
                 {
@@ -151,7 +165,7 @@ namespace Silence.Data
                 NemesisSlow = c.nemesisSlow, NemesisDodgeDelay = c.nemesisDodgeDelay, NemesisFleePercent = c.nemesisFleePercent, NemesisRankHull = c.nemesisRankHull,
                 HailEdictDamage = c.hailEdictDamage, HailEdictScrapPercent = c.hailEdictScrapPercent, HailBoardTurns = c.hailBoardTurns,
                 SabotageCost = c.sabotageCost, SabotageAmount = c.sabotageAmount, HealOfficerCost = c.healOfficerCost > 0 ? c.healOfficerCost : 15,
-                HazardChance = c.hazardChance, HazardScrapPercent = c.hazardScrapPercent > 0 ? c.hazardScrapPercent : 130, EventsPerSector = c.eventsPerSector,
+                HazardChance = c.hazardChance, HazardScrapPercent = c.hazardScrapPercent > 0 ? c.hazardScrapPercent : 130, EventsPerSector = c.eventsPerSector, EdictPenaltyOrdinals = c.edictPenaltyOrdinals > 0 ? c.edictPenaltyOrdinals : 4,
                 Sectors = Math.Max(1, c.sectors), SectorHullPercent = c.sectorHullPercent, SectorDamage = c.sectorDamage,
                 SectorRepairPercent = c.sectorRepairPercent > 0 ? c.sectorRepairPercent : 60,
                 Slots = new List<string>(c.slots), StarterModules = new List<string>(c.starterModules),

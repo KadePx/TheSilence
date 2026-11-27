@@ -449,6 +449,335 @@
      "facing": "W"
     }
    ]
+  },
+  {
+   "id": "drift_pickets",
+   "name": "Drift Pickets",
+   "tier": 0,
+   "sector": 2,
+   "scrap": 26,
+   "turnLimit": 0,
+   "intro": "A line frigate and a skiff watching the wrecks. The frigate fires its broadside twice before it moves again.",
+   "aftermath": "The frigate's bell was cast from a piece of the Open Question. It rang once when she broke up.",
+   "units": [
+    {
+     "unit": "line_frigate",
+     "col": 8,
+     "row": 2,
+     "speed": 2,
+     "facing": "W"
+    },
+    {
+     "unit": "skiff",
+     "col": 8,
+     "row": 4,
+     "speed": 2,
+     "facing": "W"
+    },
+    {
+     "unit": "gunship",
+     "col": 8,
+     "row": 6,
+     "speed": 0,
+     "facing": "W"
+    }
+   ],
+   "terrain": [],
+   "scatterAsteroids": 1,
+   "scatterDebris": 2,
+   "reinforcements": []
+  },
+  {
+   "id": "drift_scavengers",
+   "name": "Salvage Runners",
+   "tier": 0,
+   "sector": 2,
+   "scrap": 26,
+   "turnLimit": 0,
+   "intro": "Torpedo skiffs working the old battlefield. They launch, run, and come back for more.",
+   "aftermath": "Their holds were full of name-plates cut from the hulks. Somebody is keeping count.",
+   "units": [
+    {
+     "unit": "torpedo_skiff",
+     "col": 8,
+     "row": 1,
+     "speed": 2,
+     "facing": "W"
+    },
+    {
+     "unit": "torpedo_skiff",
+     "col": 8,
+     "row": 5,
+     "speed": 2,
+     "facing": "W"
+    },
+    {
+     "unit": "skiff",
+     "col": 7,
+     "row": 2,
+     "speed": 2,
+     "facing": "W"
+    }
+   ],
+   "terrain": [],
+   "scatterAsteroids": 2,
+   "scatterDebris": 2,
+   "reinforcements": []
+  },
+  {
+   "id": "drift_line",
+   "name": "The Kessane Line",
+   "tier": 1,
+   "sector": 2,
+   "scrap": 34,
+   "turnLimit": 0,
+   "intro": "Two line frigates abreast, holding the lane their mothers held. Do not sail between them.",
+   "aftermath": "They held formation to the end. It is the same formation the wrecks around them are still in.",
+   "units": [
+    {
+     "unit": "line_frigate",
+     "col": 8,
+     "row": 2,
+     "speed": 2,
+     "facing": "W"
+    },
+    {
+     "unit": "line_frigate",
+     "col": 8,
+     "row": 4,
+     "speed": 2,
+     "facing": "W"
+    },
+    {
+     "unit": "gunship",
+     "col": 8,
+     "row": 1,
+     "speed": 0,
+     "facing": "W"
+    },
+    {
+     "unit": "gunship",
+     "col": 8,
+     "row": 5,
+     "speed": 0,
+     "facing": "W"
+    }
+   ],
+   "terrain": [
+    {
+     "col": 4,
+     "row": 3,
+     "asteroid": true
+    }
+   ],
+   "scatterAsteroids": 1,
+   "scatterDebris": 2,
+   "reinforcements": []
+  },
+  {
+   "id": "drift_torpedo_run",
+   "name": "Torpedo Run",
+   "tier": 1,
+   "sector": 2,
+   "scrap": 34,
+   "turnLimit": 0,
+   "intro": "A frigate with a torpedo skiff on each wing. Three launches a cycle: keep your flak for them.",
+   "aftermath": "The skiff crews were boys. The Concord is running out of anyone else.",
+   "units": [
+    {
+     "unit": "frigate",
+     "col": 8,
+     "row": 3,
+     "speed": 2,
+     "facing": "W"
+    },
+    {
+     "unit": "torpedo_skiff",
+     "col": 7,
+     "row": 1,
+     "speed": 2,
+     "facing": "W"
+    },
+    {
+     "unit": "torpedo_skiff",
+     "col": 7,
+     "row": 5,
+     "speed": 2,
+     "facing": "W"
+    }
+   ],
+   "terrain": [],
+   "scatterAsteroids": 2,
+   "scatterDebris": 2,
+   "reinforcements": []
+  },
+  {
+   "id": "drift_repair_yard",
+   "name": "Field Yard",
+   "tier": 1,
+   "sector": 2,
+   "scrap": 36,
+   "turnLimit": 0,
+   "intro": "A tender mending a line frigate among the hulks. Whatever you do not finish, it will.",
+   "aftermath": "The yard had been raising a carrier from the wrecks, frame by frame. It was nearly done.",
+   "units": [
+    {
+     "unit": "tender",
+     "col": 8,
+     "row": 3,
+     "speed": 1,
+     "facing": "W"
+    },
+    {
+     "unit": "line_frigate",
+     "col": 7,
+     "row": 1,
+     "speed": 2,
+     "facing": "W"
+    },
+    {
+     "unit": "gunship",
+     "col": 7,
+     "row": 5,
+     "speed": 0,
+     "facing": "W"
+    }
+   ],
+   "terrain": [],
+   "scatterAsteroids": 1,
+   "scatterDebris": 2,
+   "reinforcements": []
+  },
+  {
+   "id": "drift_wolves",
+   "name": "Grave Wolves",
+   "tier": 1,
+   "sector": 2,
+   "scrap": 34,
+   "turnLimit": 0,
+   "intro": "Three skiffs and a frigate, hunting from behind the dead ships.",
+   "aftermath": "They had painted the names of the Kessane dead on their hulls. There was not room for all of them.",
+   "units": [
+    {
+     "unit": "frigate",
+     "col": 8,
+     "row": 3,
+     "speed": 2,
+     "facing": "W"
+    },
+    {
+     "unit": "skiff",
+     "col": 7,
+     "row": 1,
+     "speed": 2,
+     "facing": "W"
+    },
+    {
+     "unit": "skiff",
+     "col": 7,
+     "row": 5,
+     "speed": 2,
+     "facing": "W"
+    },
+    {
+     "unit": "torpedo_skiff",
+     "col": 8,
+     "row": 6,
+     "speed": 2,
+     "facing": "W"
+    }
+   ],
+   "terrain": [],
+   "scatterAsteroids": 3,
+   "scatterDebris": 2,
+   "reinforcements": []
+  },
+  {
+   "id": "drift_squadron",
+   "name": "Remembrance Squadron",
+   "tier": 2,
+   "sector": 2,
+   "scrap": 58,
+   "turnLimit": 0,
+   "intro": "A carrier with a line frigate and a skiff, raised for one purpose. You are the purpose.",
+   "aftermath": "The carrier's flight deck was a memorial. Every gunship carried a name. You have added to the list.",
+   "units": [
+    {
+     "unit": "carrier",
+     "col": 8,
+     "row": 3,
+     "speed": 1,
+     "facing": "W"
+    },
+    {
+     "unit": "line_frigate",
+     "col": 7,
+     "row": 1,
+     "speed": 2,
+     "facing": "W"
+    },
+    {
+     "unit": "skiff",
+     "col": 7,
+     "row": 5,
+     "speed": 2,
+     "facing": "W"
+    }
+   ],
+   "terrain": [
+    {
+     "col": 4,
+     "row": 3,
+     "asteroid": true
+    }
+   ],
+   "scatterAsteroids": 0,
+   "scatterDebris": 2,
+   "reinforcements": []
+  },
+  {
+   "id": "drift_avengers",
+   "name": "The Avengers of Kessane",
+   "tier": 2,
+   "sector": 2,
+   "scrap": 60,
+   "turnLimit": 0,
+   "intro": "Two line frigates and a torpedo skiff, sworn to the wreck of the Open Question.",
+   "aftermath": "The oath they swore is logged, numbered and filed. So are they.",
+   "units": [
+    {
+     "unit": "line_frigate",
+     "col": 8,
+     "row": 2,
+     "speed": 2,
+     "facing": "W"
+    },
+    {
+     "unit": "line_frigate",
+     "col": 8,
+     "row": 4,
+     "speed": 2,
+     "facing": "W"
+    },
+    {
+     "unit": "torpedo_skiff",
+     "col": 7,
+     "row": 0,
+     "speed": 2,
+     "facing": "W"
+    },
+    {
+     "unit": "gunship",
+     "col": 8,
+     "row": 6,
+     "speed": 0,
+     "facing": "W"
+    }
+   ],
+   "terrain": [],
+   "scatterAsteroids": 2,
+   "scatterDebris": 2,
+   "reinforcements": []
   }
  ]
 }

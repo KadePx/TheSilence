@@ -69,6 +69,18 @@ namespace Silence.Core.Battle
             IntentStep.Fire("Mass Driver", 12, Arc.Fore, 6), IntentStep.Of(IntentKind.LaunchCraft, 2), IntentStep.Fire("Broadside", 8, Sides, 3),
             IntentStep.Of(IntentKind.JointFire), IntentStep.Of(IntentKind.PatchUp, 4), IntentStep.Of(IntentKind.Maneuver));
 
+        // ---- the Kessane Drift: what is left of the Concord's line, and it has had eleven years to think ----
+
+        /// <summary>A line frigate: no torpedoes, two broadsides in three turns.</summary>
+        public static UnitSpec LineFrigate => Cycled("con_outrider",
+            UnitSpec.Capital("Line frigate", 20, 2, 1, 1, 1, 3, 1, 0, 0, 2, AiProfile.Frigate),
+            IntentStep.Of(IntentKind.Maneuver), IntentStep.Fire("Broadside", 9, Sides, 3), IntentStep.Fire("Broadside", 9, Sides, 3));
+
+        /// <summary>A torpedo skiff: it launches, runs, and comes back to launch again.</summary>
+        public static UnitSpec TorpedoSkiff => Cycled("con_skiff",
+            UnitSpec.Capital("Torpedo skiff", 9, 0, 0, 0, 0, 2, 1, 0, 0, 3, AiProfile.Frigate),
+            IntentStep.Of(IntentKind.LaunchTorpedo), IntentStep.Of(IntentKind.Maneuver), IntentStep.Fire("Fore guns", 5, Arc.Fore, 3));
+
         public static UnitSpec Torpedo
         {
             get
@@ -112,6 +124,8 @@ namespace Silence.Core.Battle
                 case "venn": return PaperUnits.VennFlagship;
                 case "torpedo": return PaperUnits.Torpedo;
                 case "common_cause": return PaperUnits.CommonCause;
+                case "line_frigate": return PaperUnits.LineFrigate;
+                case "torpedo_skiff": return PaperUnits.TorpedoSkiff;
                 case "quiet_ledger": return PaperUnits.QuietLedger;
                 case "open_hand": return PaperUnits.OpenHand;
                 case "menders_oath": return PaperUnits.MendersOath;
@@ -344,6 +358,12 @@ namespace Silence.Core.Battle
             Text = "When drawn, a weapon card in hand costs +1 this turn.", Junk = JunkTrigger.OnDrawJamWeapon,
         };
 
+        public static readonly CardDef InquisitorAboard = new CardDef
+        {
+            Id = "inquisitor_aboard", Name = "Inquisitor Aboard", Cost = 0, Type = CardType.Junk, Unplayable = true,
+            Text = "Unplayable. When drawn, lose 1 command this turn: every order is read twice.", Junk = JunkTrigger.OnDrawLoseCommand,
+        };
+
         /// <summary>The starter deck: (card, source) with source 0 = flagship, 1 = escort.</summary>
         public static readonly (CardDef card, int source)[] Starter =
         {
@@ -371,7 +391,7 @@ namespace Silence.Core.Battle
             ColdDiscipline, ScreeningManeuver, DartSortie, FlakLattice,
             ComeAbout, ShortLance, RakingBeam, PurgeTheirDecks, HoldTheLine, ScryTheVoid, SealTheDecks,
             Redline, ThermalPurge,
-            HullBreach, FireOnDeck, JammedMount,
+            HullBreach, FireOnDeck, JammedMount, InquisitorAboard,
         };
 
         public static CardDef Get(string id)

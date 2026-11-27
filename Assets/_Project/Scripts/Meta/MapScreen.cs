@@ -120,6 +120,7 @@ namespace Silence.Meta
                 case RunPhase.SectorClear: ShowSectorClear(); break;
                 case RunPhase.Map:
                     if (!run.BriefingSeen && run.CurrentNode < 0) ShowBriefing();
+                    else if (run.EdictChoices.Count > 0) ShowEdictChoice();
                     break;
             }
         }
@@ -199,6 +200,7 @@ namespace Silence.Meta
                 }
             }
 
+            y = EdictPanel(y);
             y = OfficerPanel(y);
             y = RelicShelf(y);
             Ui.Btn(fleetRoot, $"Deck - {run.Deck.Count} cards", 0, y, FleetW, 40, ShowDeck, 16);

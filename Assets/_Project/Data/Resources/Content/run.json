@@ -135,9 +135,10 @@
   "hazardScrapPercent": 130,
   "eventsPerSector": 5,
   "sectors": 2,
-  "sectorHullPercent": 12,
+  "sectorHullPercent": 0,
   "sectorDamage": 0,
-  "sectorRepairPercent": 100
+  "sectorRepairPercent": 100,
+  "edictPenaltyOrdinals": 4
  },
  "modules": [
   {
@@ -451,6 +452,66 @@
    "requiresModule": "",
    "weight": 9,
    "price": 45
+  }
+ ],
+ "edicts": [
+  {
+   "id": "tithe_of_blood",
+   "name": "The Tithe of Blood",
+   "kind": "expend",
+   "amount": 10,
+   "decree": "The vats are full. See that they are emptied to some purpose.",
+   "text": "Expend 10 Ordinals in battle before you reach the gate.",
+   "rewardMaxOrdinals": 4
+  },
+  {
+   "id": "no_quarter",
+   "name": "No Quarter",
+   "kind": "no_standoff",
+   "decree": "A fleet that breaks contact has confessed. Finish what you begin.",
+   "text": "End no battle in a stand-off before the gate.",
+   "rewardScrap": 45
+  },
+  {
+   "id": "the_hunt",
+   "name": "The Named Shall Be Unnamed",
+   "kind": "kill_commander",
+   "decree": "One of theirs has been permitted a reputation. Correct this.",
+   "text": "Destroy the commander who hunts you before you reach the gate.",
+   "rewardRelic": true
+  },
+  {
+   "id": "first_through",
+   "name": "First Through the Gate",
+   "kind": "arrive_first",
+   "decree": "The Prime is not to learn of the gate from anyone else.",
+   "text": "Reach the gate ahead of the Concord.",
+   "rewardScrap": 50
+  },
+  {
+   "id": "austerity",
+   "name": "An Audit of Stores",
+   "kind": "austerity",
+   "amount": 2,
+   "decree": "Dockyards are for the wounded and the idle. You are neither.",
+   "text": "Buy no more than 2 shipyard services before the gate. Darts and false beacons are not counted.",
+   "rewardScrap": 40
+  },
+  {
+   "id": "cull_the_strong",
+   "name": "Cull the Strong",
+   "kind": "win_elite",
+   "decree": "Their best ships are known to us by name. Bring fewer names back.",
+   "text": "Win an elite battle before you reach the gate.",
+   "rewardHull": 5
+  },
+  {
+   "id": "no_blade_lost",
+   "name": "Nothing Wasted",
+   "kind": "keep_escort",
+   "decree": "A hull lost without instruction is a theft from the Prime.",
+   "text": "Do not lose your escort in battle before the gate.",
+   "rewardScrap": 40
   }
  ]
 }

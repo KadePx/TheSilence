@@ -71,6 +71,21 @@ namespace Silence.Core.Run
         public List<string> RelicChoices = new List<string>();
     }
 
+    /// <summary>The Edict in force this sector and how it stands.</summary>
+    [Serializable]
+    public sealed class EdictState
+    {
+        public string Id = "";
+        /// <summary>Counted toward the order (Ordinals expended, yard services bought, elites won).</summary>
+        public int Progress;
+        /// <summary>Broken past mending (a stand-off under No Quarter, the escort lost).</summary>
+        public bool Failed;
+        /// <summary>Judged at the gate: 0 not yet, 1 obeyed, 2 failed.</summary>
+        public int Verdict;
+
+        public bool InForce => !string.IsNullOrEmpty(Id) && Verdict == 0;
+    }
+
     /// <summary>An officer aboard the flagship. Wounded officers give nothing until a yard or a Council motion sees to them.</summary>
     [Serializable]
     public sealed class OfficerState
@@ -171,6 +186,9 @@ namespace Silence.Core.Run
         /// <summary>Council approval (factions that vote): earned by winning, spent on motions.</summary>
         public int Approval;
         public List<OfficerState> Officers = new List<OfficerState>();
+        public EdictState Edict = new EdictState();
+        /// <summary>Edicts read out at the start of a sector; one has to be taken before the first jump.</summary>
+        public List<string> EdictChoices = new List<string>();
         public NemesisState Nemesis = new NemesisState();
         /// <summary>Relic ids held. Their effects are numbers in the relic definitions.</summary>
         public List<string> Relics = new List<string>();

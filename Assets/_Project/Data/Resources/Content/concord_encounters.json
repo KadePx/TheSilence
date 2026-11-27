@@ -455,6 +455,335 @@
      "facing": "W"
     }
    ]
+  },
+  {
+   "id": "drift_asc_pickets",
+   "name": "Reclamation Pickets",
+   "tier": 0,
+   "sector": 2,
+   "scrap": 26,
+   "turnLimit": 0,
+   "intro": "A Blade lancer and a Blade, cataloguing the wrecks for the Prime. The lancer reaches four hexes.",
+   "aftermath": "Their catalogue lists the Kessane dead as recoverable material, by weight.",
+   "units": [
+    {
+     "unit": "asc_lancer",
+     "col": 8,
+     "row": 2,
+     "speed": 2,
+     "facing": "W"
+    },
+    {
+     "unit": "asc_blade",
+     "col": 8,
+     "row": 4,
+     "speed": 2,
+     "facing": "W"
+    },
+    {
+     "unit": "asc_dart",
+     "col": 8,
+     "row": 6,
+     "speed": 0,
+     "facing": "W"
+    }
+   ],
+   "terrain": [],
+   "scatterAsteroids": 1,
+   "scatterDebris": 2,
+   "reinforcements": []
+  },
+  {
+   "id": "drift_asc_scouts",
+   "name": "Lance Scouts",
+   "tier": 0,
+   "sector": 2,
+   "scrap": 26,
+   "turnLimit": 0,
+   "intro": "Two Blade lancers ranging ahead. Thin, fast, and they hit from further than a Blade should.",
+   "aftermath": "Neither ship carried a lifeboat. The fitting had been removed to save mass.",
+   "units": [
+    {
+     "unit": "asc_lancer",
+     "col": 8,
+     "row": 1,
+     "speed": 2,
+     "facing": "W"
+    },
+    {
+     "unit": "asc_lancer",
+     "col": 8,
+     "row": 5,
+     "speed": 2,
+     "facing": "W"
+    },
+    {
+     "unit": "asc_dart",
+     "col": 8,
+     "row": 3,
+     "speed": 0,
+     "facing": "W"
+    }
+   ],
+   "terrain": [],
+   "scatterAsteroids": 2,
+   "scatterDebris": 2,
+   "reinforcements": []
+  },
+  {
+   "id": "drift_asc_line",
+   "name": "Bastion Line",
+   "tier": 1,
+   "sector": 2,
+   "scrap": 34,
+   "turnLimit": 0,
+   "intro": "A bastion cruiser with a lancer at her shoulder. She is plated on every side and fires twice before she moves.",
+   "aftermath": "The bastion's crew stood at their posts in vacuum for an hour before anyone told them to stop.",
+   "units": [
+    {
+     "unit": "asc_bastion",
+     "col": 8,
+     "row": 3,
+     "speed": 1,
+     "facing": "W"
+    },
+    {
+     "unit": "asc_lancer",
+     "col": 7,
+     "row": 1,
+     "speed": 2,
+     "facing": "W"
+    },
+    {
+     "unit": "asc_dart",
+     "col": 7,
+     "row": 5,
+     "speed": 0,
+     "facing": "W"
+    }
+   ],
+   "terrain": [
+    {
+     "col": 4,
+     "row": 3,
+     "asteroid": true
+    }
+   ],
+   "scatterAsteroids": 1,
+   "scatterDebris": 2,
+   "reinforcements": []
+  },
+  {
+   "id": "drift_asc_pack",
+   "name": "Reclaimers",
+   "tier": 1,
+   "sector": 2,
+   "scrap": 34,
+   "turnLimit": 0,
+   "intro": "Two Blades and two lancers stripping the old Concord hulks. They will not let you interrupt.",
+   "aftermath": "They were cutting the name off the Open Question when you arrived. They had got as far as the second word.",
+   "units": [
+    {
+     "unit": "asc_blade",
+     "col": 8,
+     "row": 2,
+     "speed": 2,
+     "facing": "W"
+    },
+    {
+     "unit": "asc_blade",
+     "col": 8,
+     "row": 4,
+     "speed": 2,
+     "facing": "W"
+    },
+    {
+     "unit": "asc_lancer",
+     "col": 7,
+     "row": 0,
+     "speed": 2,
+     "facing": "W"
+    },
+    {
+     "unit": "asc_lancer",
+     "col": 7,
+     "row": 6,
+     "speed": 2,
+     "facing": "W"
+    }
+   ],
+   "terrain": [],
+   "scatterAsteroids": 3,
+   "scatterDebris": 2,
+   "reinforcements": []
+  },
+  {
+   "id": "drift_asc_vats",
+   "name": "Vat Convoy",
+   "tier": 1,
+   "sector": 2,
+   "scrap": 36,
+   "turnLimit": 0,
+   "intro": "A vat-warden under the guns of a bastion cruiser. Darts in threes, and nowhere soft to hit.",
+   "aftermath": "The vats were seeded with tissue taken from the Kessane wrecks. Some of the faces would have been familiar.",
+   "units": [
+    {
+     "unit": "asc_warden",
+     "col": 8,
+     "row": 3,
+     "speed": 1,
+     "facing": "W"
+    },
+    {
+     "unit": "asc_bastion",
+     "col": 7,
+     "row": 5,
+     "speed": 1,
+     "facing": "W"
+    },
+    {
+     "unit": "asc_dart",
+     "col": 7,
+     "row": 1,
+     "speed": 0,
+     "facing": "W"
+    }
+   ],
+   "terrain": [],
+   "scatterAsteroids": 1,
+   "scatterDebris": 2,
+   "reinforcements": []
+  },
+  {
+   "id": "drift_asc_lances",
+   "name": "Three Lances",
+   "tier": 1,
+   "sector": 2,
+   "scrap": 34,
+   "turnLimit": 0,
+   "intro": "A lance-cruiser and two lancers. Every one of them shoots forward: do not be in front of all three.",
+   "aftermath": "Their firing solution on you was eleven years old. It had been waiting in the archive.",
+   "units": [
+    {
+     "unit": "asc_cruiser",
+     "col": 8,
+     "row": 3,
+     "speed": 2,
+     "facing": "W"
+    },
+    {
+     "unit": "asc_lancer",
+     "col": 7,
+     "row": 1,
+     "speed": 2,
+     "facing": "W"
+    },
+    {
+     "unit": "asc_lancer",
+     "col": 7,
+     "row": 5,
+     "speed": 2,
+     "facing": "W"
+    }
+   ],
+   "terrain": [],
+   "scatterAsteroids": 2,
+   "scatterDebris": 2,
+   "reinforcements": []
+  },
+  {
+   "id": "drift_asc_purge",
+   "name": "The Purge Detail",
+   "tier": 2,
+   "sector": 2,
+   "scrap": 58,
+   "turnLimit": 0,
+   "intro": "A bastion, a lance-cruiser and a lancer, sent to leave nothing in the Drift that remembers.",
+   "aftermath": "Their orders were to erase the battlefield. The Council votes to leave them in it.",
+   "units": [
+    {
+     "unit": "asc_bastion",
+     "col": 8,
+     "row": 3,
+     "speed": 1,
+     "facing": "W"
+    },
+    {
+     "unit": "asc_cruiser",
+     "col": 7,
+     "row": 1,
+     "speed": 2,
+     "facing": "W"
+    },
+    {
+     "unit": "asc_lancer",
+     "col": 7,
+     "row": 5,
+     "speed": 2,
+     "facing": "W"
+    },
+    {
+     "unit": "asc_dart",
+     "col": 8,
+     "row": 6,
+     "speed": 0,
+     "facing": "W"
+    }
+   ],
+   "terrain": [
+    {
+     "col": 4,
+     "row": 3,
+     "asteroid": true
+    }
+   ],
+   "scatterAsteroids": 0,
+   "scatterDebris": 2,
+   "reinforcements": []
+  },
+  {
+   "id": "drift_asc_tithe",
+   "name": "The Second Harvest",
+   "tier": 2,
+   "sector": 2,
+   "scrap": 60,
+   "turnLimit": 0,
+   "intro": "A vat-warden, a lance-cruiser and two Blades come back to Kessane for what the first harvest left.",
+   "aftermath": "There was nothing left on Kessane to harvest. They had been sent anyway.",
+   "units": [
+    {
+     "unit": "asc_warden",
+     "col": 8,
+     "row": 3,
+     "speed": 1,
+     "facing": "W"
+    },
+    {
+     "unit": "asc_cruiser",
+     "col": 7,
+     "row": 1,
+     "speed": 2,
+     "facing": "W"
+    },
+    {
+     "unit": "asc_blade",
+     "col": 7,
+     "row": 5,
+     "speed": 2,
+     "facing": "W"
+    },
+    {
+     "unit": "asc_blade",
+     "col": 8,
+     "row": 6,
+     "speed": 2,
+     "facing": "W"
+    }
+   ],
+   "terrain": [],
+   "scatterAsteroids": 2,
+   "scatterDebris": 2,
+   "reinforcements": []
   }
  ]
 }

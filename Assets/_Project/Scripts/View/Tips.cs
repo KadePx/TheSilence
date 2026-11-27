@@ -68,6 +68,8 @@ namespace Silence.View
                 Text = "Some fights are in bad space. Ion storm: nobody's shields regenerate. Nebula: every weapon on both sides reaches 1 hex less. Dense field: twice the rock. A hazard fight pays more salvage." },
             new Term { Id = "nemesis", Colour = Danger, Title = "The commander hunting you", Pattern = @"nemesis|commander|grudge|rank III|rank II|rank I\b|breaks? off|broke off",
                 Text = "One rival commander hunts each run. Below rank III their ship breaks off when it is badly hurt, after the enemy has acted, and comes back a rank higher and refitted against whatever hurt it most. Kill it in one turn from above that line, or taunt a returning commander into staying. Rank III fights to the end." },
+            new Term { Id = "edict", Colour = "fff0b8", Title = "Edict of the Prime", Pattern = @"Edicts? of the Prime|Edicts?|Inquisitor Aboard|Inquisitors?",
+                Text = "An order from the Prime for this sector, judged when you reach the gate. Two are read out and you take one. Obeyed, it pays what it promised. Broken, an Inquisitor comes aboard: a junk card that costs 1 command every time you draw it, until a shipyard strips it out." },
             new Term { Id = "elite", Colour = Danger, Title = "Elite", Pattern = @"elite",
                 Text = "A harder fight. It offers one more card, and two relics to choose between." },
             new Term { Id = "heat", Colour = Heat, Title = "Heat", Pattern = @"heat cap|Heat|heat", CaseSensitive = true,
