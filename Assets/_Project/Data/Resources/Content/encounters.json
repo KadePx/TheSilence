@@ -394,6 +394,61 @@
    "scatterAsteroids": 2,
    "scatterDebris": 3,
    "aftermath": "The escort is gone. The convoy has stopped running; there is nowhere left for it to run to."
+  },
+  {
+   "id": "dray",
+   "name": "The Common Cause",
+   "tier": 3,
+   "sector": 2,
+   "scrap": 0,
+   "turnLimit": 45,
+   "intro": "The Common Cause holds the Kessane gate with a frigate and a skiff. Her Mass Driver reaches six hexes down her bow.",
+   "units": [
+    {
+     "unit": "common_cause",
+     "col": 8,
+     "row": 3,
+     "speed": 1,
+     "facing": "W"
+    },
+    {
+     "unit": "frigate",
+     "col": 7,
+     "row": 1,
+     "speed": 2,
+     "facing": "W"
+    },
+    {
+     "unit": "skiff",
+     "col": 7,
+     "row": 5,
+     "speed": 2,
+     "facing": "W"
+    }
+   ],
+   "terrain": [
+    {
+     "col": 4,
+     "row": 3,
+     "asteroid": true
+    },
+    {
+     "col": 5,
+     "row": 6,
+     "asteroid": false
+    }
+   ],
+   "scatterAsteroids": 1,
+   "scatterDebris": 2,
+   "reinforcements": [
+    {
+     "unit": "frigate",
+     "col": 7,
+     "row": 6,
+     "speed": 2,
+     "facing": "W"
+    }
+   ]
   }
  ]
 }

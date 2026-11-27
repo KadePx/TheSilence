@@ -60,20 +60,92 @@ namespace Silence.Core.Run
             r.Approval = c.Faction.StartApproval;
             foreach (string id in c.Faction.StarterOfficers) r.Officers.Add(new OfficerState { Id = c.Officer(id).Id });
 
+            if (c.Nemeses.Count > 0) r.Nemesis = new NemesisState { Id = rng.Pick(c.Nemeses).Id, Alive = true };
+            BuildSector(r, c, rng);
+            Keep(r, rng);
+            r.Journal.Add(c.Faction.OpeningJournal);
+            return r;
+        }
+
+        /// <summary>Lay out the sector the fleet is entering: a new map, its jump lanes, where the commander waits, its hazards.</summary>
+        static void BuildSector(RunState r, RunContent c, Pcg32 rng)
+        {
+            var cfg = c.Config;
+            r.Nodes.Clear();
+            r.CurrentNode = -1;
             GenerateMap(r, c, rng);
             AddJumpLanes(r, cfg, rng);
-            if (c.Nemeses.Count > 0)
+            if (r.Nemesis.Alive && r.Nemesis.Id != "")
             {
-                r.Nemesis = new NemesisState { Id = rng.Pick(c.Nemeses).Id, Alive = true };
+                int before = r.ConcordProgress;
+                r.Nemesis.FellBack = false;
+                r.Nemesis.Node = -1;
                 PlaceNemesis(r, c, rng, 2);
-                if (r.Nemesis.FellBack) r.ConcordProgress = cfg.ConcordStart; // a map with no lane for them: no head start for it
+                if (r.Nemesis.FellBack) r.ConcordProgress = before; // a map with no lane for them: no head start for it
             }
             // Hazards: some of the fights past the opening are in a storm, a nebula or a dense field, and pay more for it.
             foreach (var n in r.Nodes)
                 if ((n.Kind == NodeKind.Battle || n.Kind == NodeKind.Elite) && n.Layer >= 2 && rng.Chance(cfg.HazardChance)) n.Hazard = rng.Pick(Hazards.All);
+        }
+
+        // ================================================================ between sectors
+
+        /// <summary>
+        /// The gate has fallen and there is another sector beyond it. The fleet is patched up in the gate's own yards,
+        /// the race carries over as a lead (nobody is more than a node and a half ahead or behind), and there is one
+        /// thing worth taking from the wreck of the gate fleet.
+        /// </summary>
+        static void ClearSector(RunState r, RunContent c, Pcg32 rng)
+        {
+            var cfg = c.Config;
+            foreach (var ship in r.Ships.Where(x => x.Alive)) ship.Hull += (ship.MaxHull - ship.Hull) * cfg.SectorRepairPercent / 100;
+            foreach (var o in r.Officers) o.Wounded = false;
+            r.Deck.RemoveAll(d => d.Ship < 0);
+            // The gate's yards are yours for a day: a lost escort is replaced, the hangar and the crew are made up.
+            if (r.Escort != null && !r.Escort.Alive)
+            {
+                r.Escort.Alive = true;
+                r.Escort.Hull = r.Escort.MaxHull;
+            }
+            r.Darts = r.MaxDarts;
+            r.Ordinals = r.MaxOrdinals;
+            var pool = c.Relics.Where(x => !x.Trophy && !r.Relics.Contains(x.Id)).ToList();
+            rng.Shuffle(pool);
+            r.SectorRelics = pool.Take(3).Select(x => x.Id).ToList();
+            r.Reward.Active = false;
+            r.Shop.Active = false;
+            r.Phase = RunPhase.SectorClear;
+        }
+
+        /// <summary>Take one of the relics on offer between sectors (-1 for none) and jump into the next sector.</summary>
+        public static string EnterNextSector(RunState r, RunContent c, int relicIndex)
+        {
+            if (r.Phase != RunPhase.SectorClear) return "the gate is not open";
+            if (relicIndex >= r.SectorRelics.Count) return "no such relic";
+            if (relicIndex < 0 && r.SectorRelics.Count > 0) return "take something from the wreck first";
+            if (relicIndex >= 0) GainRelic(r, c, r.SectorRelics[relicIndex]);
+            r.SectorRelics.Clear();
+
+            var rng = Rng(r);
+            int Lead(int progress) => Math.Max(-15, Math.Min(15, progress - r.PlayerProgress));
+            int rival = Lead(r.ConcordProgress), third = Lead(r.ChorusProgress);
+            r.Sector++;
+            r.PlayerProgress = 0;
+            r.ConcordProgress = Math.Max(0, rival);
+            r.ChorusProgress = Math.Max(0, third);
+            r.VennEnraged = false;
+            r.RivalPassed = r.ThirdPassed = false;
+            // A dead commander is replaced by another who has heard what happened; a live one is back on your trail.
+            if (!r.Nemesis.Alive && c.Nemeses.Count > 1)
+            {
+                var others = c.Nemeses.Where(n => n.Id != r.Nemesis.Id).ToList();
+                r.Nemesis = new NemesisState { Id = rng.Pick(others).Id, Alive = true };
+            }
+            BuildSector(r, c, rng);
             Keep(r, rng);
-            r.Journal.Add(c.Faction.OpeningJournal);
-            return r;
+            r.Journal.Add($"{c.Faction.SectorInfo(r.Sector).Name}.");
+            r.Phase = RunPhase.Map;
+            return null;
         }
 
         // ================================================================ map
@@ -85,6 +157,8 @@ namespace Silence.Core.Run
             var events = c.Events.Select(e => e.Id).ToList();
             rng.Shuffle(events);
             // Only some of the written events turn up in any one sector: the rest are for another run.
+            // A later sector draws on the events the fleet has not met yet, before any it has.
+            events = events.Where(e => !r.SeenEvents.Contains(e)).Concat(events.Where(e => r.SeenEvents.Contains(e))).ToList();
             if (c.Config.EventsPerSector > 0 && events.Count > c.Config.EventsPerSector) events.RemoveRange(c.Config.EventsPerSector, events.Count - c.Config.EventsPerSector);
             int nextEvent = 0;
 
@@ -150,6 +224,9 @@ namespace Silence.Core.Run
             }
 
             foreach (var n in r.Nodes)
+                if (n.Kind == NodeKind.Event && !r.SeenEvents.Contains(n.Event)) r.SeenEvents.Add(n.Event);
+
+            foreach (var n in r.Nodes)
             {
                 switch (n.Kind)
                 {
@@ -160,7 +237,7 @@ namespace Silence.Core.Run
                         n.Encounter = PickEncounter(c, rng, 2);
                         break;
                     case NodeKind.Boss:
-                        n.Encounter = PickEncounter(c, rng, 3);
+                        n.Encounter = PickGate(c, rng, r.Sector);
                         break;
                 }
             }
@@ -261,6 +338,14 @@ namespace Silence.Core.Run
             n.FellBack = true;
             r.ConcordProgress += c.Config.NemesisDodgeDelay;
             r.Journal.Add($"{c.Nemesis(n.Id).Name} has gone back to the Concord main fleet, and told it where you are.");
+        }
+
+        /// <summary>The gate fight of a sector: the one written for it, or failing that any gate fight.</summary>
+        static string PickGate(RunContent c, Pcg32 rng, int sector)
+        {
+            var pool = c.Encounters.Where(e => e.Tier == 3 && Math.Max(1, e.Sector) == sector).ToList();
+            if (pool.Count == 0) pool = c.Encounters.Where(e => e.Tier == 3).ToList();
+            return rng.Pick(pool).Id;
         }
 
         static string PickEncounter(RunContent c, Pcg32 rng, int tier)
@@ -421,6 +506,7 @@ namespace Silence.Core.Run
             var b = new Battle.Battle(seed) { Title = enc.Name, Ordinals = r.Ordinals, DartsInHangar = r.Darts };
             if (enc.TurnLimit > 0) b.TurnLimit = enc.TurnLimit;
             b.CrewName = c.Faction.CrewName;
+            b.Backdrop = c.Faction.SectorInfo(r.Sector).BattleArt;
             string hazard = enc.Tier <= 2 ? r.PendingHazard ?? "" : "";
             b.Hazard = Hazards.Name(hazard);
             b.HazardText = Hazards.Text(hazard);
@@ -491,10 +577,15 @@ namespace Silence.Core.Run
                 ids[i] = unit.Id;
             }
 
+            // Deeper in, the line ships are better found: more hull, and outside the gate fights every hit lands harder.
+            int deeper = Math.Max(0, r.Sector - 1);
+            if (enc.Tier != 3) b.EnemyDamageBonus += deeper * cfg.SectorDamage;
             foreach (var u in units)
             {
                 var spec = UnitLibrary.Get(u.Unit);
                 bool commander = u.Unit == commanderShip;
+                // (The commander grows by rank, not by sector, and the gate fights are written for their sector.)
+                if (enc.Tier != 3 && !commander && spec.Kind == UnitKind.Capital) spec.Hull += spec.Hull * deeper * cfg.SectorHullPercent / 100;
                 if (commander)
                 {
                     spec.Hull += (nem.Rank - 1) * cfg.NemesisRankHull;
@@ -525,11 +616,11 @@ namespace Silence.Core.Run
                 }
                 if (r.PendingHail == "edict")
                 {
-                    b.EnemyDamageBonus = cfg.HailEdictDamage;
+                    b.EnemyDamageBonus += cfg.HailEdictDamage;
                     b.EnemyFocusFlagship = true;
                 }
                 else if (r.PendingHail == "fire") b.FirstTurnCommand++;
-                else if (r.PendingHail == "taunt") b.EnemyDamageBonus = cfg.HailTauntDamage;
+                else if (r.PendingHail == "taunt") b.EnemyDamageBonus += cfg.HailTauntDamage;
             }
 
             foreach (var card in r.Deck)
@@ -772,7 +863,8 @@ namespace Silence.Core.Run
             if (enc.Tier == 3)
             {
                 r.Journal.Add($"{enc.Name}: the gate is open after {b.Turn} turns.");
-                End(r, RunResult.Victory);
+                if (r.Sector < cfg.Sectors) ClearSector(r, c, rng);
+                else End(r, RunResult.Victory);
                 Keep(r, rng);
                 return;
             }
@@ -1298,7 +1390,7 @@ namespace Silence.Core.Run
 
         public static int Score(RunState r)
         {
-            int score = r.BattlesWon * 50 + r.NodesVisited * 10 + r.Scrap + r.Relics.Count * 25;
+            int score = r.BattlesWon * 50 + r.NodesVisited * 10 + r.Scrap + r.Relics.Count * 25 + (r.Sector - 1) * 300;
             if (r.Nemesis.LastOutcome == NemesisOutcome.Killed) score += 100;
             if (r.Result == RunResult.Victory)
             {

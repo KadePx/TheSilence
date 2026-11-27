@@ -17,7 +17,7 @@ for (int seed = 1; seed <= N; seed++)
 {
     var r = RunRules.NewRun(seed, c);
     bool mined = false;
-    for (int step = 0; step < 220 && r.Phase != RunPhase.Over; step++)
+    for (int step = 0; step < 520 && r.Phase != RunPhase.Over; step++)
     {
         if (r.Phase == RunPhase.Map)
         {

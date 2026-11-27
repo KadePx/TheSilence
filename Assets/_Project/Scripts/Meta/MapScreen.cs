@@ -40,7 +40,10 @@ namespace Silence.Meta
             var canvas = Ui.Canvas("Map");
             canvas.transform.SetParent(transform, false);
             root = Ui.Root(canvas);
-            Ui.Backdrop(root, "starmap_bg_sector1", new Color(0.72f, 0.72f, 0.8f));
+            shownSector = run.Sector;
+            string mapArt = content.Faction.SectorInfo(run.Sector).MapArt;
+            // The Drift's broken world is bright: it is held back further so the nodes still read against it.
+            Ui.Backdrop(root, ArtLibrary.Instance.Sprite(mapArt) != null ? mapArt : "starmap_bg_sector1", run.Sector > 1 ? new Color(0.56f, 0.56f, 0.64f) : new Color(0.72f, 0.72f, 0.8f));
 
             mapRoot = Ui.Box(root, "Map", 0, 0, Ui.RefW, Ui.RefH);
             var top = Ui.Img(root, "TopBar", Skin.Header, 0, 0, Ui.RefW, TopH, Color.white, true);
@@ -85,8 +88,16 @@ namespace Silence.Meta
             Refresh();
         }
 
+        int shownSector;
+
         public void Refresh()
         {
+            // A new sector has its own sky: load the map again rather than repaint this one.
+            if (run.Sector != shownSector)
+            {
+                UnityEngine.SceneManagement.SceneManager.LoadScene(Game.MapScene);
+                return;
+            }
             RefreshTop();
             RefreshFleet();
             RefreshTrack();
@@ -103,6 +114,7 @@ namespace Silence.Meta
                 case RunPhase.EventResult: ShowEventResult(); break;
                 case RunPhase.Shipyard: ShowShipyard(); break;
                 case RunPhase.Over: ShowRunOver(); break;
+                case RunPhase.SectorClear: ShowSectorClear(); break;
                 case RunPhase.Map:
                     if (!run.BriefingSeen && run.CurrentNode < 0) ShowBriefing();
                     break;
@@ -113,7 +125,7 @@ namespace Silence.Meta
         {
             if (!string.IsNullOrEmpty(notice)) return $"<color=#f0a040>{notice}</color>";
             if (run.Phase != RunPhase.Map) return "";
-            if (run.CurrentNode < 0) return "Choose where to enter the Ion Reef. Brass rings mark the nodes you can reach.";
+            if (run.CurrentNode < 0) return "Choose where to enter the sector. Brass rings mark the nodes you can reach.";
             if (RunRules.LanesMined(run, content))
                 return $"<color=#d9573f>The {content.Faction.RivalName} is ahead and has mined the lanes: every jump costs each ship {content.Config.MineDamage} hull until you catch up.</color> Jump lanes are clear.";
             return "Choose the next node. Every jump moves the rival fleets along the track above.";
@@ -128,7 +140,7 @@ namespace Silence.Meta
         {
             Ui.Clear(topRoot);
             var f = content.Faction;
-            Ui.Heading(topRoot, f.SectorName, 16, 28, 18, 520, 20);
+            Ui.Heading(topRoot, f.SectorInfo(run.Sector).Name, 16, 28, 18, 520, 20);
             float x = 560;
             x = Resource(x, "res_scrap", "Scrap", run.Scrap.ToString(), Skin.Brass);
             x = Resource(x, CrewIcon, f.CrewName, $"{run.Ordinals}/{run.MaxOrdinals}", Skin.Cyan);

@@ -71,6 +71,52 @@ namespace Silence.Meta
             }
         }
 
+        /// <summary>
+        /// Between sectors: the gate is taken, the fleet has been through its yards, and there is one thing to carry
+        /// off before the jump. What lies beyond is told here, like an event.
+        /// </summary>
+        void ShowSectorClear()
+        {
+            var next = content.Faction.SectorInfo(run.Sector + 1);
+            const float w = 1500, h = 810;
+            var d = OpenDialog(w, h, 0.86f);
+            var well = Ui.Well(d, "ArtWell", 34, 34, 700, 396);
+            var art = ArtLibrary.Instance.Sprite(next.MapArt) ?? ArtLibrary.Instance.Sprite("event_wrecks");
+            if (art != null)
+            {
+                // The next sector's sky, cropped to the well at its own size.
+                var mask = Ui.Box(well.transform, "Mask", 6, 6, 688, 384);
+                mask.gameObject.AddComponent<UnityEngine.UI.RectMask2D>();
+                Ui.Img(mask, "Art", art, 0, 0, art.rect.width, art.rect.height);
+            }
+            Ui.Stamp(d, "The gate is yours", 12, 760, 34, 700, 14, TextAlignmentOptions.Left, Skin.Brass);
+            Ui.Heading(d, next.Name, 32, 758, 56, 700, 36);
+            var text = Ui.Label(d, next.Arrival, Skin.Body, 16, Skin.Text, 760, 116, 700, 240, TextAlignmentOptions.TopLeft);
+            text.lineSpacing = 20f;
+            Ui.Body(d, $"<color=#8cc47a>In the gate's yards: every hull mended, a lost escort replaced, junk stripped, the wounded back on duty, {content.Faction.CraftName} and {content.Faction.CrewName.ToLowerInvariant()} made up.</color>",
+                16, 760, 362, 700, 60, TextAlignmentOptions.TopLeft);
+
+            Ui.Stamp(d, run.SectorRelics.Count > 0 ? "From the wreck of the gate fleet - take one" : "Nothing left worth taking", 12, 40, 458, 800, 14, TextAlignmentOptions.Left, Skin.Brass);
+            for (int i = 0; i < run.SectorRelics.Count; i++)
+            {
+                var relic = content.Relic(run.SectorRelics[i]);
+                int index = i;
+                var b = Ui.Btn(d, "", 40 + i * 478, 484, 464, 250, () => NextSector(index));
+                Ui.Art(b.transform, ArtOr(relic.Icon, "icon_relic"), 184, 18, 2f).raycastTarget = false;
+                Ui.Heading(b.transform, relic.Name, 16, 20, 126, 424, 20, TextAlignmentOptions.Center, Skin.Hex("ffc46a"));
+                Ui.Body(b.transform, relic.Text, 16, 30, 160, 404, 80, TextAlignmentOptions.Top, Skin.Text);
+            }
+            if (run.SectorRelics.Count == 0) Ui.Btn(d, "Jump", (w - 320) / 2f, 560, 320, 70, () => NextSector(-1), 32);
+            Ui.Body(d, "Choosing one takes the fleet through the gate. The race carries over: nobody starts more than a node and a half apart.", 16, 40, h - 56, w - 80, 16, TextAlignmentOptions.TopLeft, Skin.Dim);
+        }
+
+        public void NextSector(int relic)
+        {
+            string error = RunRules.EnterNextSector(run, content, relic);
+            if (error == null) Sfx.Play("sfx_jump");
+            Commit(error);
+        }
+
         public void PickRelic(int index)
         {
             string error = RunRules.ChooseRelic(run, content, index);

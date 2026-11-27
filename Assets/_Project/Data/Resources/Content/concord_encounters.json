@@ -400,6 +400,61 @@
    "scatterDebris": 3,
    "reinforcements": [],
    "aftermath": "The escort is gone. Nine thousand people are awake in the holds, and somebody has to tell them where they are."
+  },
+  {
+   "id": "thale",
+   "name": "The Hand of the Prime",
+   "tier": 3,
+   "sector": 2,
+   "scrap": 0,
+   "turnLimit": 45,
+   "intro": "The Archon's ship holds the Kessane gate with a lance-cruiser and a Blade. Stay out of her bow: the Decree Lance does sixteen.",
+   "units": [
+    {
+     "unit": "hand_of_the_prime",
+     "col": 8,
+     "row": 3,
+     "speed": 1,
+     "facing": "W"
+    },
+    {
+     "unit": "asc_cruiser",
+     "col": 7,
+     "row": 1,
+     "speed": 2,
+     "facing": "W"
+    },
+    {
+     "unit": "asc_blade",
+     "col": 7,
+     "row": 5,
+     "speed": 2,
+     "facing": "W"
+    }
+   ],
+   "terrain": [
+    {
+     "col": 4,
+     "row": 3,
+     "asteroid": true
+    },
+    {
+     "col": 5,
+     "row": 6,
+     "asteroid": false
+    }
+   ],
+   "scatterAsteroids": 1,
+   "scatterDebris": 2,
+   "reinforcements": [
+    {
+     "unit": "asc_blade",
+     "col": 8,
+     "row": 6,
+     "speed": 2,
+     "facing": "W"
+    }
+   ]
   }
  ]
 }

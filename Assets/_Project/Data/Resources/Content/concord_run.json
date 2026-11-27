@@ -34,7 +34,23 @@
   "maxOfficers": 4,
   "briefing": "Nine days ago every relay in the Concord carried the same thing at the same moment: four seconds of nothing. Not static. Nothing, shaped like a voice. The Survey Board put a bearing on it, past the Ion Reef, and then the Board adjourned without a motion for the first time anyone remembers.\n\nThe Council voted nine to four to send a ship. The Ascendancy's Prime has simply ordered it. Something else is on the way there too, and nobody has been able to hail it.\n\nYou have the chair on the Long Promise. The gate at the far side of the Reef is held by High Inquisitor Calix Mor. The crews voted for you. Try to deserve it.",
   "rivalPasses": "The Ascendancy fleet has passed you in the Reef. The Council has asked, politely, whether the chair needs help.",
-  "thirdPasses": "Something overtook the fleet in the dark. Sensors logged it as weather. The night watch has asked not to stand it alone again, and nobody voted against."
+  "thirdPasses": "Something overtook the fleet in the dark. Sensors logged it as weather. The night watch has asked not to stand it alone again, and nobody voted against.",
+  "laterSectors": [
+   {
+    "name": "Sector II - The Kessane Drift",
+    "mapArt": "starmap_bg_sector2",
+    "battleArt": "battle_bg_kessane",
+    "bossName": "Archon Sevrin Thale",
+    "bossShip": "Ascendancy - Hand of the Prime",
+    "bossPortrait": "portrait_thale",
+    "bossHail": "\"Long Promise. The Prime has heard of you. That is not a thing that has happened to a Concord ship before, and it will not happen to another.\"\n\n\"I am the Hand. Where I close, the matter is settled. You have come a long way to be an example.\"",
+    "bossHailEnraged": "\"You opened the convoy. Nine thousand unlogged persons. The Prime felt each one leave the ledger.\"",
+    "arrival": "Beyond the gate is the Kessane Drift: the world the Concord and the Ascendancy broke eleven years ago, and the hulls of both fleets still turning around it. The broadcast is louder here. Half the night watch has started humming it.\n\nThe Prime has sent an Archon to hold the far gate. The ships out here are better found and better led, and every crew in the fleet has someone in that wreckage.",
+    "winAhead": "The Hand of the Prime is open and drifting, and the Kessane gate is yours. Beyond it there is nothing on any chart, and the broadcast is very close now. The Council votes to go on. Nobody asks for a count.",
+    "winBehind": "The Hand of the Prime is open and drifting, but the Prime's fleet went through the gate while the Archon held you. You are through the Drift, and the thing you came to stop is ahead of you.",
+    "outpaced": "The Archon did not need to win. The Hand only had to stay closed until the Prime's fleet was through. The Council recalls the Long Promise. For the first time, the vote is unanimous."
+   }
+  ]
  },
  "config": {
   "startScrap": 30,
@@ -133,7 +149,11 @@
   "healOfficerCost": 15,
   "hazardChance": 33,
   "hazardScrapPercent": 130,
-  "eventsPerSector": 5
+  "eventsPerSector": 5,
+  "sectors": 2,
+  "sectorHullPercent": 12,
+  "sectorDamage": 0,
+  "sectorRepairPercent": 100
  },
  "modules": [
   {

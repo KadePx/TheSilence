@@ -62,7 +62,7 @@ namespace Silence.View
             fxRoot = Child("Fx");
             arrowRoot = Child("Arrows");
 
-            var bg = NewSprite(transform, "Background", ArtLibrary.Instance.Sprite("battle_bg_ionreef"), -100);
+            var bg = NewSprite(transform, "Background", ArtLibrary.Instance.Sprite(string.IsNullOrEmpty(battle.Backdrop) ? "battle_bg_ionreef" : battle.Backdrop) ?? ArtLibrary.Instance.Sprite("battle_bg_ionreef"), -100);
             bg.transform.localScale = Vector3.one * 3f;
             // A hazard colours the whole field, so it is felt before it is read.
             bg.color = battle.Hazard == "Nebula" ? new Color(0.78f, 0.56f, 0.95f, 1f)

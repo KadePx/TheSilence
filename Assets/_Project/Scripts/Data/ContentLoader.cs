@@ -63,7 +63,7 @@ namespace Silence.Data
             public int withdrawalDelay, longBattleTurns, longBattleDelay, shipyardDelayPerPurchase;
             public int flagshipRebuildOrdinals, flagshipRebuildMaxHullLoss;
             public int jumpLanes, jumpHullCost, mineLead, mineDamage, nemesisSlow, nemesisDodgeDelay, nemesisFleePercent, nemesisRankHull;
-            public int hailEdictDamage, hailEdictScrapPercent, hailBoardTurns, sabotageCost, sabotageAmount, healOfficerCost, hazardChance, hazardScrapPercent, eventsPerSector;
+            public int hailEdictDamage, hailEdictScrapPercent, hailBoardTurns, sabotageCost, sabotageAmount, healOfficerCost, hazardChance, hazardScrapPercent, eventsPerSector, sectors, sectorHullPercent, sectorDamage, sectorRepairPercent;
             public string[] slots;
             public string[] starterModules;
             public CardDto[] starterCards;
@@ -92,7 +92,10 @@ namespace Silence.Data
             public bool hasCouncil;
             public int startApproval, maxApproval, maxOfficers;
             public string[] starterOfficers;
+            public SectorDto[] laterSectors;
         }
+
+        [Serializable] class SectorDto { public string name, mapArt, battleArt, bossName, bossShip, bossPortrait, bossHail, bossHailEnraged, arrival, winAhead, winBehind, outpaced; }
 
         [Serializable] class RunDto { public FactionDto faction; public ConfigDto config; public ModuleDto[] modules; public RewardDto[] rewards; public OfficerDto[] officers; public MotionDto[] motions; }
 
@@ -112,6 +115,13 @@ namespace Silence.Data
                 HasCouncil = f.hasCouncil, StartApproval = f.startApproval, MaxApproval = f.maxApproval > 0 ? f.maxApproval : 6,
                 MaxOfficers = f.maxOfficers > 0 ? f.maxOfficers : 4, StarterOfficers = new List<string>(f.starterOfficers ?? new string[0]),
             };
+            foreach (var s in f.laterSectors ?? new SectorDto[0])
+                content.Faction.LaterSectors.Add(new SectorDef
+                {
+                    Name = s.name ?? "", MapArt = s.mapArt ?? "", BattleArt = s.battleArt ?? "", BossName = s.bossName ?? "", BossShip = s.bossShip ?? "",
+                    BossPortrait = s.bossPortrait ?? "", BossHail = s.bossHail ?? "", BossHailEnraged = s.bossHailEnraged ?? "", Arrival = s.arrival ?? "",
+                    WinAhead = s.winAhead ?? "", WinBehind = s.winBehind ?? "", Outpaced = s.outpaced ?? "",
+                });
             foreach (var o in dto.officers ?? new OfficerDto[0])
                 content.Officers.Add(new OfficerDef
                 {
@@ -142,6 +152,8 @@ namespace Silence.Data
                 HailEdictDamage = c.hailEdictDamage, HailEdictScrapPercent = c.hailEdictScrapPercent, HailBoardTurns = c.hailBoardTurns,
                 SabotageCost = c.sabotageCost, SabotageAmount = c.sabotageAmount, HealOfficerCost = c.healOfficerCost > 0 ? c.healOfficerCost : 15,
                 HazardChance = c.hazardChance, HazardScrapPercent = c.hazardScrapPercent > 0 ? c.hazardScrapPercent : 130, EventsPerSector = c.eventsPerSector,
+                Sectors = Math.Max(1, c.sectors), SectorHullPercent = c.sectorHullPercent, SectorDamage = c.sectorDamage,
+                SectorRepairPercent = c.sectorRepairPercent > 0 ? c.sectorRepairPercent : 60,
                 Slots = new List<string>(c.slots), StarterModules = new List<string>(c.starterModules),
             };
             foreach (var s in c.starterCards) content.Config.StarterCards.Add(new DeckCard(s.card, s.ship));
@@ -164,6 +176,7 @@ namespace Silence.Data
         class EncounterDto
         {
             public string id, name, intro, aftermath;
+            public int sector;
             public int tier, scrap, turnLimit, scatterAsteroids, scatterDebris;
             public UnitDto[] units;
             public TerrainDto[] terrain;
@@ -184,7 +197,7 @@ namespace Silence.Data
             {
                 var def = new EncounterDef
                 {
-                    Id = e.id, Name = e.name, Intro = e.intro ?? "", Aftermath = e.aftermath ?? "", Tier = e.tier, Scrap = e.scrap, TurnLimit = e.turnLimit,
+                    Id = e.id, Name = e.name, Intro = e.intro ?? "", Aftermath = e.aftermath ?? "", Sector = e.sector, Tier = e.tier, Scrap = e.scrap, TurnLimit = e.turnLimit,
                     ScatterAsteroids = e.scatterAsteroids, ScatterDebris = e.scatterDebris,
                 };
                 foreach (var u in e.units ?? new UnitDto[0]) def.Units.Add(Unit(u));

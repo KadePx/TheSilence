@@ -31,7 +31,23 @@
   "maxOfficers": 4,
   "briefing": "Nine days ago every receiver in the Ascendancy heard the same thing at the same moment: four seconds of nothing. Not static. Nothing, shaped like a voice. The Waymind choirs traced it to a point past the Ion Reef and then would not say what was there.\n\nThe Prime has decreed that the Ascendancy will reach the Silence first. The Concord heard it too and has voted to go. Something else is moving that way that does not vote and was not decreed.\n\nYou command the Sixth Verdict. The gate at the far side of the Reef is held by Marshal Oru Venn. Lumen expects a report.",
   "rivalPasses": "The Concord fleet has passed you in the Reef. Lumen has been informed, and has asked for a reason.",
-  "thirdPasses": "Something overtook the fleet in the dark. Sensors logged it as weather. Four Ordinals on the night watch have been reassigned for describing a sound."
+  "thirdPasses": "Something overtook the fleet in the dark. Sensors logged it as weather. Four Ordinals on the night watch have been reassigned for describing a sound.",
+  "laterSectors": [
+   {
+    "name": "Sector II - The Kessane Drift",
+    "mapArt": "starmap_bg_sector2",
+    "battleArt": "battle_bg_kessane",
+    "bossName": "Fleet-Speaker Anselma Dray",
+    "bossShip": "Concord - Common Cause",
+    "bossPortrait": "portrait_dray",
+    "bossHail": "\"Sixth Verdict. You killed Oru Venn at the Reef. He was my friend, and he was the last of us who thought you could be reasoned with.\"\n\n\"This is the Common Cause, with every hull the Council could find. Kessane is behind me. You will not harvest it twice.\"",
+    "bossHailEnraged": "\"The convoy's dead have been read into the record. All of them. I had the names piped to my gun crews.\"",
+    "arrival": "Beyond the gate is the Kessane Drift: the world the Ascendancy and the Concord broke eleven years ago, and the hulls of both fleets still turning around it. The broadcast is louder here. The Waymind has started answering it in its sleep.\n\nThe Concord's last fleet is ahead of you, and it knows what you did at the Reef. The ships out here are better found and better led.",
+    "winAhead": "Dray's flagship is a new wreck among the old ones, and the Kessane gate stands open. Beyond it there is nothing on any chart, and the broadcast is very close now. The Prime will be informed that the Sixth Verdict goes on alone.",
+    "winBehind": "Dray's flagship is a new wreck among the old ones, but the Concord's last ships slipped through the gate while she held you. You are through the Drift, and something is ahead of you.",
+    "outpaced": "Dray never meant to win. She meant to stand in the door until everyone she loved was through it, and she did. The Sixth Verdict is recalled to Lumen. The Waymind does not want to go."
+   }
+  ]
  },
  "config": {
   "startScrap": 30,
@@ -117,7 +133,11 @@
   "sabotageAmount": 8,
   "hazardChance": 33,
   "hazardScrapPercent": 130,
-  "eventsPerSector": 5
+  "eventsPerSector": 5,
+  "sectors": 2,
+  "sectorHullPercent": 12,
+  "sectorDamage": 0,
+  "sectorRepairPercent": 100
  },
  "modules": [
   {

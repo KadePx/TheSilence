@@ -3,7 +3,7 @@ using System.Collections.Generic;
 
 namespace Silence.Core.Run
 {
-    public enum RunPhase { Map = 0, Battle = 1, Reward = 2, Event = 3, EventResult = 4, Shipyard = 5, Over = 6, Hail = 7 }
+    public enum RunPhase { Map = 0, Battle = 1, Reward = 2, Event = 3, EventResult = 4, Shipyard = 5, Over = 6, Hail = 7, SectorClear = 8 }
 
     public enum RunResult { Ongoing = 0, Victory = 1, Defeat = 2, Outpaced = 3 }
 
@@ -132,6 +132,12 @@ namespace Silence.Core.Run
         public int Version = 1;
         /// <summary>Faction id: which content the run is played with.</summary>
         public string Faction = "ascendancy";
+        /// <summary>Which sector the fleet is in, from 1.</summary>
+        public int Sector = 1;
+        /// <summary>Events already placed on an earlier sector's map, so the next sector draws the others first.</summary>
+        public List<string> SeenEvents = new List<string>();
+        /// <summary>Relics on offer between sectors (take one).</summary>
+        public List<string> SectorRelics = new List<string>();
         public long Seed;
         public long RngState;
         public long RngIncrement;

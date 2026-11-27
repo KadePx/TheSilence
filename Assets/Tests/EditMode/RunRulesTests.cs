@@ -77,7 +77,8 @@ namespace Silence.Tests
         public void ContentLoadsAndEveryReferenceResolves()
         {
             Assert.GreaterOrEqual(c.Events.Count, 5, "M2 asks for 5 written events");
-            Assert.AreEqual(1, c.Encounters.Count(e => e.Tier == 3), "one sector boss");
+            for (int sector = 1; sector <= c.Config.Sectors; sector++)
+                Assert.AreEqual(1, c.Encounters.Count(e => e.Tier == 3 && System.Math.Max(1, e.Sector) == sector), $"one gate fight for sector {sector}");
             foreach (int tier in new[] { 0, 1, 2 }) Assert.GreaterOrEqual(c.Encounters.Count(e => e.Tier == tier), 2, $"tier {tier}");
 
             foreach (var e in c.Encounters)
@@ -412,6 +413,7 @@ namespace Silence.Tests
         {
             var r = Reach(NodeKind.Boss);
             Assert.AreEqual(3, c.Encounter(r.PendingEncounter).Tier);
+            r.Sector = c.Config.Sectors; // the last gate
             var b = RunRules.BuildBattle(r, c);
             Win(b);
             RunRules.FinishBattle(r, c, b);

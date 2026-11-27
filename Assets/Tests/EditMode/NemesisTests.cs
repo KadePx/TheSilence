@@ -742,6 +742,131 @@ namespace Silence.Tests
             Assert.IsFalse(RunRules.BuildBattle(r, c).NoShieldRegen);
         }
 
+        // ---------------------------------------------------------------- sectors
+
+        /// <summary>A run standing in the gate's yards after the first gate has fallen.</summary>
+        RunState AtSectorClear(RunContent f, long seed = 3, bool killNemesis = false)
+        {
+            var r = RunRules.NewRun(seed, f);
+            r.Phase = RunPhase.Battle;
+            r.CurrentNode = r.Nodes.First(n => n.Kind == NodeKind.Boss).Id;
+            r.PendingEncounter = r.Current.Encounter;
+            if (killNemesis) r.Nemesis.Alive = false;
+            var b = RunRules.BuildBattle(r, f);
+            Win(b);
+            RunRules.FinishBattle(r, f, b);
+            return r;
+        }
+
+        [Test]
+        public void TheFirstGateOpensOntoASecondSectorNotTheEnd()
+        {
+            foreach (string id in ContentLoader.Factions)
+            {
+                var f = ContentLoader.Load(id);
+                Assert.AreEqual(2, f.Config.Sectors, id);
+                var info = f.Faction.SectorInfo(2);
+                foreach (string text in new[] { info.Name, info.MapArt, info.BattleArt, info.BossName, info.BossHail, info.Arrival, info.WinAhead, info.WinBehind, info.Outpaced })
+                    Assert.IsNotEmpty(text, id);
+                Assert.AreNotEqual(f.Faction.SectorInfo(1).Name, info.Name);
+
+                var r = RunRules.NewRun(3, f);
+                r.Flagship.Hull = 5;
+                r.Escort.Alive = false;
+                r.Darts = 0;
+                r.Deck.Add(new DeckCard("fire_on_deck", -1));
+                r.Phase = RunPhase.Battle;
+                r.CurrentNode = r.Nodes.First(n => n.Kind == NodeKind.Boss).Id;
+                r.PendingEncounter = r.Current.Encounter;
+                var b = RunRules.BuildBattle(r, f);
+                Win(b);
+                RunRules.FinishBattle(r, f, b);
+
+                Assert.AreEqual(RunResult.Ongoing, r.Result, id);
+                Assert.AreEqual(RunPhase.SectorClear, r.Phase, id);
+                Assert.AreEqual(r.Flagship.MaxHull, r.Flagship.Hull, "mended in the gate's yards");
+                Assert.IsTrue(r.Escort.Alive, "a lost escort is replaced");
+                Assert.AreEqual(r.MaxDarts, r.Darts);
+                Assert.AreEqual(0, r.JunkCount());
+                Assert.AreEqual(3, r.SectorRelics.Count);
+                Assert.IsNotNull(RunRules.EnterNextSector(r, f, -1), "something has to be taken");
+                Assert.IsNotNull(RunRules.EnterNextSector(r, f, 5));
+                string pick = r.SectorRelics[1];
+                Assert.IsNull(RunRules.EnterNextSector(r, f, 1));
+
+                Assert.Contains(pick, r.Relics);
+                Assert.AreEqual(2, r.Sector);
+                Assert.AreEqual(RunPhase.Map, r.Phase);
+                Assert.AreEqual(-1, r.CurrentNode);
+                Assert.AreEqual(0, r.PlayerProgress);
+                Assert.That(r.ConcordProgress, Is.InRange(0, 15));
+                Assert.IsTrue(r.Nodes.All(n => !n.Visited));
+                Assert.AreEqual(3, RunRules.Choices(r).Count);
+                var gate = r.Nodes.Single(n => n.Kind == NodeKind.Boss);
+                Assert.AreEqual(2, f.Encounter(gate.Encounter).Sector, "the second sector has its own gate fight");
+                Assert.AreEqual(RunJson.ToJson(r), RunJson.ToJson(RunJson.FromJson(RunJson.ToJson(r))));
+            }
+        }
+
+        [Test]
+        public void TheSecondSectorDrawsTheEventsTheFirstDidNot()
+        {
+            var r = AtSectorClear(c);
+            var first = new HashSet<string>(r.Nodes.Where(n => n.Kind == NodeKind.Event).Select(n => n.Event));
+            Assert.IsNull(RunRules.EnterNextSector(r, c, 0));
+            var second = r.Nodes.Where(n => n.Kind == NodeKind.Event).Select(n => n.Event).ToList();
+            int unseen = c.Events.Count - first.Count;
+            Assert.GreaterOrEqual(second.Count(e => !first.Contains(e)), System.Math.Min(unseen, second.Count), "new events come before repeats");
+        }
+
+        [Test]
+        public void ACommanderWhoGotAwayIsWaitingInTheNextSectorAndADeadOneIsReplaced()
+        {
+            var r = AtSectorClear(c);
+            string id = r.Nemesis.Id;
+            r.Nemesis.Rank = 2;
+            r.Nemesis.FellBack = true;
+            r.Nemesis.Scars.Add("a burn the length of the prow");
+            Assert.IsNull(RunRules.EnterNextSector(r, c, 0));
+            Assert.AreEqual(id, r.Nemesis.Id);
+            Assert.AreEqual(2, r.Nemesis.Rank, "they kept what they learned");
+            Assert.AreEqual(1, r.Nemesis.Scars.Count);
+            Assert.IsTrue(r.Nemesis.Hunting || r.Nemesis.FellBack);
+            if (r.Nemesis.Hunting) Assert.AreEqual(NodeKind.Nemesis, r.Node(r.Nemesis.Node).Kind);
+
+            var widowed = AtSectorClear(c, 3, killNemesis: true);
+            string dead = widowed.Nemesis.Id;
+            Assert.IsNull(RunRules.EnterNextSector(widowed, c, 0));
+            Assert.AreNotEqual(dead, widowed.Nemesis.Id, "another commander takes up the hunt");
+            Assert.IsTrue(widowed.Nemesis.Alive);
+            Assert.AreEqual(1, widowed.Nemesis.Rank);
+        }
+
+        [Test]
+        public void ShipsInTheSecondSectorAreBetterFoundAndTheLastGateEndsTheRun()
+        {
+            var r = AtSectorClear(c);
+            Assert.IsNull(RunRules.EnterNextSector(r, c, 0));
+            var first = r.Nodes.First(n => n.Layer == 0);
+            Assert.IsNull(RunRules.Travel(r, c, first.Id));
+            var b = RunRules.BuildBattle(r, c);
+            var enc = c.Encounter(r.PendingEncounter);
+            var spec = UnitLibrary.Get(enc.Units.First(u => UnitLibrary.Get(u.Unit).Kind == UnitKind.Capital).Unit);
+            var unit = b.Units.First(u => u.Side == Side.Enemy && u.Name == spec.Name);
+            Assert.AreEqual(spec.Hull + spec.Hull * c.Config.SectorHullPercent / 100, unit.MaxHull);
+            Assert.AreEqual(c.Faction.SectorInfo(2).BattleArt, b.Backdrop);
+
+            r.CurrentNode = r.Nodes.First(n => n.Kind == NodeKind.Boss).Id;
+            r.PendingEncounter = r.Current.Encounter;
+            var gate = RunRules.BuildBattle(r, c);
+            var boss = UnitLibrary.Get(c.Encounter(r.PendingEncounter).Units[0].Unit);
+            Assert.AreEqual(boss.Hull, gate.Units.First(u => u.Name == boss.Name).MaxHull, "gate fights are written for their sector, not scaled");
+            Win(gate);
+            RunRules.FinishBattle(r, c, gate);
+            Assert.AreEqual(RunResult.Victory, r.Result);
+            Assert.AreEqual(RunPhase.Over, r.Phase);
+        }
+
         // ---------------------------------------------------------------- story
 
         [Test]

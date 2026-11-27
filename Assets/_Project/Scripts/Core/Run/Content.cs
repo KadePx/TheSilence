@@ -20,6 +20,8 @@ namespace Silence.Core.Run
         public string Name;
         /// <summary>0 opening, 1 standard, 2 elite, 3 boss, 4 only from events.</summary>
         public int Tier;
+        /// <summary>For a gate fight: the sector whose gate it is (0 or 1 = the first).</summary>
+        public int Sector;
         public string Intro = "";
         /// <summary>One line of what was found afterwards, shown with the salvage.</summary>
         public string Aftermath = "";
@@ -217,6 +219,11 @@ namespace Silence.Core.Run
         public int HazardChance = 25, HazardScrapPercent = 130;
         /// <summary>How many of the written events one sector draws on (0 = all of them).</summary>
         public int EventsPerSector = 5;
+        /// <summary>How many sectors a run crosses. Past the first, enemy capital ships have SectorHullPercent more hull
+        /// per sector and every enemy attack outside a gate fight deals SectorDamage more.</summary>
+        public int Sectors = 1, SectorHullPercent = 25, SectorDamage = 1;
+        /// <summary>Percent of missing hull every ship gets back in the gate yards between sectors.</summary>
+        public int SectorRepairPercent = 60;
         /// <summary>Shipyard service: the sickbay returns one wounded officer to duty.</summary>
         public int HealOfficerCost = 15;
         public List<string> StarterModules = new List<string>();
@@ -250,6 +257,17 @@ namespace Silence.Core.Run
         public bool HealOfficers;
     }
 
+    /// <summary>A sector after the first: its name, its look, who holds its gate and what is said on arriving.</summary>
+    public sealed class SectorDef
+    {
+        public string Name = "", MapArt = "", BattleArt = "";
+        public string BossName = "", BossShip = "", BossPortrait = "", BossHail = "", BossHailEnraged = "";
+        /// <summary>Shown when the gate before it falls: what was found on the other side.</summary>
+        public string Arrival = "";
+        /// <summary>Endings for a run that finishes at this sector's gate. Empty: the faction's own.</summary>
+        public string WinAhead = "", WinBehind = "", Outpaced = "";
+    }
+
     /// <summary>Who the player is: names, voice and the lines the map and the end screens use. All from data.</summary>
     public sealed class FactionDef
     {
@@ -270,6 +288,20 @@ namespace Silence.Core.Run
         public string BossName = "", BossShip = "", BossPortrait = "", BossHail = "", BossHailEnraged = "";
         public string WinAhead = "", WinBehind = "", WinThirdAhead = "", Outpaced = "", LostAhead = "", LostBehind = "";
         /// <summary>True for a faction that votes: approval is earned in battle and spent on Council motions.</summary>
+        /// <summary>Sectors after the first, in order.</summary>
+        public List<SectorDef> LaterSectors = new List<SectorDef>();
+
+        /// <summary>Name, art and gate-holder of a sector (1-based). The first sector's are the faction's own fields.</summary>
+        public SectorDef SectorInfo(int sector)
+        {
+            if (sector >= 2 && sector - 2 < LaterSectors.Count) return LaterSectors[sector - 2];
+            return new SectorDef
+            {
+                Name = SectorName, MapArt = "starmap_bg_sector1", BattleArt = "battle_bg_ionreef", BossName = BossName, BossShip = BossShip,
+                BossPortrait = BossPortrait, BossHail = BossHail, BossHailEnraged = BossHailEnraged,
+            };
+        }
+
         public bool HasCouncil;
         public int StartApproval, MaxApproval = 6;
         public List<string> StarterOfficers = new List<string>();

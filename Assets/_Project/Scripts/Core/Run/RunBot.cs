@@ -18,7 +18,7 @@ namespace Silence.Core.Run
         };
 
         /// <summary>Play a new run to its end and return the final state.</summary>
-        public static RunState Play(long seed, RunContent c, int maxSteps = 200)
+        public static RunState Play(long seed, RunContent c, int maxSteps = 500)
         {
             var r = RunRules.NewRun(seed, c);
             for (int step = 0; step < maxSteps && r.Phase != RunPhase.Over; step++) Step(r, c);
@@ -98,6 +98,9 @@ namespace Silence.Core.Run
                 }
                 case RunPhase.EventResult:
                     RunRules.CloseEvent(r);
+                    break;
+                case RunPhase.SectorClear:
+                    RunRules.EnterNextSector(r, c, r.SectorRelics.Count > 0 ? 0 : -1);
                     break;
                 case RunPhase.Shipyard:
                     if (!r.Escort.Alive) RunRules.RebuildEscort(r, c);

@@ -170,8 +170,9 @@ namespace Silence.Meta
                     ? string.Join(" > ", spec.Cycle.Select(StepName))
                     : spec.Kind == UnitKind.Craft ? $"goes for the aft, {spec.AttackDamage} damage" : "";
                 Ui.Label(row.transform, $"{group.Count()} x {spec.Name.ToUpperInvariant()}", Skin.Heading, 16, Skin.Text, 60, 13, 300, 20);
-                Ui.Body(row.transform, $"Hull {spec.Hull}   " + cycle, 16, 330, 14, w - 340, 16, TextAlignmentOptions.TopLeft, Skin.Dim)
-                    .textWrappingMode = TextWrappingModes.NoWrap;
+                var orders = Ui.Body(row.transform, $"Hull {spec.Hull}   " + cycle, 16, 330, 14, w - 346, 16, TextAlignmentOptions.TopLeft, Skin.Dim);
+                orders.textWrappingMode = TextWrappingModes.NoWrap;
+                orders.overflowMode = TextOverflowModes.Ellipsis;
                 y += 48;
             }
             return y;

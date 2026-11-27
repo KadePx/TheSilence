@@ -179,6 +179,12 @@ namespace Silence.Core.Battle
             IntentStep.Of(IntentKind.LaunchCraft, 2), IntentStep.Fire("Grand Lance", 14, Arc.Fore, 5),
             IntentStep.Of(IntentKind.Maneuver), IntentStep.Of(IntentKind.JointFire), IntentStep.Fire("Broadside", 8, Sides, 3));
 
+        /// <summary>Gate of the second sector on the Concord's route: the Archon's own ship. Its lance reaches most of the field.</summary>
+        public static UnitSpec HandOfThePrime => Named("asc_handoftheprime",
+            UnitSpec.Capital("Hand of the Prime", 46, 3, 2, 2, 1, 4, 1, 0, 0, 1, AiProfile.Carrier),
+            IntentStep.Fire("Decree Lance", 16, Arc.Fore, 5), IntentStep.Of(IntentKind.Maneuver), IntentStep.Of(IntentKind.LaunchCraft, 2),
+            IntentStep.Fire("Broadside", 9, Sides, 3), IntentStep.Of(IntentKind.JointFire));
+
         // ---- Ascendancy commanders hunting a Concord run ----
 
         /// <summary>Inquisitor-Adjunct Vael's cruiser: the longest lance in the sector.</summary>
@@ -208,6 +214,7 @@ namespace Silence.Core.Battle
                 case "asc_warden": return EnemyWarden;
                 case "asc_dart": return EnemyDart;
                 case "ninth_sentence": return NinthSentence;
+                case "hand_of_the_prime": return HandOfThePrime;
                 case "final_tally": return FinalTally;
                 case "clean_hand": return CleanHand;
                 case "tithe_of_nine": return TitheOfNine;

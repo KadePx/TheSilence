@@ -80,6 +80,8 @@ namespace Silence.Core.Battle
         public string Hazard = "";
         /// <summary>What that hazard changes, in a sentence.</summary>
         public string HazardText = "";
+        /// <summary>Sprite name of the field's backdrop, or empty for the default.</summary>
+        public string Backdrop = "";
         /// <summary>A line spoken as the fight opens (a commander answering your reply), with who says it.</summary>
         public string OpeningLine = "", OpeningSpeaker = "";
 

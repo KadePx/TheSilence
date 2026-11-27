@@ -649,3 +649,50 @@ seam at the loop point, sensible levels. They may be dull or grating; the volume
 ### Art
 
 Six scarred portraits: 20 generations. 689.6 of the 1,000 are spent.
+
+## A second sector
+
+A run is now two sectors. Taking the Ion Reef gate no longer ends it: the fleet goes through into the Kessane Drift,
+the old battlefield both factions keep referring to.
+
+- **Between sectors.** The gate's yards mend every hull, replace a lost escort, strip the junk, return the wounded
+  and make up the hangar and the crew. You take one of three relics from the wreck of the gate fleet, read what lies
+  beyond, and jump. The race carries over as a lead of at most a node and a half either way.
+- **The Kessane Drift** has its own map and battlefield art, a new map, new jump lanes and hazards, and draws the
+  events the first sector did not use before repeating any.
+- **Better-found enemies.** Capital ships there have 12 percent more hull. (25 percent and +1 damage was tried first:
+  the bot won 1 run in 200.)
+- **The commander follows you.** One who got away or fell back is waiting in the Drift with the rank, scar and refit
+  they left with. If you killed yours, another takes up the hunt.
+- **A second gate.** The Ascendancy meets Fleet-Speaker Anselma Dray on the dreadnought Common Cause, who opens by
+  naming the man you killed at the first gate. The Concord meets Archon Sevrin Thale on the Hand of the Prime. Each
+  has a portrait, a ship, a hail and their own three endings.
+- The number of sectors is one line of data (`sectors` in each run file); the rules take any number.
+
+### Numbers (200 bot runs each, two sectors)
+
+| | Ascendancy | Concord |
+| --- | --- | --- |
+| Runs won / fleet lost / outpaced | 44 / 102 / 54 | 64 / 82 / 54 |
+| Turns fought per run | 81 | 103 |
+
+A two-sector run is meant to be harder to finish than the single sector was, and the bot is a weak player, but
+these are low and the Ascendancy is now the harder side: 27 of its fleets die at Dray's gate and 23 to a rank II
+commander, which the bot goads into staying and then cannot finish.
+
+### How it was checked
+
+215 EditMode tests pass (4 new: the gate opening onto a second sector, unseen events first, the commander carrying
+over or being replaced, scaling and the last gate ending the run). On screen: the between-sector screen, the Drift's
+map, Dray's hail and her fight (`ArtSource/Screenshots/m5_*.png`). The autopilot then played a two-sector Concord
+run in the editor from the first jump to the Archon's gate and won it, with no errors logged.
+
+### Art
+
+Two backgrounds, two portraits, two ships: 90 generations. 779.6 of the 1,000 are spent.
+
+### Still open
+
+- Balance of the second sector rests on bot runs alone, and on one measurement.
+- The Drift reuses the first sector's encounters with tougher hulls; it has its own gate but not its own line fights.
+- The Chorus is still only a marker on the track and an event.

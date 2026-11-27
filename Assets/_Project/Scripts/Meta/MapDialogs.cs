@@ -32,7 +32,7 @@ namespace Silence.Meta
             if (boss)
             {
                 var well = Ui.Well(d, "Comms", 40, 116, 272, 272);
-                var fac = content.Faction;
+                var fac = content.Faction.SectorInfo(run.Sector);
                 var portrait = Ui.Art(well.transform, fac.BossPortrait, 8, 8, 2f);
                 if (!portrait.enabled) Ui.Body(well.transform, "NO SIGNAL", 20, 0, 120, 272, 30, TextAlignmentOptions.Center, Skin.Faint);
                 Ui.Stamp(d, fac.BossName, 14, 20, 394, 312, 18, TextAlignmentOptions.Center, Skin.Hex("ffc46a"));
@@ -396,17 +396,18 @@ namespace Silence.Meta
             string story;
             if (won)
             {
-                story = RunRules.ConcordAhead(run) ? fx.WinBehind : fx.WinAhead;
+                var last = fx.SectorInfo(run.Sector);
+                story = RunRules.ConcordAhead(run) ? (last.WinBehind != "" ? last.WinBehind : fx.WinBehind) : (last.WinAhead != "" ? last.WinAhead : fx.WinAhead);
                 if (run.Nemesis.LastOutcome == NemesisOutcome.Killed && run.Nemesis.Id != "") story += $" {content.Nemesis(run.Nemesis.Id).Name} did not live to see it.";
                 if (RunRules.ChorusAhead(run)) story += " " + fx.WinThirdAhead;
             }
-            else if (run.Result == RunResult.Outpaced) story = fx.Outpaced;
+            else if (run.Result == RunResult.Outpaced) story = fx.SectorInfo(run.Sector).Outpaced != "" ? fx.SectorInfo(run.Sector).Outpaced : fx.Outpaced;
             else story = RunRules.ConcordAhead(run) ? fx.LostAhead : fx.LostBehind;
             Ui.Body(d, story, 22, 80, 156, 940, 130, TextAlignmentOptions.Top);
 
             var stats = new[]
             {
-                ("Nodes crossed", run.NodesVisited.ToString()), ("Battles won", run.BattlesWon.ToString()), ("Turns fought", run.TurnsFought.ToString()),
+                ("Sector reached", run.Sector.ToString()), ("Battles won", run.BattlesWon.ToString()), ("Turns fought", run.TurnsFought.ToString()),
                 ("Scrap", run.Scrap.ToString()), (content.Faction.CrewName + " left", run.Ordinals.ToString()), ("Score", RunRules.Score(run).ToString()),
             };
             for (int i = 0; i < stats.Length; i++)

@@ -453,6 +453,7 @@ The next step is the paper prototype (M0); nothing goes into Unity until combat 
 - Story is told where the player already looks: a briefing before the first jump, an aftermath line with each fight's salvage, an epitaph for each commander, and events.
 - A commander who has met you before can be taunted: they do not break off and hit 1 harder. Commanders with a scar show a scarred portrait.
 - Music is four synthesized loops (menu, map, battle, hunt), cross-faded by screen; volume is in Settings.
+- A run is two sectors (the Ion Reef, then the Kessane Drift); `sectors` in the run file sets how many. Between sectors the fleet is fully mended and takes one of three relics; the race carries over as a lead of at most 1.5 nodes; a surviving commander follows, a dead one is replaced. Enemy capital ships have 12 percent more hull per sector past the first; gate fights are written per sector and not scaled.
 - Each faction's run is its own set of content files; rules that differ between factions are data in the `faction` block, not branches in code.
 
 ### Open questions

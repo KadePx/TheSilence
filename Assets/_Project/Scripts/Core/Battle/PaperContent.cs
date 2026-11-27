@@ -63,6 +63,12 @@ namespace Silence.Core.Battle
             UnitSpec.Capital("Mender's Oath", 24, 3, 2, 2, 1, 3, 1, 0, 0, 1, AiProfile.Carrier),
             IntentStep.Fire("Cutting Beam", 8, Arc.Fore | Sides, 2), IntentStep.Of(IntentKind.PatchUp, 4), IntentStep.Fire("Broadside", 6, Sides, 3));
 
+        /// <summary>Gate of the second sector on the Ascendancy's route: Fleet-Speaker Dray's dreadnought, with everything the Concord has left.</summary>
+        public static UnitSpec CommonCause => Cycled("con_commoncause",
+            UnitSpec.Capital("Common Cause", 42, 2, 2, 2, 1, 4, 1, 0, 0, 1, AiProfile.Carrier),
+            IntentStep.Fire("Mass Driver", 12, Arc.Fore, 6), IntentStep.Of(IntentKind.LaunchCraft, 2), IntentStep.Fire("Broadside", 8, Sides, 3),
+            IntentStep.Of(IntentKind.JointFire), IntentStep.Of(IntentKind.PatchUp, 4), IntentStep.Of(IntentKind.Maneuver));
+
         public static UnitSpec Torpedo
         {
             get
@@ -105,6 +111,7 @@ namespace Silence.Core.Battle
                 case "tender": return PaperUnits.Tender;
                 case "venn": return PaperUnits.VennFlagship;
                 case "torpedo": return PaperUnits.Torpedo;
+                case "common_cause": return PaperUnits.CommonCause;
                 case "quiet_ledger": return PaperUnits.QuietLedger;
                 case "open_hand": return PaperUnits.OpenHand;
                 case "menders_oath": return PaperUnits.MendersOath;
