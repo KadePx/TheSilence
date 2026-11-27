@@ -161,6 +161,19 @@ Every sprite follows these rules so generated art, rotations and Unity import st
 - **Style reference:** the Ascendancy cruiser for outline, detail and shading on every new unit; the faction's own flagship for its colors.
 - **Import:** Point (no filter), no compression, pixels per unit set so 1 pixel = 1 screen pixel at 1080p.
 
+### Ordinals
+
+How an Ordinal looks, decided by Kade after two versions read as Star Wars troopers:
+
+- White plate armour with streaks of dark navy blue.
+- A smooth helmet with no visor, no eyes and no face at all.
+- A long narrow feature hanging down from the chin over the chest.
+- No T-visors, no visor bands, no vents, no rounded "bucket" helmets, no trooper silhouettes.
+
+`ArtSource/design/ordinal_reference.png` is the reference. Pass it as a reference image to every generation that
+shows an Ordinal, and say in the prompt: "smooth blank featureless ivory-white helmet with no visor, no eyes and no
+face, with a long narrow spike hanging down from the chin; white plate armour with bold dark navy blue streaks".
+
 ### Faction palettes
 
 | Faction | Colors (hex) |

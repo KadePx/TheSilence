@@ -727,3 +727,22 @@ mouse, so how they feel while moving the pointer around (flicker, getting in the
 
 Scripted checks were writing to the same save file a real run uses, so they could overwrite a run in progress. They
 now use their own file.
+
+## Ordinals redrawn to Kade's brief
+
+The Ordinals icon in the top bar was a row of trooper helmets, and the Edict art had drifted the same way before.
+Kade's brief: white armour with streaks of dark blue, a smooth helmet with a long feature down from the chin, no
+visible face.
+
+- A design reference was generated to that brief first (`ArtSource/design/ordinal_reference.png`) and then used as
+  the reference image for everything else, so the pieces agree with each other.
+- **The Ordinals icon** is one smooth, faceless helmet with the chin spike and a dark blue streak.
+- **The Edict of the Prime** is a close rank of five kneeling Ordinals to the same design, under the sunburst. They
+  have picked up gold epaulettes from the reference, and the blue is on the helmets more than the armour.
+- The brief and the prompt wording are written into `Docs/FleetAndAssetPlan.md` so later art follows them.
+
+Two attempts were rejected on the way (three heads in a row were a muddle at 48 pixels; a wide shot came out as the
+old robed ranks). 50 generations; 829.6 of the 1,000 are spent.
+
+Not checked in the running game: the editor was in Play Mode when the files were swapped, so they were left to
+re-import on their own. Both replace existing files under the same names.
