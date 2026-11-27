@@ -75,6 +75,11 @@ the sprint plan.
   basic punctuation: no degree sign, brackets or ampersand.
 - Plates, wells, buttons, bars and chips come from the kit in `Assets/_Project/Art/UI/Kit`, 9-sliced in `Skin`.
   Cards use `Art/UI/Cards/card_frame.png` (220x298) at 1:1.
+- Every rules word has one colour and one explanation, in `Gloss` (`View/Tips.cs`). `Ui.Body` and `Ui.Stamp` colour
+  those words and make them hoverable on their own; a label whose text is set later uses `Ui.Glossed` and
+  `Gloss.Mark`. Icons, rows and buttons get `Tip.On(graphic, title, body)`. A new mechanic needs a `Gloss` term.
+  Green is hull, red damage and danger, orange heat, cyan shields, brass scrap, pink the race, gold relics, violet hazards.
+- Play-test scripts set `Game.SaveFile = "silence_playtest.json"` first, so they never overwrite a real run.
 - Keep screens quiet: nothing sits on screen permanently unless the player needs it every turn. Rules text goes
   behind Help, the battle log behind Log, detail on hover.
 

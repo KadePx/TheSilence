@@ -170,6 +170,8 @@ namespace Silence.Meta
                 Ui.Label(b.transform, choice.Label, Skin.BodyBold, 16, blocked == null ? Skin.Text : Skin.Faint, 80, 26, 1300, 36);
                 string tag = Summary(choice) + (blocked != null ? $"   <color=#d9573f>({blocked})</color>" : "");
                 Ui.Stamp(b.transform, tag, 12, 82, 64, 1300, 14, TextAlignmentOptions.Left, blocked == null ? Skin.Brass : Skin.Faint);
+                string effects = Summary(choice);
+                Tip.On(b.targetGraphic, "What this does", () => effects == "No effect" ? "Nothing changes." : Gloss.Legend(effects));
                 y += 116;
             }
         }
@@ -197,7 +199,7 @@ namespace Silence.Meta
                     case OutcomeKind.AddJunk: parts.Add($"Adds {PaperCards.Get(o.Id).Name}"); break;
                     case OutcomeKind.RemoveJunk: parts.Add(o.Amount > 1 ? $"Removes up to {o.Amount} junk cards" : "Removes a junk card"); break;
                     case OutcomeKind.RivalsAdvance:
-                        parts.Add(o.Amount > 0 ? $"Rivals gain {o.Amount / 10f:0.0} node" : $"Rivals lose {-o.Amount / 10f:0.0} node");
+                        parts.Add(o.Amount > 0 ? $"Costs time: rivals gain {o.Amount / 10f:0.0} node" : $"Rivals fall back {-o.Amount / 10f:0.0} node");
                         break;
                     case OutcomeKind.EnrageBoss: parts.Add("The gate guard is reinforced"); break;
                     case OutcomeKind.StartBattle:
@@ -377,6 +379,7 @@ namespace Silence.Meta
             var row = Ui.Img(d, "Service", Skin.Slot, x, y, 520, 84, Color.white, true);
             Ui.Heading(row.transform, title, 16, 16, 14, 340, 20, TextAlignmentOptions.Left, available ? Skin.Text : Skin.Faint);
             Ui.Stamp(row.transform, detail, 12, 16, 42, 340, 30, TextAlignmentOptions.TopLeft, Skin.Dim);
+            Tip.On(row, title, () => detail + "\n\n" + Gloss.Legend(title + ". " + detail + " scrap"));
             var b = Ui.Btn(row.transform, $"{cost} scrap", 364, 18, 140, 48, onClick, 16);
             b.interactable = available && run.Scrap >= cost && cost > 0;
             y += 92;

@@ -27,11 +27,15 @@ namespace Silence.Meta
         static void ResetStatics()
         {
             Run = null;
+            SaveFile = "silence_run.json";
             BattleLauncher.Clear();
             ContentLoader.Invalidate();
         }
 
-        public static string SavePath => Path.Combine(Application.persistentDataPath, "silence_run.json");
+        /// <summary>File name of the save. Play-test scripts point this at a scratch file so they never touch a real run.</summary>
+        public static string SaveFile = "silence_run.json";
+
+        public static string SavePath => Path.Combine(Application.persistentDataPath, SaveFile);
 
         public static bool HasSave => File.Exists(SavePath);
 

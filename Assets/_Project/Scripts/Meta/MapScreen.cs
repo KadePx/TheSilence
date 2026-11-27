@@ -34,6 +34,9 @@ namespace Silence.Meta
             content = Game.Content;
             run = Game.Run ?? Game.EnsureRun();
             Music.Play("music_map");
+            Gloss.Rival = content.Faction.RivalName;
+            Gloss.Crew = content.Faction.CrewName;
+            Gloss.Craft = content.Faction.CraftName;
 
             var cam = Camera.main;
             if (cam != null) cam.backgroundColor = Skin.Ink;
@@ -133,7 +136,7 @@ namespace Silence.Meta
 
         void SetInfo(string text)
         {
-            if (infoText != null) infoText.text = text;
+            if (infoText != null) Ui.Glossed(infoText, true).text = Gloss.Mark(text);
         }
 
         void RefreshTop()
@@ -189,7 +192,10 @@ namespace Silence.Meta
                 {
                     var m = content.Module(run.Modules[slot]);
                     Ui.Stamp(t, m.Slot, 12, 16, 70 + slot * 18, 96, 14, TextAlignmentOptions.Left, Skin.BrassDark);
-                    Ui.Stamp(t, m.Name, 12, 112, 70 + slot * 18, 176, 14, TextAlignmentOptions.Left, Skin.Text).textWrappingMode = TextWrappingModes.NoWrap;
+                    var moduleName = Ui.Stamp(t, m.Name, 12, 112, 70 + slot * 18, 176, 14, TextAlignmentOptions.Left, Skin.Text);
+                    moduleName.textWrappingMode = TextWrappingModes.NoWrap;
+                    Tip.On(moduleName, m.Slot + " module: " + m.Name, () => (string.IsNullOrEmpty(m.Text) ? "" : m.Text + ".\n\n") +
+                        "Gives the deck: " + string.Join(", ", m.Cards.Select(card => PaperCards.Get(card).Name)) + ".\n\nA shipyard can refit this slot with another module: the old one's cards leave the deck and the new one's join it.");
                 }
             }
 
@@ -233,6 +239,10 @@ namespace Silence.Meta
             Marker(t, x0, x1, yLine, run.ChorusProgress, length, third, Skin.Hex("5fffc8"), false, yLine + 36, 12);
             Marker(t, x0, x1, yLine, run.PlayerProgress, length, "You", Color.white, true, yLine - 40, 12);
 
+            var raceTip = Ui.Catcher(t, "RaceTip", 310, 0, x1 - 250, 100);
+            Tip.On(raceTip.GetComponent<Image>(), "The race", () => Gloss.Explain(Gloss.Find("race")) +
+                $"\n\nNow: {rival} {(run.ConcordProgress - run.PlayerProgress) / 10f:+0.0;-0.0;0.0} node, {third} {(run.ChorusProgress - run.PlayerProgress) / 10f:+0.0;-0.0;0.0} node, relative to you.", Gloss.Race);
+            raceTip.transform.SetAsFirstSibling();
             Ui.Body(t, Lead(rival, run.ConcordProgress), 16, 18, 34, 300, 16, TextAlignmentOptions.TopLeft, Skin.Dim).textWrappingMode = TextWrappingModes.NoWrap;
             Ui.Body(t, Lead(third, run.ChorusProgress), 16, 18, 54, 300, 16, TextAlignmentOptions.TopLeft, Skin.Dim).textWrappingMode = TextWrappingModes.NoWrap;
             if (run.Nemesis.Hunting)
@@ -306,6 +316,24 @@ namespace Silence.Meta
             }
         }
 
+        /// <summary>Everything worth knowing about a node before going there, for its tooltip.</summary>
+        string NodeTip(MapNode n, bool can, bool here, bool jump)
+        {
+            string text = System.Text.RegularExpressions.Regex.Replace(Describe(n), @"^<color=#\w+>[^<]*</color>\s*", "");
+            switch (n.Kind)
+            {
+                case NodeKind.Battle: text += "\n\nWin for scrap and one card out of three, or field repairs instead."; break;
+                case NodeKind.Elite: text += "\n\nA harder fight: one more card on offer, and two relics to choose between."; break;
+                case NodeKind.Boss: text += "\n\nThe gate out of this sector. If the " + content.Faction.RivalName + " fleet is ahead of you when you arrive, the guard is reinforced. Running out the clock here loses the race."; break;
+                case NodeKind.Event: text += "\n\nEach choice shows what it costs and gives before you take it."; break;
+                case NodeKind.Shipyard: text += "\n\nEach service bought lets the rivals gain " + (content.Config.ShipyardDelayPerPurchase / 10f).ToString("0.0") + " node."; break;
+            }
+            if (jump) text += $"\n\nJump lane: skips a node, every ship loses {RunRules.JumpCost(run, content)} hull.";
+            else if (can && RunRules.LanesMined(run, content)) text += $"\n\nMined lanes: going here costs every ship {content.Config.MineDamage} hull.";
+            text += can ? "\n\nClick to jump here." : here ? "\n\nYou are here." : n.Visited ? "\n\nAlready visited." : "\n\nNot reachable from where you are: the map only goes forward along its lanes.";
+            return text;
+        }
+
         void RefreshMap()
         {
             Ui.Clear(mapRoot);
@@ -363,6 +391,8 @@ namespace Silence.Meta
                 relay.Enter = () => SetInfo(Describe(node) + jumpNote + (can ? "" : here ? "   <color=#8a90a0>(you are here)</color>" : node.Visited ? "   <color=#8a90a0>(visited)</color>" : ""));
                 relay.Exit = () => SetInfo(DefaultInfo());
                 relay.Click = _ => ClickNode(node.Id);
+                Tip.On(img, NemesisHere(node) ? "Nemesis" : node.Kind == NodeKind.Nemesis ? "Battle" : KindName(node.Kind),
+                    () => NodeTip(node, can, here, jumpTo), node.Kind == NodeKind.Battle || node.Kind == NodeKind.Event || node.Kind == NodeKind.Shipyard ? Gloss.Command : Gloss.Danger);
                 string label = NemesisHere(n) ? "Nemesis" : n.Kind == NodeKind.Nemesis ? "Battle" : KindName(n.Kind);
                 bool hazardous = !string.IsNullOrEmpty(n.Hazard) && !NemesisHere(n) && (n.Kind == NodeKind.Battle || n.Kind == NodeKind.Elite || n.Kind == NodeKind.Nemesis);
                 if (hazardous && !n.Visited) Ui.Stamp(mapRoot, Hazards.Name(n.Hazard), 12, p.x - 80, p.y + size / 2f + 24, 160, 14, TextAlignmentOptions.Center, Skin.Hex("b48cf0"));

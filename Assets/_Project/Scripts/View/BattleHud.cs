@@ -92,6 +92,7 @@ namespace Silence.View
             for (int i = 0; i < 6; i++)
             {
                 var socket = Ui.Img(bottom.transform, "Pip" + i, Skin.PipSocket, 28 + i * 44, 44, 41, 47);
+                Tip.On(socket, "Command", () => Gloss.Explain(Gloss.Find("command")) + " The number in the corner of a card is what it costs.");
                 var fill = Ui.Img(socket.transform, "Fill", Skin.Pip, 10, 12, 21, 23, Skin.Brass);
                 pips.Add(socket);
                 pipFills.Add(fill);
@@ -105,6 +106,7 @@ namespace Silence.View
             handRoot = Ui.Box(bottom.transform, "Hand", 300, 0, 1320, Ui.RefH - BottomY);
 
             endTurnButton = Ui.Btn(bottom.transform, "End turn", 1660, 112, 232, 84, OnEndTurn, 32);
+            Tip.On(endTurnButton.targetGraphic, "End turn", () => "In order: every ship drifts ahead by its Speed, the enemy carries out the orders shown top right, shields come back and heat drains, and your hand is discarded. Then you draw 5 and get 3 command.\n\nAn enemy order misses if you have left its arc or range by then.");
             endGlow = Ui.Img(endTurnButton.transform, "Glow", Skin.Frame, -4, -4, 240, 92, Skin.BrassLight, true);
             endGlow.gameObject.AddComponent<Blink>();
             endGlow.enabled = false;
@@ -165,7 +167,7 @@ namespace Silence.View
             lines.Add(helms > 0
                 ? "<color=#7fdcf2>HELM</color>  set speed with - + on a ship card"
                 : "<color=#555b6a>HELM  speed is set for this turn</color>");
-            actionsText.text = string.Join("\n", lines);
+            Ui.Glossed(actionsText, true).text = Gloss.Mark(string.Join("\n", lines), true, true);
 
             bool nothingLeft = playable == 0 && darts == 0;
             var parts = new List<string>();
@@ -216,8 +218,10 @@ namespace Silence.View
             ordinalsText.text = Battle.Ordinals.ToString();
             ordinalsText.color = Battle.Ordinals <= 0 ? Skin.Bad : Skin.Cyan;
             dartsText.text = Battle.DartsInHangar < 0 ? "-" : Battle.DartsInHangar.ToString();
-            crewLabel.text = Battle.CrewName;
-            craftLabel.text = char.ToUpperInvariant(CraftWord[0]) + CraftWord.Substring(1) + "s";
+            Gloss.Crew = Battle.CrewName;
+            Gloss.Craft = CraftWord + "s";
+            Ui.Glossed(crewLabel, true).text = Gloss.Mark(Battle.CrewName.ToUpperInvariant(), true, true);
+            Ui.Glossed(craftLabel, true).text = Gloss.Mark((CraftWord + "s").ToUpperInvariant(), true, true);
 
             for (int i = 0; i < pips.Count; i++)
             {
@@ -245,7 +249,7 @@ namespace Silence.View
         void RefreshPrompt()
         {
             if (promptText == null || Battle == null) return;
-            promptText.text = PromptText();
+            Ui.Glossed(promptText, true).text = Gloss.Mark(PromptText());
             bool showExpend = mode == Mode.Target && selectedCard != null && selectedCard.Def.ExpendOptional && selectedCard.Def.ExpendCost > 0;
             expendButton.gameObject.SetActive(showExpend);
             if (showExpend)
@@ -269,7 +273,7 @@ namespace Silence.View
             foreach (var c in Battle.Deck.Hand)
             {
                 var source = c.SourceId >= 0 ? Battle.Get(c.SourceId) : null;
-                var view = CardView.Create(handRoot, c.Def, source != null ? source.Name : "", ArtFor(c.Def, source), Battle.CostOf(c), RulesText(c.Def));
+                var view = CardView.Create(handRoot, c.Def, source != null ? source.Name : "", ArtFor(c.Def, source), Battle.CostOf(c), RulesText(c.Def), false);
                 view.InstanceId = c.Id;
                 var card = c;
                 view.Clicked = _ => OnCardClicked(card);
@@ -373,31 +377,10 @@ namespace Silence.View
             if (focus != null && focus.Alive && !(focus.Side == Side.Player && focus.IsCapital)) TargetCard(focus, y);
         }
 
-        static readonly (string find, string term, string meaning)[] Keywords =
-        {
-            ("fore arc", "FORE ARC", "the hexes ahead of the ship, within 30 degrees of her heading"),
-            ("port or starboard", "SIDE ARCS", "the hexes to either flank of the ship"),
-            ("range", "RANGE", "counted in hexes from the ship that fires"),
-            ("Heat", "HEAT", "builds on the ship that plays the card; over the cap at end of turn adds Fire on Deck"),
-            ("Expend", "EXPEND", "an extra cost paid in Ordinals, the fleet's crew"),
-            ("Exhaust", "EXHAUST", "the card is gone for the rest of this battle"),
-            ("Unplayable", "UNPLAYABLE", "it only clogs your hand; remove it at a shipyard"),
-            ("shields", "SHIELDS", "soak damage on the arc that is hit, before armor and hull"),
-            ("armor", "ARMOR", "takes a fixed amount off each hit that gets past the shields"),
-            ("crits", "CRITICAL", "5 or more hull damage in one hit; adds junk or hits the engines"),
-            ("Speed", "SPEED", "how many hexes a ship drifts at end of turn"),
-            ("darts", "DARTS", "small craft you move by hand; each acts once a turn"),
-            ("intent", "INTENT", "the order an enemy has announced for this turn"),
-            ("command", "COMMAND", "what cards cost; 3 a turn, unspent command is lost"),
-        };
-
         /// <summary>While a card is under the pointer, spell out the rules words on it. False if it has none.</summary>
         bool Glossary(CardDef def, float y)
         {
-            var lines = new List<string>();
-            foreach (var (find, term, meaning) in Keywords)
-                if (def.Text.IndexOf(find, System.StringComparison.OrdinalIgnoreCase) >= 0 && lines.Count < 5)
-                    lines.Add($"<color=#e8c870>{term}</color>  {meaning}.");
+            var lines = Gloss.TermsIn(def.Text).Take(5).Select(t => $"<color=#{t.Colour}>{t.Title.ToUpperInvariant()}</color>  {Gloss.Short(t)}").ToList();
             if (lines.Count == 0) return false;
             var card = Ui.Panel(unitPanel, "Glossary", 0, y, FleetW, 100);
             Ui.Stamp(card.transform, def.Name, 12, 16, 12, FleetW - 32, 14, TextAlignmentOptions.Left, Skin.BrassDark);
@@ -445,6 +428,8 @@ namespace Silence.View
                 Ui.Img(t, "Chevron", Skin.Arrow, 80 + i * 15, 117, 14, 14, i < u.Speed ? Skin.Cyan : Skin.Hex("1c2a33"));
             int id = u.Id;
             bool mine = mode != Mode.Busy && mode != Mode.Over && mode != Mode.Intro;
+            var speedTip = Ui.Catcher(t, "SpeedTip", 12, 110, 180, 28);
+            Tip.On(speedTip.GetComponent<Image>(), "Speed and the helm", () => Gloss.Explain(Gloss.Find("speed")) + "\n\nThe ghost on the board marked DRIFT is where she will end the turn.", Gloss.Shield);
             HelmButton(t, 130, 113, "-", mine && Battle.CheckThrottle(id, -1) == null, () => ClickThrottle(id, -1));
             HelmButton(t, 162, 113, "+", mine && Battle.CheckThrottle(id, 1) == null, () => ClickThrottle(id, 1));
             Ui.Stamp(t, "Heading " + u.Facing, 12, 196, 118, 88, 14, TextAlignmentOptions.Right, Skin.Dim);
@@ -471,6 +456,13 @@ namespace Silence.View
                 int arc = order[i];
                 float x = 14 + i * 68;
                 var slot = Ui.Img(t, "Arc", Skin.Slot, x, y, 64, 28, Color.white, true);
+                string[] arcNames = { "Fore", "Starboard", "Aft", "Port" };
+                string[] arcWhere = { "ahead of the ship", "on her right-hand flank", "behind her", "on her left-hand flank" };
+                int shieldsNow = u.Shields[arc], armorNow = u.Armor[arc], regen = u.ShieldRegen;
+                string arcName = arcNames[arc], where = arcWhere[arc];
+                Tip.On(slot, arcName + " arc", () => $"Shields {shieldsNow} / armor {armorNow}, against a hit from {where}.\n\n" +
+                    $"A hit here loses {shieldsNow} to shields, then {armorNow} to armor, and the rest comes off hull. Shields come back {regen} a turn; armor does not wear down.\n\n" +
+                    "Turn the ship to show an arc that still has shields.", Gloss.Shield);
                 Ui.Stamp(slot.transform, letters[arc], 12, 8, 8, 12, 14, TextAlignmentOptions.Left, Skin.BrassDark);
                 string sh = ColorUtility.ToHtmlStringRGB(u.Shields[arc] > u.MaxShields ? Color.white : u.Shields[arc] > 0 ? Skin.Cyan : Skin.Faint);
                 Ui.Number(slot.transform, $"<color=#{sh}>{u.Shields[arc]}</color><color=#555b6a>/</color><color=#8a90a0>{u.Armor[arc]}</color>",
@@ -627,6 +619,8 @@ namespace Silence.View
                 var i = list[n];
                 var u = Battle.Get(i.UnitId);
                 var row = Ui.Img(panel.transform, "Order", Skin.Slot, 10, 36 + n * 32, OrdersW - 20, 30, Color.white, true);
+                string orderText = i.Describe(Battle);
+                Tip.On(row, "Enemy order", () => orderText + ".\n\nThis is what the ship will do after you end your turn. An attack misses if its target has left the arc or range by then: the line on the board is bright if it will land as things stand, and faint if it will miss.", Gloss.Danger);
                 var color = i.Cancelled ? Skin.Faint : IntentColor(i);
                 Ui.Fill(row.transform, "Edge", 3, 4, 3, 22, color);
                 Ui.Art(row.transform, IntentIcon(i), 10, 3, 1f, i.Cancelled ? Skin.Faint : Color.white);

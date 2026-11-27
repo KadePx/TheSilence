@@ -130,6 +130,8 @@ namespace Silence.Meta
                 string blocked = RunRules.CanReply(run, reply);
                 int index = i;
                 var b = Ui.Btn(d, "", 40, y, w - 80, 62, () => Reply(index));
+                string does = RunRules.HailEffect(content, reply);
+                Tip.On(b.targetGraphic, reply.Tag, () => does + ".\n\n" + Gloss.Legend(does + " commander"), Gloss.Danger);
                 b.interactable = blocked == null;
                 Ui.Number(b.transform, (i + 1).ToString(), 24, 22, 19, 40, 24, TextAlignmentOptions.Center, blocked == null ? Skin.Brass : Skin.Faint);
                 Ui.Label(b.transform, reply.Label, Skin.BodyBold, 16, blocked == null ? Skin.Text : Skin.Faint, 80, 10, w - 200, 20);
@@ -191,7 +193,7 @@ namespace Silence.Meta
             {
                 var relic = content.Relic(run.Relics[i]);
                 var icon = Ui.Art(card.transform, ArtOr(relic.Icon, "icon_relic"), 18 + (i % perRow) * 54, 32 + (i / perRow) * 54, 1f);
-                icon.raycastTarget = true;
+                Tip.On(icon, relic.Name, () => relic.Text + (relic.Trophy ? "\n\nA trophy, taken from the commander who hunted you." : ""), Gloss.Relic);
                 var relay = icon.gameObject.AddComponent<PointerRelay>();
                 relay.Enter = () => SetInfo($"<color=#c9a24a>{(relic.Trophy ? "TROPHY" : "RELIC")}</color>  {relic.Name}: {relic.Text}");
                 relay.Exit = () => SetInfo(DefaultInfo());

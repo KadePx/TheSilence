@@ -32,7 +32,7 @@ namespace Silence.Meta
                 var line = Ui.Stamp(card.transform, def.Name, 12, 16, 34 + i * 18, 150, 14, TextAlignmentOptions.Left, state.Wounded ? Skin.Faint : Skin.Text);
                 Ui.Stamp(card.transform, state.Wounded ? "Wounded" : def.Role, 12, 150, 34 + i * 18, 134, 14, TextAlignmentOptions.Right, state.Wounded ? Skin.Bad : Skin.BrassDark)
                     .textWrappingMode = TextWrappingModes.NoWrap;
-                line.raycastTarget = true;
+                Tip.On(line, def.Role + ": " + def.Name, () => def.Text + (state.Wounded ? "\n\nWounded: no effect until a shipyard sickbay or the Council's relief crews return them to duty." : "\n\nA critical hit on the flagship wounds one officer."), "ebe0c6");
                 var relay = line.gameObject.AddComponent<PointerRelay>();
                 relay.Enter = () => SetInfo($"<color=#c9a24a>{def.Role.ToUpperInvariant()}</color>  {def.Name}: {def.Text}" +
                                             (state.Wounded ? "   <color=#d9573f>Wounded: no effect until a yard or the Council sees to it.</color>" : ""));
@@ -41,6 +41,7 @@ namespace Silence.Meta
             y += h + 8;
             var council = Ui.Btn(fleetRoot, $"Council - approval {run.Approval}/{content.Faction.MaxApproval}", 0, y, FleetW, 40, ShowCouncil, 16);
             council.interactable = run.Phase == RunPhase.Map;
+            Tip.On(council.targetGraphic, "The Council", () => Gloss.Explain(Gloss.Find("approval")), Gloss.Approval);
             return y + 50;
         }
 
@@ -65,6 +66,7 @@ namespace Silence.Meta
                 string blocked = RunRules.CanCallVote(run, content, m);
                 int index = i;
                 var row = Ui.Img(d, "Motion", Skin.Slot, 40, y, w - 80, 84, Color.white, true);
+                Tip.On(row, m.Name, () => m.Text + "\n\n" + Gloss.Legend(m.Text + " approval"), Gloss.Approval);
                 Ui.Heading(row.transform, m.Name, 16, 16, 14, 600, 20, TextAlignmentOptions.Left, blocked == null ? Skin.Text : Skin.Faint);
                 Ui.Stamp(row.transform, m.Text + (blocked != null ? $"   <color=#d9573f>({blocked})</color>" : ""), 12, 16, 46, 760, 14, TextAlignmentOptions.Left, Skin.Dim);
                 var vote = Ui.Btn(row.transform, $"{m.Cost} approval", w - 80 - 196, 18, 180, 48, () => Vote(index), 16);

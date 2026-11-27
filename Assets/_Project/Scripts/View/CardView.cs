@@ -26,7 +26,7 @@ namespace Silence.View
         TextMeshProUGUI costText;
         int baseCost;
 
-        public static CardView Create(Transform parent, CardDef def, string sourceName, string artSprite, int cost, string rulesText = null)
+        public static CardView Create(Transform parent, CardDef def, string sourceName, string artSprite, int cost, string rulesText = null, bool tips = true)
         {
             var rt = Ui.Box(parent, "Card " + def.Name, 0, 0, W, H);
             rt.pivot = new Vector2(0.5f, 0f);
@@ -39,6 +39,7 @@ namespace Silence.View
             var frameSprite = Data.ArtLibrary.Instance.Sprite("card_frame");
             view.plate = Ui.Img(rt, "Plate", frameSprite != null ? frameSprite : Skin.Plate, 0, 0, W, H, tint, frameSprite == null);
             view.plate.raycastTarget = true;
+            if (tips) Tip.On(view.plate, def.Name, () => Gloss.Legend(rulesText ?? def.Text), junk ? Gloss.Junk : Gloss.Command);
 
             // Art window of the frame: 182x88 at (19,61).
             var window = Ui.Box(rt, "Art", 19, 61, 182, 88);
@@ -67,7 +68,7 @@ namespace Silence.View
             name.overflowMode = TextOverflowModes.Truncate;
 
             // Rules text: well 191x101 at (14,165). Six lines of about 25 characters.
-            var body = Ui.Label(rt, Highlight(rulesText ?? def.Text), Skin.Body, 16, Skin.Text, 20, 169, 182, 96, TextAlignmentOptions.TopLeft);
+            var body = Ui.Label(rt, Gloss.Mark(Highlight(rulesText ?? def.Text), false), Skin.Body, 16, Skin.Text, 20, 169, 182, 96, TextAlignmentOptions.TopLeft);
             body.overflowMode = TextOverflowModes.Truncate;
 
             // Footer: 191x12 at (14,276). Ship on the left, card type on the right.

@@ -65,6 +65,7 @@ namespace Silence.Meta
                 var relic = content.Relic(offer.RelicChoices[i]);
                 int index = i;
                 var b = Ui.Btn(d, "", 40 + i * 490, 150, 470, 270, () => PickRelic(index));
+                Tip.On(b.targetGraphic, relic.Name, () => relic.Text + "\n\n" + Gloss.Legend(relic.Text + " relic"), Gloss.Relic);
                 Ui.Art(b.transform, ArtOr(relic.Icon, "icon_relic"), 187, 22, 2f).raycastTarget = false;
                 Ui.Heading(b.transform, relic.Name, 16, 20, 134, 430, 20, TextAlignmentOptions.Center, Skin.Hex("ffc46a"));
                 Ui.Body(b.transform, relic.Text, 16, 30, 170, 410, 80, TextAlignmentOptions.Top, Skin.Text);
@@ -102,6 +103,7 @@ namespace Silence.Meta
                 var relic = content.Relic(run.SectorRelics[i]);
                 int index = i;
                 var b = Ui.Btn(d, "", 40 + i * 478, 484, 464, 250, () => NextSector(index));
+                Tip.On(b.targetGraphic, relic.Name, () => relic.Text + "\n\n" + Gloss.Legend(relic.Text + " relic"), Gloss.Relic);
                 Ui.Art(b.transform, ArtOr(relic.Icon, "icon_relic"), 184, 18, 2f).raycastTarget = false;
                 Ui.Heading(b.transform, relic.Name, 16, 20, 126, 424, 20, TextAlignmentOptions.Center, Skin.Hex("ffc46a"));
                 Ui.Body(b.transform, relic.Text, 16, 30, 160, 404, 80, TextAlignmentOptions.Top, Skin.Text);

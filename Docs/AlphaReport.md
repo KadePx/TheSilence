@@ -696,3 +696,34 @@ Two backgrounds, two portraits, two ships: 90 generations. 779.6 of the 1,000 ar
 - Balance of the second sector rests on bot runs alone, and on one measurement.
 - The Drift reuses the first sector's encounters with tougher hulls; it has its own gate but not its own line fights.
 - The Chorus is still only a marker on the track and an event.
+
+## Colour-coded text and tooltips
+
+Kade's first reaction to playing M3 and M4: an event said the rivals moved by 0.8 node and there was no way to find
+out what that meant. Text should be colour-coded by what it does in play, and almost anything should explain itself
+on hover.
+
+- **One vocabulary** (`Gloss`, in `View/Tips.cs`): 27 rules words, each with one colour and one explanation. Green is
+  hull, red is damage and danger, orange is heat, cyan is shields, brass is scrap, blue is crew, pink is the race,
+  gold is relics, violet is hazards, rust is junk.
+- **Everywhere at once.** Body text and labels are marked as they are created, so the same word is the same colour
+  on the map, in events, the shipyard, the Council, hails, the briefing and in battle. Card text is coloured too.
+- **Hover a coloured word** and a tooltip explains it, with the names of this run filled in. The race tooltip says
+  what a node is, what moves the rivals, and what falling behind costs.
+- **Hover a thing** for a tooltip of its own: every map node (what is there, what it pays, why it can or cannot be
+  reached), event choices, shipyard services, Council motions, hail replies, relics, officers, modules, the race
+  track, cards outside battle, and in battle the four arc readouts on a ship card, the helm, command pips, each enemy
+  order and End Turn.
+- Event wording: "Rivals lose 0.8 node" is now "Rivals fall back 0.8 node", and a cost in time says "Costs time".
+
+### How it was checked
+
+215 EditMode tests pass. The tooltips were put on screen by pointing the tooltip layer at a spot from script (it
+normally follows the mouse): a word in the top bar, the race effect of an event choice, a shipyard service row, the
+heat label and an arc readout in battle (`ArtSource/Screenshots/tips_*.png`). They have not been tried with a real
+mouse, so how they feel while moving the pointer around (flicker, getting in the way) is untested.
+
+### Also fixed
+
+Scripted checks were writing to the same save file a real run uses, so they could overwrite a run in progress. They
+now use their own file.

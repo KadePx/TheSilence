@@ -161,13 +161,25 @@ namespace Silence.View
         public static TextMeshProUGUI Stamp(Transform parent, string text, float size, float x, float y, float w, float h,
             TextAlignmentOptions align = TextAlignmentOptions.Left, Color? color = null)
         {
-            var t = Label(parent, text.ToUpperInvariant(), Skin.Stencil, size, color ?? Skin.Dim, x, y, w, h, align);
+            var t = Label(parent, Gloss.Mark(text.ToUpperInvariant(), true, true), Skin.Stencil, size, color ?? Skin.Dim, x, y, w, h, align);
+            return Glossed(t);
+        }
+
+        /// <summary>
+        /// Make the rules words in a label hoverable. Stamps and body text get this as they are made; a label
+        /// whose text is set later calls it once and marks each new text with <see cref="Gloss.Mark"/>.
+        /// </summary>
+        public static TextMeshProUGUI Glossed(TextMeshProUGUI t, bool always = false)
+        {
+            if (!always && t.text.IndexOf("<link=", StringComparison.Ordinal) < 0) return t;
+            if (t.GetComponent<GlossText>() == null) t.gameObject.AddComponent<GlossText>().Text = t;
+            TipLayer.Ensure();
             return t;
         }
 
         public static TextMeshProUGUI Body(Transform parent, string text, float size, float x, float y, float w, float h,
             TextAlignmentOptions align = TextAlignmentOptions.TopLeft, Color? color = null)
-            => Label(parent, text, Skin.Body, size, color ?? Skin.Text, x, y, w, h, align);
+            => Glossed(Label(parent, Gloss.Mark(text), Skin.Body, size, color ?? Skin.Text, x, y, w, h, align));
 
         public static TextMeshProUGUI Number(Transform parent, string text, float size, float x, float y, float w, float h,
             TextAlignmentOptions align = TextAlignmentOptions.Left, Color? color = null)
