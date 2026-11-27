@@ -89,7 +89,11 @@
      "facing": "W"
     }
    ],
-   "epitaph": "The audit is closed. Nobody in the Ascendancy will be told how it balanced."
+   "epitaph": "The audit is closed. Nobody in the Ascendancy will be told how it balanced.",
+   "retortEdict": "You read me a charter. I have audited charters. They burn at the same temperature as everything else.",
+   "retortFire": "Unprovoked fire on an officer of the Inquisition. Entered. Signed. Carried forward.",
+   "retortBoard": "You jammed my relay by committee. How many of you did it take to agree?",
+   "retortSilence": "No statement. The record will show you had the opportunity."
   },
   {
    "id": "achter",
@@ -153,7 +157,11 @@
      "facing": "W"
     }
    ],
-   "epitaph": "Clean Hand's crew were found at their posts. They had not been given leave to abandon ship."
+   "epitaph": "Clean Hand's crew were found at their posts. They had not been given leave to abandon ship.",
+   "retortEdict": "Boarded under your charter. Come and board me. Bring all forty delegates.",
+   "retortFire": "Finally. Somebody on that ship who does not need a second.",
+   "retortBoard": "My Blades cannot hear me. They do not need to. They know what I would say.",
+   "retortSilence": "Quiet. I have had quieter crews. I had them shot too."
   },
   {
    "id": "rell",
@@ -238,7 +246,11 @@
      "facing": "W"
     }
    ],
-   "epitaph": "The vats will be relit. It will be a month before anything walks out of them."
+   "epitaph": "The vats will be relit. It will be a month before anything walks out of them.",
+   "retortEdict": "Stand down? They would not know how. I never grew that into them.",
+   "retortFire": "You fire on children. Mine are nine days old. I will make more.",
+   "retortBoard": "You have cut me off from them. They will be so frightened. That is on you.",
+   "retortSilence": "You will not even speak to me. They always spoke to me, in the vats."
   }
  ],
  "relics": [

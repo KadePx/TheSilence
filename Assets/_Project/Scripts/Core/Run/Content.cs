@@ -166,6 +166,8 @@ namespace Silence.Core.Run
         public List<EncounterUnit>[] Escorts = { new List<EncounterUnit>(), new List<EncounterUnit>(), new List<EncounterUnit>() };
         /// <summary>Hail lines: first meeting, after escaping you, after a stand-off, and at rank 3.</summary>
         public string HailFirst = "", HailEscaped = "", HailStandoff = "", HailFinal = "";
+        /// <summary>What they say back to each kind of reply ("edict", "fire", "board", "silence"), as the fight opens.</summary>
+        public Dictionary<string, string> Retorts = new Dictionary<string, string>();
         /// <summary>What is said over the wreck.</summary>
         public string Epitaph = "";
         /// <summary>Relic id taken from the wreck.</summary>

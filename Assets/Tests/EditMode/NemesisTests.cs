@@ -117,6 +117,10 @@ namespace Silence.Tests
                 foreach (string line in new[] { n.HailFirst, n.HailEscaped, n.HailStandoff, n.HailFinal }) Assert.IsNotEmpty(line, n.Id);
             }
             foreach (var reply in c.HailReplies) Assert.IsNotEmpty(RunRules.HailEffect(c, reply));
+            foreach (string id in ContentLoader.Factions)
+                foreach (var n in ContentLoader.Load(id).Nemeses)
+                    foreach (var reply in ContentLoader.Load(id).HailReplies)
+                        Assert.IsNotEmpty(n.Retorts[reply.Effect], $"{n.Id} has no answer to {reply.Id}");
             Assert.IsTrue(c.Relics.Count(x => !x.Trophy) >= 5);
             Assert.AreEqual(c.Relics.Count, c.Relics.Select(x => x.Id).Distinct().Count());
         }
@@ -396,6 +400,8 @@ namespace Silence.Tests
             var b = Fight(r, "edict");
             Assert.AreEqual(c.Config.HailEdictScrapPercent, r.PendingRewardPercent);
             Assert.AreEqual(c.Config.HailEdictDamage, b.EnemyDamageBonus);
+            Assert.AreEqual(c.Nemesis(r.Nemesis.Id).Retorts["edict"], b.OpeningLine, "they answer what you said");
+            Assert.IsNotEmpty(b.OpeningSpeaker);
             Assert.IsTrue(b.EnemyFocusFlagship);
             b.Start();
             foreach (var i in b.Intents.Where(i => i.Kind == IntentKind.Broadside || i.Kind == IntentKind.CraftAttack))

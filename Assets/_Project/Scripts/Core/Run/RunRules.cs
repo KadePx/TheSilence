@@ -517,6 +517,12 @@ namespace Silence.Core.Run
             }
             if (nemesisFight)
             {
+                var speaker = c.Nemesis(nem.Id);
+                if (speaker.Retorts.TryGetValue(string.IsNullOrEmpty(r.PendingHail) ? "silence" : r.PendingHail, out string retort) && retort != "")
+                {
+                    b.OpeningLine = retort;
+                    b.OpeningSpeaker = speaker.Name.Split(' ').Last();
+                }
                 if (r.PendingHail == "edict")
                 {
                     b.EnemyDamageBonus = cfg.HailEdictDamage;

@@ -201,7 +201,7 @@ namespace Silence.Data
         [Serializable]
         class NemesisDto
         {
-            public string id, name, title, ship, portrait, trait, tactic, hailFirst, hailEscaped, hailStandoff, hailFinal, trophy, epitaph;
+            public string id, name, title, ship, portrait, trait, tactic, hailFirst, hailEscaped, hailStandoff, hailFinal, trophy, epitaph, retortEdict, retortFire, retortBoard, retortSilence;
             public int scrap;
             public UnitDto[] rank1, rank2, rank3;
         }
@@ -229,6 +229,10 @@ namespace Silence.Data
                     HailFirst = n.hailFirst ?? "", HailEscaped = n.hailEscaped ?? "", HailStandoff = n.hailStandoff ?? "", HailFinal = n.hailFinal ?? "", Epitaph = n.epitaph ?? "",
                     Trophy = n.trophy ?? "", Scrap = n.scrap,
                 };
+                def.Retorts["edict"] = n.retortEdict ?? "";
+                def.Retorts["fire"] = n.retortFire ?? "";
+                def.Retorts["board"] = n.retortBoard ?? "";
+                def.Retorts["silence"] = n.retortSilence ?? "";
                 var ranks = new[] { n.rank1, n.rank2, n.rank3 };
                 for (int i = 0; i < 3; i++)
                     foreach (var u in ranks[i] ?? new UnitDto[0]) def.Escorts[i].Add(Unit(u));

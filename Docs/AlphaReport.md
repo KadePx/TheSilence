@@ -571,6 +571,8 @@ screens that match each other.
   passing as "weather", the old Kessane battlefield that both factions keep referring to, a market that sells to anyone.
 - **An aftermath line on every encounter**, shown with the salvage (what was in the picket's log, what the vat-ship
   was carrying).
+- **Every commander answers the reply you gave** (four answers each, 24 lines), on the open channel as the fight
+  starts, and the hail now shows their ship beside the dossier.
 - **An epitaph for every commander**, and one journal line each for the first time the rival fleet and the Chorus
   get ahead of you.
 
@@ -612,7 +614,7 @@ generations. 669.6 of the 1,000 are spent.
 
 ### Still open
 
-- Hail replies are still one set per faction.
+- Hail replies are still one set per faction (the commanders' answers differ; your options do not).
 - Scars are text and the red hex; the portraits do not change.
 - The Concord and Ascendancy line ships are shared between player and enemy.
 - No music. The tutorial and skirmish are Ascendancy only.

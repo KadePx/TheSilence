@@ -80,6 +80,8 @@ namespace Silence.Core.Battle
         public string Hazard = "";
         /// <summary>What that hazard changes, in a sentence.</summary>
         public string HazardText = "";
+        /// <summary>A line spoken as the fight opens (a commander answering your reply), with who says it.</summary>
+        public string OpeningLine = "", OpeningSpeaker = "";
 
         /// <summary>A weapon's range as it is in this battle.</summary>
         public int Reach(int range) => Math.Max(1, range - RangePenalty);

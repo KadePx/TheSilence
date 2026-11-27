@@ -119,6 +119,12 @@ namespace Silence.View
             mode = battle.Outcome == BattleOutcome.Ongoing ? Mode.Idle : Mode.Over;
             Refresh();
             if (mode == Mode.Over) ShowEndScreen();
+            else if (!string.IsNullOrEmpty(battle.OpeningLine) && battle.Turn <= 1)
+            {
+                // The commander's answer to your reply, on the open channel as the fleets close.
+                Flash($"<color=#ffc46a>{battle.OpeningSpeaker.ToUpperInvariant()}</color>  \"{battle.OpeningLine}\"");
+                flashUntil = Time.unscaledTime + 10f;
+            }
             else if (!string.IsNullOrEmpty(battle.Hazard) && battle.Turn <= 1)
             {
                 // Say once, where the eye already is, what is different about this field.
