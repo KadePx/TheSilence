@@ -878,4 +878,15 @@ Three PixelLab calls, 30 generations (859.6 of 1,000 spent). Screenshot: `ArtSou
 - Hits land on the side of the hull facing the attacker. The hull recoils, the lost slice of the hull bar stays white and drains, heavy hits and capital kills jolt the board, and the floater says what the shields took. "SHIELDS HOLD" and "ARMOR HOLDS" replace "ABSORBED". A miss now fires and goes wide, with the reason over the attacker.
 - The log is written in plain words: no unit numbers, die rolls or compass letters.
 - Five enemy types have their own hulls: Vat-warden, Bastion cruiser, Blade lancer, Line frigate, Torpedo skiff (50 PixelLab generations; about 910 of 1,000 used).
-- 225 EditMode tests pass. Not yet checked in Play Mode: none of the above has been seen on screen.
+- 225 EditMode tests pass.
+
+Checked in Play Mode afterwards (screenshot `ArtSource/Screenshots/m5_board_pass.png`), and fixed what it showed:
+
+- The hit number and the shield note sat on top of each other and the flare: the number now rises above the hull and the note sits under it.
+- The Blade lancer sprite held two ships; it is cropped to one.
+- The log wrapped without an indent and repeated itself on a critical. Wrapped lines now hang under their first word, a critical is one line, and the panel shows the last 11 entries.
+- Enemy order rows cut "Bastion cruiser" to "CRUISER"; they keep the whole name when it fits.
+- Drift ghosts are fainter, so a big hull next to its own ghost no longer reads as two ships joined.
+- The carrier in ordinary Concord fights was named Long Promise and drawn as Venn's flagship. It is now "Concord carrier" with its own hull (10 more generations, about 920 of 1,000 used). The rules are unchanged.
+- The skull on the Council Vote ballot box is painted out for a ring.
+- With four enemy ships staged in a clump, every chip found a clear place. A miss was played without errors but not captured mid-flight, so the wide shot itself is unseen.
