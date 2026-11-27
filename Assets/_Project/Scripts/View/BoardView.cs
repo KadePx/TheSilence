@@ -387,7 +387,7 @@ namespace Silence.View
                 ghost.transform.rotation = v.Body.rotation;
                 var c = u.Side == Side.Player ? Skin.Alpha(Skin.Cyan, 0.5f) : Skin.Alpha(Skin.Warn, 0.4f);
                 // In the side's colour, not the hull's own: a white ghost one hex ahead read as a second ship lying over the first.
-                ghost.color = new Color(c.r, c.g, c.b, 0.3f);
+                ghost.color = new Color(c.r, c.g, c.b, 0.18f);
                 Dashes(World(u.Pos), World(dest), c, 0.09f, 0.16f, 0.22f, -21, false);
             }
 

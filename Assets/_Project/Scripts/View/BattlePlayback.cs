@@ -191,12 +191,12 @@ namespace Silence.View
                     if (e.Absorbed > 0)
                     {
                         Sfx.Play("sfx_shield", 0.8f);
-                        board.ShieldFlare(at, v.Capital);
+                        board.ShieldFlare(at, v.Capital && e.Amount == 0);
                     }
                     if (e.Amount > 0)
                     {
-                        Floater(v.Root.position, "-" + e.Amount, Skin.Bad, v.Capital ? 34 : 24);
-                        if (e.Absorbed > 0) Floater(v.Root.position + Vector3.down * 0.75f, $"SHIELDS TOOK {e.Absorbed}", Skin.Cyan, 16);
+                        Floater(v.Root.position + Vector3.up * (v.Capital ? 0.9f : 0.3f), "-" + e.Amount, Skin.Bad, v.Capital ? 34 : 24);
+                        if (e.Absorbed > 0) Floater(v.Root.position + Vector3.down * 1.9f, $"SHIELDS TOOK {e.Absorbed}", Skin.Cyan, 16);
                         Sfx.Play("sfx_hit", 0.8f);
                         StartCoroutine(board.Flash(v, Skin.Bad, 0.25f));
                         board.HitSpark(at);

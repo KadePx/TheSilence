@@ -30,6 +30,18 @@ namespace Silence.Core.Battle
             UnitSpec.Capital("Long Promise", 32, 2, 2, 2, 1, 4, 1, 0, 0, 1, AiProfile.Carrier),
             IntentStep.Of(IntentKind.LaunchCraft, 2), IntentStep.Of(IntentKind.PatchUp, 4), IntentStep.Of(IntentKind.JointFire));
 
+        /// <summary>The carrier met in ordinary fights. Same ship as <see cref="Carrier"/> in the rules; it is not Venn's flagship, so it has its own name and hull.</summary>
+        public static UnitSpec FleetCarrier
+        {
+            get
+            {
+                var s = Carrier;
+                s.Id = "con_carrier";
+                s.Name = "Concord carrier";
+                return s;
+            }
+        }
+
         /// <summary>Concord escort: fast, fragile, fights with its fore guns.</summary>
         public static UnitSpec Skiff => Cycled("con_skiff",
             UnitSpec.Capital("Concord skiff", 9, 0, 0, 0, 0, 2, 1, 0, 0, 3, AiProfile.Frigate),
@@ -118,7 +130,7 @@ namespace Silence.Core.Battle
                 case "dart": return PaperUnits.Dart;
                 case "frigate": return PaperUnits.Frigate;
                 case "gunship": return PaperUnits.Gunship;
-                case "carrier": return PaperUnits.Carrier;
+                case "carrier": return PaperUnits.FleetCarrier;
                 case "skiff": return PaperUnits.Skiff;
                 case "tender": return PaperUnits.Tender;
                 case "venn": return PaperUnits.VennFlagship;

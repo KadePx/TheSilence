@@ -625,7 +625,8 @@ namespace Silence.View
                 var color = i.Cancelled ? Skin.Faint : IntentColor(i);
                 Ui.Fill(row.transform, "Edge", 3, 4, 3, 22, color);
                 Ui.Art(row.transform, IntentIcon(i), 10, 3, 1f, i.Cancelled ? Skin.Faint : Color.white);
-                string head = $"<color=#8a90a0>{ShortName(u)}</color>  <color=#{ColorUtility.ToHtmlStringRGB(color)}>{(i.Cancelled ? "CANCELLED" : IntentShort(i))}</color>";
+                string order = i.Cancelled ? "CANCELLED" : IntentShort(i);
+                string head = $"<color=#8a90a0>{ShortName(u, 29 - order.Length)}</color>  <color=#{ColorUtility.ToHtmlStringRGB(color)}>{order}</color>";
                 var h = Ui.Label(row.transform, head, Skin.Stencil, 12, Skin.Text, 40, 9, OrdersW - 70, 14);
                 h.textWrappingMode = TextWrappingModes.NoWrap;
                 h.overflowMode = TextOverflowModes.Ellipsis;
@@ -724,12 +725,12 @@ namespace Silence.View
             Ui.Label(chip.transform, text, Skin.Stencil, 12, color, 0, 1, w, 14, TextAlignmentOptions.Center).textWrappingMode = TextWrappingModes.NoWrap;
         }
 
-        /// <summary>"Concord frigate" reads as FRIGATE in a narrow row.</summary>
-        static string ShortName(Unit u)
+        /// <summary>The whole name when the row has room for it; otherwise its last word ("Hand of the Prime" reads as PRIME).</summary>
+        static string ShortName(Unit u, int room)
         {
             string n = u.Name.ToUpperInvariant();
             int space = n.LastIndexOf(' ');
-            return n.Length > 12 && space >= 0 ? n.Substring(space + 1) : n;
+            return n.Length > room && space >= 0 ? n.Substring(space + 1) : n;
         }
 
         /// <summary>A small plate over each enemy saying what it will do, so orders read on the board itself.</summary>
@@ -816,7 +817,9 @@ namespace Silence.View
                 default: return; // phases, draws, drift steps, regen and the like stay out of the log
             }
             if (e.Kind == EventKind.Damage && e.Amount == 0) color = e.Absorbed > 0 ? "7fdcf2" : "8a90a0";
-            logLines.Add($"<color=#{color}>{LogLine(e)}</color>");
+            // A critical on your own ship is followed by the junk card it adds: that line says both.
+            if (e.Kind == EventKind.Critical && e.Text.EndsWith(")")) return;
+            logLines.Add($"<line-indent=-10><color=#{color}>{LogLine(e)}</color></line-indent>");
             if (logLines.Count > 80) logLines.RemoveAt(0);
         }
 
@@ -862,6 +865,8 @@ namespace Silence.View
                     return u != null && u.IsCapital ? $"{who} joins the fight" : $"{who} launched";
                 case EventKind.Destroyed: return $"{who} destroyed";
                 case EventKind.IntentCancelled: return $"{who}: order cancelled";
+                case EventKind.CardAdded:
+                    return text.Replace("Critical on ", "Critical hit on ").Replace(" added to the discard pile", " added to your deck");
                 case EventKind.Critical:
                 {
                     int colon = e.Text.IndexOf("): ");
@@ -889,7 +894,7 @@ namespace Silence.View
         void RefreshLog()
         {
             if (!logOpen) return;
-            logText.text = string.Join("\n", logLines.Skip(Mathf.Max(0, logLines.Count - 14)));
+            logText.text = "<margin-left=10>" + string.Join("\n", logLines.Skip(Mathf.Max(0, logLines.Count - 11)));
         }
 
         // ---------------------------------------------------------------- floating text
