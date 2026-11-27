@@ -65,7 +65,7 @@ namespace Silence.Core.Battle
 
         /// <summary>Gate of the second sector on the Ascendancy's route: Fleet-Speaker Dray's dreadnought, with everything the Concord has left.</summary>
         public static UnitSpec CommonCause => Cycled("con_commoncause",
-            UnitSpec.Capital("Common Cause", 42, 2, 2, 2, 1, 4, 1, 0, 0, 1, AiProfile.Carrier),
+            UnitSpec.Capital("Common Cause", 38, 2, 2, 2, 1, 4, 1, 0, 0, 1, AiProfile.Carrier),
             IntentStep.Fire("Mass Driver", 12, Arc.Fore, 6), IntentStep.Of(IntentKind.LaunchCraft, 2), IntentStep.Fire("Broadside", 8, Sides, 3),
             IntentStep.Of(IntentKind.JointFire), IntentStep.Of(IntentKind.PatchUp, 4), IntentStep.Of(IntentKind.Maneuver));
 

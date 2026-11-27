@@ -442,7 +442,7 @@
    "scatterDebris": 2,
    "reinforcements": [
     {
-     "unit": "frigate",
+     "unit": "skiff",
      "col": 7,
      "row": 6,
      "speed": 2,

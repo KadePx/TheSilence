@@ -169,12 +169,12 @@ namespace Silence.Meta
                     Ui.Img(row.transform, "Icon", icon, 8 + (40 - icon.rect.width * s) / 2f, 2 + (40 - icon.rect.height * s) / 2f, icon.rect.width * s, icon.rect.height * s);
                 }
                 string cycle = spec.Cycle.Length > 0
-                    ? string.Join(" > ", spec.Cycle.Select(StepName))
+                    ? string.Join(" > ", spec.Cycle.Take(4).Select(StepName)) + (spec.Cycle.Length > 4 ? " > more" : "")
                     : spec.Kind == UnitKind.Craft ? $"goes for the aft, {spec.AttackDamage} damage" : "";
                 Ui.Label(row.transform, $"{group.Count()} x {spec.Name.ToUpperInvariant()}", Skin.Heading, 16, Skin.Text, 60, 13, 300, 20);
                 var orders = Ui.Body(row.transform, $"Hull {spec.Hull}   " + cycle, 16, 330, 14, w - 346, 16, TextAlignmentOptions.TopLeft, Skin.Dim);
                 orders.textWrappingMode = TextWrappingModes.NoWrap;
-                orders.overflowMode = TextOverflowModes.Ellipsis;
+                orders.overflowMode = TextOverflowModes.Overflow;
                 y += 48;
             }
             return y;

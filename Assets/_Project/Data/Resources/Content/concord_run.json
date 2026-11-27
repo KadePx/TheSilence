@@ -521,7 +521,7 @@
   {
    "id": "run_dark",
    "name": "Run dark",
-   "text": "Both rival fleets lose 0.8 node.",
+   "text": "Both rival fleets fall back 0.8 node.",
    "cost": 2,
    "rivalsBack": 8
   }

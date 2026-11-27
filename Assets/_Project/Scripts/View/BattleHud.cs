@@ -155,16 +155,17 @@ namespace Silence.View
             int darts = Battle.LiveUnits(Side.Player).Count(u => u.Kind == UnitKind.Craft && !u.CraftActed);
             int dartsOut = Battle.PlayerCraftCount();
 
+            bool early = InTutorial || Battle.Turn <= 2;
             var lines = new List<string>();
-            lines.Add(playable > 0
+            if (early) lines.Add(playable > 0
                 ? $"<color=#e8c870>CARDS</color>  {playable} you can play"
                 : "<color=#555b6a>CARDS  none you can afford</color>");
-            if (dartsOut > 0)
+            if (dartsOut > 0 && (early || darts > 0))
                 lines.Add(darts > 0
                     ? $"<color=#7fdcf2>{CraftWord.ToUpperInvariant()}S</color>  {darts} ready: click one to move it"
                     : $"<color=#555b6a>{CraftWord.ToUpperInvariant()}S  all have acted</color>");
             int helms = Battle.LiveUnits(Side.Player).Count(u => u.IsCapital && !u.ThrottleUsed);
-            lines.Add(helms > 0
+            if (early) lines.Add(helms > 0
                 ? "<color=#7fdcf2>HELM</color>  set speed with - + on a ship card"
                 : "<color=#555b6a>HELM  speed is set for this turn</color>");
             Ui.Glossed(actionsText, true).text = Gloss.Mark(string.Join("\n", lines), true, true);
@@ -194,9 +195,9 @@ namespace Silence.View
             {
                 "Enemies show their orders before you act. A solid red line will hit; a faded one misses as things stand.",
                 "Cards cost command. A weapon needs its target inside the weapon's arc and range.",
-                "Ships drift straight ahead by their Speed when you end the turn. Set Speed with - and + on a ship card, one step a turn. Cards turn the ship.",
+                "Ships drift straight ahead by their Speed when you end the turn. Set Speed with the minus and plus buttons on a ship card, one step a turn. Cards turn the ship.",
                 "A hit lands on the arc facing the attacker: shields soak it first, then armor, then hull.",
-                "Leave an enemy's arc or range and its shot misses. Heat over the cap adds Fire on Deck. Darts move by hand: click one, then a hex or an enemy.",
+                "Leave an enemy's arc or range and its shot misses. Heat over the cap adds Fire on Deck. " + char.ToUpperInvariant(CraftWord[0]) + CraftWord.Substring(1) + "s move by hand: click one, then a hex or an enemy.",
             };
             for (int i = 0; i < rules.Length; i++)
             {
@@ -479,7 +480,7 @@ namespace Silence.View
             var notes = new List<string>();
             if (u.FleesAtHull > 0) notes.Add($"Breaks off at {u.FleesAtHull} hull, after the enemy acts.");
             if (u.LanceWard > 0) notes.Add($"Lance baffles: lance hits deal {u.LanceWard} less.");
-            if (u.CraftWard > 0) notes.Add($"Point defence: darts deal {u.CraftWard} less.");
+            if (u.CraftWard > 0) notes.Add($"Point defence: {CraftWord}s deal {u.CraftWard} less.");
             float h = (u.IsCapital ? 190 : 118) + notes.Count * 34;
             var card = Ui.Panel(unitPanel, "Target", 0, y, FleetW, h);
             var t = card.transform;
@@ -854,7 +855,7 @@ namespace Silence.View
         {
             mode = Mode.Over;
             var d = OpenOverlay(760, 470, 0.66f);
-            string title = tutorialBattle && Battle.Outcome == BattleOutcome.Victory ? "Tutorial complete" : Battle.Outcome == BattleOutcome.Victory ? "Victory" : Battle.Outcome == BattleOutcome.Defeat ? "Defeat" : "Withdrawal";
+            string title = tutorialBattle && Battle.Outcome == BattleOutcome.Victory ? "Tutorial complete" : Battle.Outcome == BattleOutcome.Victory ? (Battle.Units.Exists(u => u.Escaped) ? "Driven off" : "Victory") : Battle.Outcome == BattleOutcome.Defeat ? "Defeat" : "Withdrawal";
             var color = Battle.Outcome == BattleOutcome.Victory ? Skin.Brass : Battle.Outcome == BattleOutcome.Defeat ? Skin.Bad : Skin.Warn;
             Ui.Label(d, title, Skin.Logo, 64, color, 0, 36, 760, 80, TextAlignmentOptions.Center);
             string line = Battle.Outcome == BattleOutcome.Victory ? "Every enemy capital ship is destroyed."

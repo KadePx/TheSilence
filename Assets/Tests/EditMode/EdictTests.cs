@@ -132,6 +132,7 @@ namespace Silence.Tests
             RunRules.FinishBattle(r, c, b);
             Assert.IsTrue(r.Edict.Failed);
             Assert.AreEqual("Broken", RunRules.EdictProgress(r, c));
+            Assert.AreEqual(1, r.Journal.Count(l => l.StartsWith("The Edict cannot now be obeyed")), "the journal says so at once, and once");
 
             r.Ordinals = 10;
             int scrap = r.Scrap;

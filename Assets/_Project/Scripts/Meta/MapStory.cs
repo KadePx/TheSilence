@@ -94,8 +94,9 @@ namespace Silence.Meta
             Ui.Heading(d, next.Name, 32, 758, 56, 700, 36);
             var text = Ui.Label(d, next.Arrival, Skin.Body, 16, Skin.Text, 760, 116, 700, 240, TextAlignmentOptions.TopLeft);
             text.lineSpacing = 20f;
-            Ui.Body(d, $"<color=#8cc47a>In the gate's yards: every hull mended, a lost escort replaced, junk stripped, the wounded back on duty, {content.Faction.CraftName} and {content.Faction.CrewName.ToLowerInvariant()} made up.</color>",
-                16, 760, 362, 700, 60, TextAlignmentOptions.TopLeft);
+            // One colour: this is a single piece of good news, not six rules words.
+            Ui.Label(d, $"In the gate's yards: every hull mended, a lost escort replaced, junk stripped, the wounded back on duty, {content.Faction.CraftName} and {content.Faction.CrewName.ToLowerInvariant()} made up.",
+                Skin.Body, 16, Skin.Good, 760, 362, 700, 60, TextAlignmentOptions.TopLeft);
 
             Ui.Stamp(d, run.SectorRelics.Count > 0 ? "From the wreck of the gate fleet - take one" : "Nothing left worth taking", 12, 40, 458, 800, 14, TextAlignmentOptions.Left, Skin.Brass);
             for (int i = 0; i < run.SectorRelics.Count; i++)

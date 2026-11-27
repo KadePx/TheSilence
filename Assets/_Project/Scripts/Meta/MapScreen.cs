@@ -192,7 +192,7 @@ namespace Silence.Meta
                 for (int slot = 0; slot < run.Modules.Count; slot++)
                 {
                     var m = content.Module(run.Modules[slot]);
-                    Ui.Stamp(t, m.Slot, 12, 16, 70 + slot * 18, 96, 14, TextAlignmentOptions.Left, Skin.BrassDark);
+                    Ui.Stamp(t, m.Slot, 12, 16, 70 + slot * 18, 96, 14, TextAlignmentOptions.Left, Skin.Dim);
                     var moduleName = Ui.Stamp(t, m.Name, 12, 112, 70 + slot * 18, 176, 14, TextAlignmentOptions.Left, Skin.Text);
                     moduleName.textWrappingMode = TextWrappingModes.NoWrap;
                     Tip.On(moduleName, m.Slot + " module: " + m.Name, () => (string.IsNullOrEmpty(m.Text) ? "" : m.Text + ".\n\n") +
@@ -207,7 +207,8 @@ namespace Silence.Meta
             y += 50;
 
             // The journal: only the last few lines, and only once there is something to say.
-            var lines = run.Journal.Skip(Math.Max(0, run.Journal.Count - 4)).ToList();
+            var told = run.Journal.Where(l => !l.StartsWith("Relic: ") && !l.StartsWith("Edict of the Prime: ")).ToList();
+            var lines = told.Skip(Math.Max(0, told.Count - 3)).ToList();
             if (lines.Count == 0) return;
             var log = Ui.Panel(fleetRoot, "Journal", 0, y, FleetW, 200);
             var text = Ui.Label(log.transform, string.Join("\n", lines), Skin.Stencil, 12, Skin.Dim, 16, 14, FleetW - 32, 172, TextAlignmentOptions.TopLeft);
@@ -224,7 +225,7 @@ namespace Silence.Meta
             Ui.Clear(trackRoot);
             var t = trackRoot;
             float w = Ui.RefW - LeftW - 22;
-            Ui.Stamp(t, "The race to the gate", 12, 18, 14, 300, 14, TextAlignmentOptions.Left, Skin.BrassDark);
+            Ui.Label(t, "THE RACE", Skin.Stencil, 12, Skin.BrassDark, 18, 14, 300, 14, TextAlignmentOptions.Left);
             float x0 = 320, x1 = w - 130, yLine = 46;
             int length = RunRules.TrackLength(run);
             Ui.Fill(t, "Line", x0, yLine - 1, x1 - x0, 3, Skin.Faint);
@@ -245,10 +246,10 @@ namespace Silence.Meta
             Tip.On(raceTip.GetComponent<Image>(), "The race", () => Gloss.Explain(Gloss.Find("race")) +
                 $"\n\nNow: {rival} {(run.ConcordProgress - run.PlayerProgress) / 10f:+0.0;-0.0;0.0} node, {third} {(run.ChorusProgress - run.PlayerProgress) / 10f:+0.0;-0.0;0.0} node, relative to you.", Gloss.Race);
             raceTip.transform.SetAsFirstSibling();
-            Ui.Body(t, Lead(rival, run.ConcordProgress), 16, 18, 34, 300, 16, TextAlignmentOptions.TopLeft, Skin.Dim).textWrappingMode = TextWrappingModes.NoWrap;
-            Ui.Body(t, Lead(third, run.ChorusProgress), 16, 18, 54, 300, 16, TextAlignmentOptions.TopLeft, Skin.Dim).textWrappingMode = TextWrappingModes.NoWrap;
+            Ui.Label(t, Lead(rival, run.ConcordProgress), Skin.Body, 16, Skin.Dim, 18, 34, 300, 16, TextAlignmentOptions.TopLeft).textWrappingMode = TextWrappingModes.NoWrap;
+            Ui.Label(t, Lead(third, run.ChorusProgress), Skin.Body, 16, Skin.Dim, 18, 54, 300, 16, TextAlignmentOptions.TopLeft).textWrappingMode = TextWrappingModes.NoWrap;
             if (run.Nemesis.Hunting)
-                Ui.Stamp(t, $"{content.Nemesis(run.Nemesis.Id).Name.Split(' ').Last()} hunts you - rank {Roman(run.Nemesis.Rank)}", 12, 18, 78, 230, 14, TextAlignmentOptions.Left, Skin.Bad);
+                Ui.Stamp(t, $"{content.Nemesis(run.Nemesis.Id).Name.Split(' ').Last()} hunts you - rank {Roman(run.Nemesis.Rank)}", 12, 96, 14, 214, 14, TextAlignmentOptions.Right, Skin.Bad);
         }
 
         string Lead(string name, int progress)
@@ -398,7 +399,7 @@ namespace Silence.Meta
                 string label = NemesisHere(n) ? "Nemesis" : n.Kind == NodeKind.Nemesis ? "Battle" : KindName(n.Kind);
                 bool hazardous = !string.IsNullOrEmpty(n.Hazard) && !NemesisHere(n) && (n.Kind == NodeKind.Battle || n.Kind == NodeKind.Elite || n.Kind == NodeKind.Nemesis);
                 if (hazardous && !n.Visited) Ui.Stamp(mapRoot, Hazards.Name(n.Hazard), 12, p.x - 80, p.y + size / 2f + 24, 160, 14, TextAlignmentOptions.Center, Skin.Hex("b48cf0"));
-                Ui.Stamp(mapRoot, jumpTo ? label + " - jump" : label, 12, p.x - 80, p.y + size / 2f + 8, 160, 14, TextAlignmentOptions.Center,
+                Ui.Stamp(mapRoot, jumpTo ? label + " - jump" : label, 12, p.x - 80, p.y + size / 2f + (n.Id == run.CurrentNode ? 16 : 8), 160, 14, TextAlignmentOptions.Center,
                     jumpTo ? Skin.Cyan : NemesisHere(n) ? Skin.Bad : can ? Skin.BrassLight : Skin.Dim);
             }
 

@@ -897,10 +897,13 @@ namespace Silence.Core.Run
             if (r.Edict.InForce)
             {
                 string order = c.Edict(r.Edict.Id).Kind;
+                bool wasFailed = r.Edict.Failed;
                 if (order == "expend") r.Edict.Progress += b.OrdinalsExpended;
                 if (order == "no_standoff" && b.Outcome == BattleOutcome.Withdrawal) r.Edict.Failed = true;
                 if (order == "win_elite" && b.Outcome == BattleOutcome.Victory && enc.Tier == 2) r.Edict.Progress++;
                 if (order == "keep_escort" && b.Units.Any(u => u.Side == Side.Player && u.IsCapital && !u.IsFlagship && !u.Alive)) r.Edict.Failed = true;
+                // Say so at once: the player should not learn at the gate that it was lost six nodes back.
+                if (r.Edict.Failed && !wasFailed) r.Journal.Add($"The Edict cannot now be obeyed: {c.Edict(r.Edict.Id).Name}. An Inquisitor waits at the gate.");
             }
             r.Ordinals = Math.Max(0, b.Ordinals);
             if (b.DartsInHangar >= 0) r.Darts = Math.Min(r.MaxDarts, b.DartsInHangar + b.PlayerCraftCount());

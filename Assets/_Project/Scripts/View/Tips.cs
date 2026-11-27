@@ -36,7 +36,7 @@ namespace Silence.View
         // Longer phrases first: the first alternative that matches wins.
         static readonly Term[] Terms =
         {
-            new Term { Id = "race", Colour = Race, Title = "The race", Pattern = @"costs time: rivals gain \d+(?:\.\d+)? nodes?|rivals (?:gain|lose|fall back) \d+(?:\.\d+)? nodes?|(?:both )?rival fleets lose \d+(?:\.\d+)? nodes?|\d+(?:\.\d+)? nodes?|rival fleets?|rivals?|the race|costs time|dock time|nodes? ahead|nodes? behind",
+            new Term { Id = "race", Colour = Race, Title = "The race", Pattern = @"costs time: rivals gain \d+(?:\.\d+)? nodes?|rivals (?:gain|lose|fall back) \d+(?:\.\d+)? nodes?|(?:both )?rival fleets (?:lose|fall back) \d+(?:\.\d+)? nodes?|\d+(?:\.\d+)? nodes?|rival fleets?|rivals?|the race|costs time|dock time|nodes? ahead|nodes? behind",
                 Text = "Every jump moves you 1 node toward the gate and each rival a little less, so 0.8 node is most of a jump won or lost. It is the track along the top of the map.\n\nRivals also gain when a battle runs long, when you buy at a shipyard, or when an event costs time.\n\nIf the {rival} gets a full node ahead it mines the lanes: every jump then costs each ship 2 hull. If it is ahead when you reach the gate, the gate is reinforced." },
             new Term { Id = "jump", Colour = Shield, Title = "Jump lane", Pattern = @"jump lanes?",
                 Text = "A dotted cyan lane on the map that skips a node. You gain two nodes on the rivals for one jump of their time. Every ship pays hull for the rough passage, and you never see the node you skipped. Jump lanes are never mined." },
@@ -78,7 +78,7 @@ namespace Silence.View
                 Text = "Soak damage on the arc that is hit, before armor and hull. Each arc has its own and they come back a little each turn." },
             new Term { Id = "armor", Colour = "a9b0c0", Title = "Armor", Pattern = @"armou?r",
                 Text = "Takes a fixed amount off every hit that gets past the shields, on the arc that is hit." },
-            new Term { Id = "command", Colour = Command, Title = "Command", Pattern = @"\d command|more command|command next turn|command on turn|COMMAND", CaseSensitive = true,
+            new Term { Id = "command", Colour = Command, Title = "Command", Pattern = @"\d command|more command|command next turn|command on turn", CaseSensitive = true,
                 Text = "What cards cost. You have 3 each turn and what you do not spend is lost." },
             new Term { Id = "expend", Colour = CrewColour, Title = "Expend", Pattern = @"Expend", CaseSensitive = true,
                 Text = "An extra cost paid in crew. Some cards need it; some are stronger if you choose to pay." },

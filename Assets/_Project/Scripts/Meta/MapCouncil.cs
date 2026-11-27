@@ -48,7 +48,8 @@ namespace Silence.Meta
         /// <summary>The order paper: every motion, what it costs in approval and why it can't be moved right now.</summary>
         void ShowCouncil()
         {
-            float h = 190 + content.Motions.Count * 92 + 40;
+            float top = string.IsNullOrEmpty(notice) ? 152 : 180;
+            float h = top + content.Motions.Count * 92 + 30;
             const float w = 1100;
             var d = OpenDialog(w, h, 0.8f);
             Ui.Stamp(d, "The Council", 12, 40, 26, 400, 14, TextAlignmentOptions.Left, Skin.Brass);
@@ -59,7 +60,7 @@ namespace Silence.Meta
                 16, 40, 104, w - 80, 40, TextAlignmentOptions.TopLeft, Skin.Dim);
             if (!string.IsNullOrEmpty(notice)) Ui.Body(d, $"<color=#f0a040>{notice}</color>", 16, 40, 150, w - 80, 16);
 
-            float y = 176;
+            float y = top;
             for (int i = 0; i < content.Motions.Count; i++)
             {
                 var m = content.Motions[i];

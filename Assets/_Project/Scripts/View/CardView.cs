@@ -123,6 +123,8 @@ namespace Silence.View
         public static string Highlight(string text)
         {
             text = text.Replace("°", " deg");
+            // Shared junk is written in the Ascendancy's words; another fleet reads its own.
+            if (Gloss.Crew != "Ordinals") text = text.Replace("Ordinals", Gloss.Crew.ToLowerInvariant());
             var sb = new System.Text.StringBuilder(text.Length + 64);
             bool inNumber = false;
             const string open = "<color=#e8c870>", close = "</color>";

@@ -22,7 +22,7 @@ namespace Silence.Meta
             var roster = RunRules.Roster(run, content, enc);
             int rows = roster.Select(u => u.Unit).Distinct().Count();
             float w = boss ? 1180 : 980;
-            float h = 116 + (boss ? Mathf.Max((run.VennEnraged ? 150 : 110) + 36 + 64 + 22 + rows * 48 + (EdictVerdictLine() != "" ? 48 : 0), 340) : 64 + 22 + rows * 48 + (enc.Tier == 5 ? 44 : 0) + (run.PendingHazard != "" && enc.Tier <= 2 ? 48 : 0)) + 130;
+            float h = 116 + (boss ? Mathf.Max((run.VennEnraged ? 150 : 110) + 36 + 52 + 22 + rows * 48 + (EdictVerdictLine() != "" ? 48 : 0), 340) : 52 + 22 + rows * 48 + (enc.Tier == 5 ? 44 : 0) + (run.PendingHazard != "" && enc.Tier <= 2 ? 48 : 0)) + 130;
             var d = OpenDialog(w, h);
             string tier = boss ? "Sector boss" : enc.Tier == 5 ? "Nemesis" : enc.Tier == 2 ? "Elite battle" : enc.Tier == 4 ? "Ambush" : "Battle";
             Ui.Stamp(d, tier, 14, 40, 26, 400, 20, TextAlignmentOptions.Left, enc.Tier >= 2 ? Skin.Bad : Skin.Brass);
@@ -49,7 +49,7 @@ namespace Silence.Meta
             }
 
             Ui.Body(d, enc.Intro, 20, textX, y, textW, 70, TextAlignmentOptions.TopLeft, Skin.Text);
-            y += 64;
+            y += 52;
 
             var units = roster;
             if (run.PendingHazard != "" && enc.Tier <= 2)
@@ -75,7 +75,7 @@ namespace Silence.Meta
             {
                 string rivalName = content.Faction.RivalName;
                 string race = RunRules.ConcordAhead(run)
-                    ? $"<color=#d9573f>The {rivalName} fleet reached the gate before you. Its guard is reinforced.</color>"
+                    ? $"<color=#d9573f>The {rivalName} fleet {(run.ConcordProgress > run.PlayerProgress ? "reached the gate before you" : "is at the gate with you")}. Its guard is reinforced.</color>"
                     : run.VennEnraged ? "<color=#d9573f>The gate has called in another ship.</color>"
                     : $"<color=#8cc47a>You are ahead of the {rivalName} fleet. The gate has only its standing guard.</color>";
                 Ui.Body(d, race, 18, textX, y, textW, 26);
@@ -113,10 +113,12 @@ namespace Silence.Meta
                 ShowRelicChoice();
                 return;
             }
-            var d = OpenDialog(1040, 660);
+bool hasRelic = !string.IsNullOrEmpty(offer.Relic);
+            float top = hasRelic ? 56 : 0;
+            var d = OpenDialog(1040, 690 + top);
             Ui.Stamp(d, "After action", 14, 40, 26, 400, 20, TextAlignmentOptions.Left, Skin.Brass);
             Ui.Heading(d, "Salvage", 32, 38, 50, 560, 40);
-            Ui.Body(d, offer.Note, 16, 40, 88, 960, 36, TextAlignmentOptions.TopLeft, Skin.Dim);
+            Ui.Body(d, offer.Note, 16, 40, 104, 960, 40, TextAlignmentOptions.TopLeft, Skin.Dim);
             Ui.Art(d, "res_scrap", 640, 40, 1f);
             Ui.Number(d, $"+{offer.Scrap} scrap", 24, 700, 52, 200, 24, TextAlignmentOptions.Left, Skin.Brass);
             if (offer.Ordinals > 0)
@@ -127,25 +129,25 @@ namespace Silence.Meta
             if (!string.IsNullOrEmpty(offer.Relic))
             {
                 var relic = content.Relic(offer.Relic);
-                Ui.Art(d, ArtOr(relic.Icon, "icon_relic"), 40, 126, 1f);
-                Ui.Body(d, $"<color=#ffc46a>{(relic.Trophy ? "Trophy" : "Relic")}: {relic.Name}.</color> {relic.Text}", 16, 96, 134, 900, 16);
+                Ui.Art(d, ArtOr(relic.Icon, "icon_relic"), 40, 150, 1f);
+                Ui.Body(d, $"<color=#ffc46a>{(relic.Trophy ? "Trophy" : "Relic")}: {relic.Name}.</color> {relic.Text}", 16, 100, 156, 900, 40);
             }
-            Ui.Stamp(d, "Take one card for the command deck, or patch the fleet up", 12, string.IsNullOrEmpty(offer.Relic) ? 40 : 96, 160, 800, 14, TextAlignmentOptions.Left, Skin.BrassDark);
+            Ui.Label(d, "TAKE ONE CARD FOR THE DECK, OR PATCH THE FLEET UP", Skin.Stencil, 12, Skin.Dim, 40, 162 + top, 800, 14, TextAlignmentOptions.Left);
 
             int n = offer.Cards.Count;
             float step = CardView.W + 28, x0 = (1040 - (step * (n - 1) + CardView.W)) / 2f + CardView.W / 2f;
             for (int i = 0; i < n; i++)
             {
                 int index = i;
-                var card = MakeCard(d, offer.Cards[i], x0 + i * step, 180 + CardView.H);
+                var card = MakeCard(d, offer.Cards[i], x0 + i * step, 190 + top + CardView.H);
                 card.Clicked = _ => PickReward(index);
                 card.Hovered = v => v.SetSelected(true);
                 card.Unhovered = v => v.SetSelected(false);
             }
             bool hurt = run.Ships.Any(s => s.Alive && s.Hull < s.MaxHull);
-            var repair = Ui.Btn(d, $"Field repairs instead: +{RunRules.FieldRepairAmount(run, content)} hull each", 130, 566, 500, 60, FieldRepair, 16);
+            var repair = Ui.Btn(d, $"Field repairs instead: +{RunRules.FieldRepairAmount(run, content)} hull each", 130, 596 + top, 500, 60, FieldRepair, 16);
             repair.interactable = hurt;
-            Ui.Btn(d, "Take nothing", 660, 566, 250, 60, () => PickReward(-1), 16);
+            Ui.Btn(d, "Take nothing", 660, 596 + top, 250, 60, () => PickReward(-1), 16);
         }
 
         // ---------------------------------------------------------------- events
@@ -290,7 +292,7 @@ namespace Silence.Meta
                     wounded > 0, () => Shop(() => RunRules.HealOfficer(run, content)));
             }
 
-            Service(d, x, ref y, "Seed false beacons", shop.Sabotaged ? "Already seeded from this yard." : $"Both rival fleets lose {cfg.SabotageAmount / 10f:0.0} node. Takes no dock time.",
+            Service(d, x, ref y, "Seed false beacons", shop.Sabotaged ? "Already seeded from this yard." : $"Both rival fleets fall back {cfg.SabotageAmount / 10f:0.0} node. Takes no dock time.",
                 cfg.SabotageCost, !shop.Sabotaged, () => Shop(() => RunRules.Sabotage(run, content)));
 
             // ---- cards

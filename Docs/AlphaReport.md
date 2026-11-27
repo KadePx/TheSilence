@@ -798,3 +798,52 @@ no errors. The redrawn Ordinals icon was seen in the top bar in the same session
 - An Edict is judged only at the gate; nothing tells you mid-sector that one has just become impossible beyond the
   panel turning red.
 - The bot picks the Edict it is most likely to keep and does not play toward it, so how often a person keeps one is unknown.
+
+## Polish pass: two review cycles
+
+Kade asked for a few cycles of cleaning up gameplay and reviewing the UI for clutter, intuition and cohesion. Each
+cycle: put every screen up on the play-test save, list what is wrong, fix, look again.
+
+### What changed on screen
+
+- **Map, race panel.** Each line is one colour again (it was glossed word by word, so "Concord" was red and "0.7 nodes"
+  pink in the same line). The heading is "The race"; the hunt line moved to the header row, where it no longer clips.
+- **Map, journal.** The last three things that happened, without the relic and Edict lines the panels above already show.
+- **Map, fleet card.** Module slot names are legible (dim grey, not dark brass). The label of the node you are on sits
+  clear of its ring.
+- **Battle briefing.** Enemy orders are readable again (they were cut to "Maneuver..."): the first four steps, then
+  "more". Less dead space under the intro.
+- **Reward.** Taller, with the note, the relic line and the cards each on their own row. "Command" in "command deck" is
+  no longer coloured as the resource.
+- **Council.** The motions start under the rules line instead of after a gap. "Fall back 0.8 node" everywhere a rival
+  is slowed (it said "lose" in two places and "fall back" in the events).
+- **Sector clear.** The yard line is one green sentence, not six coloured words.
+- **Battle.** The three hint lines bottom left show on turns 1 and 2 (and in the tutorial); after that only craft that
+  can still move are listed, since End Turn already says what is open. Help spells out "minus and plus" (the body font's
+  hyphen vanished between spaces) and names the fleet's own craft. Prompts say "gunship" in a Concord battle. Shared
+  junk cards say "crew" there, not "Ordinals". The end screen is titled "Driven off" when the commander ran.
+
+### What changed in the rules
+
+- **A broken Edict is announced at once.** The journal says "The Edict cannot now be obeyed" the moment it happens,
+  once. (This was on the open list.) Tested.
+- **The gate briefing no longer says the rival "reached the gate before you" when you are level**; the guard is
+  reinforced either way, and it now says the rival is at the gate with you.
+- **Admiral Dray is a little softer.** The Ascendancy won 36 of 200 bot runs against the Concord's 60, and Dray alone
+  ended 32. Common Cause has 38 hull (was 42) and her reinforcement is a skiff, not a second frigate.
+
+### Bot results after the pass (200 runs each, two sectors)
+
+| | Won | Lost | Outpaced | Lost at the second gate |
+|---|---|---|---|---|
+| Ascendancy | 55 (was 36) | 95 | 50 | Dray 14 (was 32) |
+| Concord | 60 | 90 | 50 | Thale 14 |
+
+225 EditMode tests pass.
+
+### Still open
+
+- Several Concord cards share one art crop (the ring), so a Concord hand looks samey.
+- Large ships on adjacent hexes overlap each other on the board.
+- The run-over screen shows the last journal lines but not the relics held or what became of the commander.
+- Balance still rests on bot runs; nothing here was checked with a physical mouse.

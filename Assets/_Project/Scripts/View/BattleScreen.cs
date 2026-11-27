@@ -300,7 +300,7 @@ namespace Silence.View
                     {
                         var reach = Battle.Reachable(selectedDart.Pos, selectedDart.Move + selectedDart.CraftBonusMove);
                         var spots = reach.Where(h => h.DistanceTo(unit.Pos) == 1).OrderBy(h => h.DistanceTo(selectedDart.Pos)).ToList();
-                        if (spots.Count == 0) { Flash("That enemy is out of the dart's reach."); return; }
+                        if (spots.Count == 0) { Flash($"That enemy is out of the {CraftWord}'s reach."); return; }
                         Do(() => Battle.CommandCraft(selectedDart.Id, spots[0], unit.Id));
                         return;
                     }
@@ -316,7 +316,7 @@ namespace Silence.View
                     }
                     {
                         var reach = Battle.Reachable(selectedDart.Pos, selectedDart.Move + selectedDart.CraftBonusMove);
-                        if (!reach.Contains(hex)) { Flash("Out of the dart's reach."); return; }
+                        if (!reach.Contains(hex)) { Flash($"Out of the {CraftWord}'s reach."); return; }
                         // After moving, a dart attacks an adjacent enemy automatically: torpedoes first, then the weakest.
                         var auto = Battle.LiveUnits(Side.Enemy).Where(en => en.Pos.DistanceTo(hex) == 1)
                             .OrderBy(en => en.Kind == UnitKind.Torpedo ? 0 : en.Kind == UnitKind.Craft ? 1 : 2).ThenBy(en => en.Hull).FirstOrDefault();
@@ -328,7 +328,7 @@ namespace Silence.View
                     if (unit == null) return;
                     if (unit.Side == Side.Player && unit.Kind == UnitKind.Craft)
                     {
-                        if (unit.CraftActed) { Flash("That dart has already acted this turn."); return; }
+                        if (unit.CraftActed) { Flash($"That {CraftWord} has already acted this turn."); return; }
                         string blocked = TutorialBlocksDart();
                         if (blocked != null) { Flash(blocked); return; }
                         SelectDart(unit);
@@ -652,8 +652,8 @@ namespace Silence.View
                         if (intent != null) return $"<color=#d9573f>{IntentText(intent, true)}</color>";
                     }
                     if (hov != null && hov.Side == Side.Player && hov.Kind == UnitKind.Craft)
-                        return hov.CraftActed ? "This dart has acted this turn." : "Click the dart to move it.";
-                    return "Select a card, click a dart to move it, or end the turn.";
+                        return hov.CraftActed ? $"This {CraftWord} has acted this turn." : $"Click the {CraftWord} to move it.";
+                    return $"Select a card, click a {CraftWord} to move it, or end the turn.";
                 }
             }
         }
