@@ -72,12 +72,12 @@ namespace Silence.Core.Battle
         // ---- the Kessane Drift: what is left of the Concord's line, and it has had eleven years to think ----
 
         /// <summary>A line frigate: no torpedoes, two broadsides in three turns.</summary>
-        public static UnitSpec LineFrigate => Cycled("con_outrider",
+        public static UnitSpec LineFrigate => Cycled("con_linefrigate",
             UnitSpec.Capital("Line frigate", 20, 2, 1, 1, 1, 3, 1, 0, 0, 2, AiProfile.Frigate),
             IntentStep.Of(IntentKind.Maneuver), IntentStep.Fire("Broadside", 9, Sides, 3), IntentStep.Fire("Broadside", 9, Sides, 3));
 
         /// <summary>A torpedo skiff: it launches, runs, and comes back to launch again.</summary>
-        public static UnitSpec TorpedoSkiff => Cycled("con_skiff",
+        public static UnitSpec TorpedoSkiff => Cycled("con_torpskiff",
             UnitSpec.Capital("Torpedo skiff", 9, 0, 0, 0, 0, 2, 1, 0, 0, 3, AiProfile.Frigate),
             IntentStep.Of(IntentKind.LaunchTorpedo), IntentStep.Of(IntentKind.Maneuver), IntentStep.Fire("Fore guns", 5, Arc.Fore, 3));
 

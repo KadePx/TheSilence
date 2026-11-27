@@ -25,6 +25,10 @@ namespace Silence.Tests
             Assert.AreEqual(16, t.Hull);
             Assert.AreEqual(0, t.Shields[ArcIndex.Fore]);
             Assert.AreEqual(3, t.Shields[ArcIndex.Aft], "only the hit arc loses shields");
+            var e = b.Log[b.Log.Count - 1];
+            Assert.AreEqual(EventKind.Damage, e.Kind);
+            Assert.AreEqual(3, e.Absorbed, "the event says what the shields took");
+            Assert.AreEqual(2, e.Armored, "and what the armor took");
         }
 
         [Test]

@@ -213,7 +213,7 @@ namespace Silence.View
                 v.BarBack.color = new Color(0f, 0f, 0f, 0.8f);
                 v.BarBack.transform.localPosition = new Vector3(0f, -1.45f, 0f);
                 v.BarBack.transform.localScale = new Vector3(13.5f, 1.6f, 1f);
-                v.BarFill = NewSprite(v.Root, "HullFill", Skin.Pixel, 9);
+                v.BarFill = NewSprite(v.Root, "HullFill", Skin.Pixel, 10);
                 v.BarFill.color = u.Side == Side.Player ? Skin.Good : Skin.Bad;
                 v.ShieldBars = new SpriteRenderer[ArcIndex.Count];
                 for (int i = 0; i < ArcIndex.Count; i++)
@@ -613,6 +613,42 @@ namespace Silence.View
         {
             if (!PlaySheet("fx_shield", 96, 8, 22f, at, capital ? 1.5f : 0.75f, new Color(0.6f, 0.95f, 1f, 0.9f)))
                 StartCoroutine(Burst(at, Skin.Cyan, 1.1f, 0.25f));
+        }
+
+        /// <summary>The slice of hull bar just lost stays white for a moment, then drains away: the eye sees how much went.</summary>
+        public IEnumerator BarLoss(UnitView v, int hullBefore)
+        {
+            if (!v.Capital || v.MaxHull <= 0 || hullBefore <= v.Hull) yield break;
+            const float full = 12.5f;
+            float a = Mathf.Clamp01(v.Hull / (float)v.MaxHull), b = Mathf.Clamp01(hullBefore / (float)v.MaxHull);
+            var lost = NewSprite(v.Root, "HullLost", Skin.Pixel, 9);
+            lost.color = Color.white;
+            const float hold = 0.18f, drain = 0.4f;
+            for (float t = 0; t < hold + drain; t += Time.deltaTime)
+            {
+                if (lost == null) yield break;
+                float top = t < hold ? b : Mathf.Lerp(b, a, (t - hold) / drain);
+                lost.transform.localScale = new Vector3(full * (top - a), 0.9f, 1f);
+                lost.transform.localPosition = new Vector3(-full * 0.0625f + (a + top) / 2f * full * 0.125f, -1.45f, 0f);
+                yield return null;
+            }
+            if (lost != null) Destroy(lost.gameObject);
+        }
+
+        /// <summary>A hit shoves the hull a few pixels away from whoever fired, and it settles back.</summary>
+        public IEnumerator Recoil(UnitView v, Vector2 away, float pixels, float seconds)
+        {
+            if (v.Body == null || away.sqrMagnitude < 0.0001f) yield break;
+            away.Normalize();
+            for (float t = 0; t < seconds; t += Time.deltaTime)
+            {
+                if (v.Body == null) yield break;
+                float k = Mathf.Sin(Mathf.PI * Mathf.Sqrt(t / seconds));
+                var p = away * (Mathf.Round(pixels * k) / 32f);
+                v.Body.localPosition = new Vector3(p.x, p.y, v.Body.localPosition.z);
+                yield return null;
+            }
+            if (v.Body != null) v.Body.localPosition = new Vector3(0f, 0f, v.Body.localPosition.z);
         }
 
         public IEnumerator Flash(UnitView v, Color color, float seconds)

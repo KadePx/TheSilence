@@ -654,10 +654,71 @@ namespace Silence.View
             }
         }
 
+        /// <summary>Where this turn's chips and tabs already are, so the next one does not land on them.</summary>
+        readonly List<Rect> chipRects = new List<Rect>();
+
+        /// <summary>The space a unit takes on screen, in reference pixels: its hull, and for a capital the hull bar under it.</summary>
+        Rect Footprint(Unit u, UnitView view)
+        {
+            var p = WorldToRef(view.Root.position);
+            if (!u.IsCapital) return new Rect(p.x - 16, p.y - 16, 32, 32);
+            bool big = view.Sprite != null && view.Sprite.sprite != null && view.Sprite.sprite.rect.width >= 150;
+            float hw = big ? 56 : 38, hh = big ? 38 : 30;
+            return new Rect(p.x - hw, p.y - hh, hw * 2, hh + 52);
+        }
+
+        /// <summary>
+        /// Top-left corner for a chip of this size belonging to the unit at p. Above the ship is where the eye looks
+        /// first; if another ship or chip is there, try below, then either side, then the corners, and take the
+        /// place that covers least.
+        /// </summary>
+        Vector2 ChipSpot(int unitId, Vector2 p, float w, float h, float lift, float reach)
+        {
+            var spots = new[]
+            {
+                new Vector2(p.x - w / 2f, p.y - lift),
+                new Vector2(p.x - w / 2f, p.y + lift - h + (lift > 50 ? 20 : 0)),
+                new Vector2(p.x + reach, p.y - h / 2f),
+                new Vector2(p.x - reach - w, p.y - h / 2f),
+                new Vector2(p.x + reach * 0.6f, p.y - lift),
+                new Vector2(p.x - reach * 0.6f - w, p.y - lift),
+                new Vector2(p.x + reach * 0.6f, p.y + lift - h),
+                new Vector2(p.x - reach * 0.6f - w, p.y + lift - h),
+            };
+            float best = float.MaxValue;
+            var pick = spots[0];
+            for (int n = 0; n < spots.Length; n++)
+            {
+                var r = new Rect(Mathf.Round(spots[n].x), Mathf.Round(spots[n].y), w, h);
+                float cost = n * 12f; // a small preference for the earlier places
+                if (r.xMin < FleetX || r.xMax > Ui.RefW - 8 || r.yMin < TopH + 4 || r.yMax > BottomY - PromptH - 4) cost += 5000f;
+                foreach (var u in Battle.Units)
+                {
+                    if (!u.Alive || u.Id == unitId || !board.Views.TryGetValue(u.Id, out var view)) continue;
+                    cost += Overlap(r, Footprint(u, view)) * (u.IsCapital ? 1f : 0.6f);
+                }
+                foreach (var taken in chipRects) cost += Overlap(r, taken) * 2f;
+                if (cost < best)
+                {
+                    best = cost;
+                    pick = new Vector2(r.x, r.y);
+                }
+            }
+            chipRects.Add(new Rect(pick.x, pick.y, w, h));
+            return pick;
+        }
+
+        static float Overlap(Rect a, Rect b)
+        {
+            float w = Mathf.Min(a.xMax, b.xMax) - Mathf.Max(a.xMin, b.xMin), h = Mathf.Min(a.yMax, b.yMax) - Mathf.Max(a.yMin, b.yMin);
+            return w > 0 && h > 0 ? w * h : 0f;
+        }
+
         /// <summary>A small dark tab with a coloured underline, centred above a board position.</summary>
         void Tab(Vector2 p, float dy, string text, Color color)
         {
             float w = 12f + text.Length * 7.2f;
+            chipRects.Add(new Rect(Mathf.Round(p.x - w / 2f), Mathf.Round(p.y + dy), w, 16));
             var chip = Ui.Fill(chipRoot, "Tab", Mathf.Round(p.x - w / 2f), Mathf.Round(p.y + dy), w, 16, new Color(0.02f, 0.02f, 0.04f, 0.9f));
             Ui.Fill(chip.transform, "Edge", 0, 14, w, 2, color);
             Ui.Label(chip.transform, text, Skin.Stencil, 12, color, 0, 1, w, 14, TextAlignmentOptions.Center).textWrappingMode = TextWrappingModes.NoWrap;
@@ -675,6 +736,7 @@ namespace Silence.View
         void RefreshChips()
         {
             Ui.Clear(chipRoot);
+            chipRects.Clear();
             if (Battle == null || Battle.Outcome != BattleOutcome.Ongoing) return;
 
             // Your side: where each ship will drift to, and which darts can still be moved.
@@ -700,7 +762,8 @@ namespace Silence.View
                 if (u.IsCapital)
                 {
                     float w = Mathf.Round(48f + text.Length * 7.2f);
-                    var chip = Ui.Img(chipRoot, "Chip", Skin.Chip, Mathf.Round(p.x - w / 2f), Mathf.Round(p.y - 70f), w, 28, Color.white, true);
+                    var spot = ChipSpot(u.Id, p, w, 28, 70f, Footprint(u, view).width / 2f + 6f);
+                    var chip = Ui.Img(chipRoot, "Chip", Skin.Chip, spot.x, spot.y, w, 28, Color.white, true);
                     Ui.Art(chip.transform, IntentIcon(i), 8, 2);
                     var label = Ui.Label(chip.transform, text, Skin.Stencil, 12, color, 36, 8, w, 14);
                     label.textWrappingMode = TextWrappingModes.NoWrap;
@@ -711,7 +774,8 @@ namespace Silence.View
                     int amount = i.Damage + i.Bonus;
                     string shortText = amount > 0 && !i.Cancelled ? amount.ToString() : "-";
                     float w = 12f + shortText.Length * 8f;
-                    var chip = Ui.Fill(chipRoot, "Chip", Mathf.Round(p.x - w / 2f), Mathf.Round(p.y - 36f), w, 16, new Color(0.02f, 0.02f, 0.04f, 0.9f));
+                    var spot = ChipSpot(u.Id, p, w, 16, 36f, 20f);
+                    var chip = Ui.Fill(chipRoot, "Chip", spot.x, spot.y, w, 16, new Color(0.02f, 0.02f, 0.04f, 0.9f));
                     Ui.Fill(chip.transform, "Edge", 0, 14, w, 2, color);
                     Ui.Label(chip.transform, shortText, Skin.Stencil, 12, color, 0, 1, w, 14, TextAlignmentOptions.Center);
                 }
@@ -751,19 +815,75 @@ namespace Silence.View
                 case EventKind.CardsRemoved: color = "8a90a0"; break;
                 default: return; // phases, draws, drift steps, regen and the like stay out of the log
             }
-            string text = e.Text;
-            if (e.Kind == EventKind.Damage)
-            {
-                // Core's damage line is complete but long; the log keeps the part a player scans for.
-                var hit = Battle.Get(e.UnitId);
-                string who = hit != null ? hit.Name : "Target";
-                int open = text.IndexOf('('), close = text.IndexOf(')');
-                string arc = hit != null && hit.IsCapital && open >= 0 && close > open && close - open < 14 ? " " + text.Substring(open, close - open + 1) : "";
-                text = e.Amount > 0 ? $"{who}{arc}: -{e.Amount} hull" : $"{who}{arc}: hit absorbed";
-                if (e.Amount == 0) color = "7fdcf2";
-            }
-            logLines.Add($"<color=#{color}>{text}</color>");
+            if (e.Kind == EventKind.Damage && e.Amount == 0) color = e.Absorbed > 0 ? "7fdcf2" : "8a90a0";
+            logLines.Add($"<color=#{color}>{LogLine(e)}</color>");
             if (logLines.Count > 80) logLines.RemoveAt(0);
+        }
+
+        static readonly System.Text.RegularExpressions.Regex IdTag = new System.Text.RegularExpressions.Regex(@" ?#\d+");
+
+        /// <summary>
+        /// Core's event text is the replay record: it carries unit numbers, die rolls and compass letters. The log a
+        /// player reads says the same thing in plain words.
+        /// </summary>
+        string LogLine(BattleEvent e)
+        {
+            var u = Battle.Get(e.UnitId);
+            string who = u != null ? u.Name : "Ship";
+            string text = IdTag.Replace(e.Text, "").Replace(" -> ", " to ");
+            if (Gloss.Crew != "Ordinals") text = text.Replace("Ordinals", Gloss.Crew.ToLowerInvariant());
+            switch (e.Kind)
+            {
+                case EventKind.TurnStarted: return $"TURN {e.Amount}";
+                case EventKind.Damage:
+                {
+                    // "Sixth Verdict (Port) takes 3 hull damage of 6 (shields 2, armor 1), hull 21"
+                    int open = e.Text.IndexOf('('), takes = e.Text.IndexOf(" takes ");
+                    string arc = u != null && u.IsCapital && open >= 0 && open < takes ? e.Text.Substring(open + 1, e.Text.IndexOf(')') - open - 1).ToLowerInvariant() : "";
+                    if (takes < 0) return text; // flak and the like, already a sentence
+                    string side = arc == "" ? "" : arc == "fore" || arc == "aft" ? $" {arc}" : $" to {arc}";
+                    if (e.Amount > 0) return $"{who} hit{side}: -{e.Amount} hull" + (e.Absorbed > 0 ? $", shields took {e.Absorbed}" : "");
+                    return e.Absorbed > 0 ? $"{who} hit{side}: shields hold" : $"{who} hit{side}: armor holds";
+                }
+                case EventKind.Miss:
+                    if (u != null && e.Text.StartsWith(who) && e.Text.Contains(" misses: "))
+                    {
+                        string weapon = e.Text.Substring(who.Length, e.Text.IndexOf(" misses: ") - who.Length).Trim();
+                        string why = e.Text.Contains("arc") ? "out of its arc" : e.Text.Contains("range") ? "out of range" : e.Text.Contains("blocked") ? "something in the way" : "nothing to hit";
+                        return $"{who}'s {weapon} misses: {why}";
+                    }
+                    return text;
+                case EventKind.Turned:
+                {
+                    int arrow = e.Text.LastIndexOf("-> ");
+                    return arrow < 0 ? text : $"{who} turns {Compass(e.Text.Substring(arrow + 3))}";
+                }
+                case EventKind.Spawned:
+                    return u != null && u.IsCapital ? $"{who} joins the fight" : $"{who} launched";
+                case EventKind.Destroyed: return $"{who} destroyed";
+                case EventKind.IntentCancelled: return $"{who}: order cancelled";
+                case EventKind.Critical:
+                {
+                    int colon = e.Text.IndexOf("): ");
+                    string effect = colon >= 0 ? e.Text.Substring(colon + 3) : "";
+                    return effect == "" || effect.StartsWith("no extra") ? $"Critical hit on {who}" : $"Critical hit on {who}: {effect}";
+                }
+                default: return text;
+            }
+        }
+
+        static string Compass(string facing)
+        {
+            switch (facing.Trim())
+            {
+                case "E": return "east";
+                case "W": return "west";
+                case "NE": return "north-east";
+                case "NW": return "north-west";
+                case "SE": return "south-east";
+                case "SW": return "south-west";
+                default: return facing;
+            }
         }
 
         void RefreshLog()

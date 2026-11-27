@@ -167,7 +167,7 @@ namespace Silence.Core.Battle
             IntentStep.Of(IntentKind.Maneuver), IntentStep.Fire("Lance Volley", 11, Arc.Fore, 4), IntentStep.Fire("Broadside", 7, Sides, 3));
 
         /// <summary>A vat-ship: it fights through its darts and spends them freely.</summary>
-        public static UnitSpec EnemyWarden => Named("asc_cruiser",
+        public static UnitSpec EnemyWarden => Named("asc_warden",
             UnitSpec.Capital("Vat-warden", 24, 2, 2, 2, 1, 3, 1, 0, 0, 1, AiProfile.Carrier),
             IntentStep.Of(IntentKind.LaunchCraft, 3), IntentStep.Fire("Broadside", 8, Sides, 3), IntentStep.Of(IntentKind.JointFire));
 
@@ -182,12 +182,12 @@ namespace Silence.Core.Battle
         // ---- the Kessane Drift: the Prime's second line ----
 
         /// <summary>A Blade refitted with a short lance: it reaches a hex further than you expect a Blade to.</summary>
-        public static UnitSpec EnemyLancer => Named("asc_blade",
+        public static UnitSpec EnemyLancer => Named("asc_lancer",
             UnitSpec.Capital("Blade lancer", 12, 1, 1, 1, 0, 2, 1, 0, 0, 3, AiProfile.Frigate),
             IntentStep.Of(IntentKind.Maneuver), IntentStep.Fire("Short lance", 8, Arc.Fore, 4));
 
         /// <summary>A bastion cruiser: slow, plated all round, and it fires its broadside two turns in three.</summary>
-        public static UnitSpec EnemyBastion => Named("asc_cruiser",
+        public static UnitSpec EnemyBastion => Named("asc_bastion",
             UnitSpec.Capital("Bastion cruiser", 26, 3, 3, 3, 1, 4, 1, 0, 0, 1, AiProfile.Frigate),
             IntentStep.Fire("Broadside", 8, Sides, 3), IntentStep.Fire("Broadside", 8, Sides, 3), IntentStep.Of(IntentKind.Maneuver));
 

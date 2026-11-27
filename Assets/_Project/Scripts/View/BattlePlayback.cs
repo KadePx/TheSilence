@@ -59,6 +59,46 @@ namespace Silence.View
             }
         }
 
+        /// <summary>Guns or a lance firing from one point to another. A miss uses it too, with somewhere else to land.</summary>
+        IEnumerator Volley(UnitView v, Vector3 from, Vector3 to, string text, int amount)
+        {
+            bool player = v.Side == Side.Player;
+            if (text.Contains("Lance") || text.Contains("lance") || text.Contains("Mass Driver") || text.Contains("Survey Driver") || text.Contains("Cutting Beam") || text.Contains("rakes"))
+            {
+                Sfx.Play("sfx_lance");
+                yield return board.Beam(from, to, player ? Skin.Cyan : Skin.Hex("ffc46a"), amount >= 9 ? 0.34f : 0.2f, 0.3f * Pace);
+            }
+            else if (text.Contains("storm"))
+            {
+                Sfx.Play("sfx_launch");
+                yield return board.Shots(from, to, Skin.Text, 4, 0.3f * Pace);
+            }
+            else
+            {
+                Sfx.Play(v.Capital ? "sfx_battery" : "sfx_shot", v.Capital ? 1f : 0.6f);
+                yield return board.Shots(from, to, player ? Skin.Hex("c8f6ff") : Skin.Hex("ffc46a"), v.Capital ? 4 : 2, (v.Capital ? 0.26f : 0.18f) * Pace);
+            }
+        }
+
+        int shakes;
+
+        /// <summary>Jolt the board by a few whole pixels. The interface is on its own canvas and stays put.</summary>
+        IEnumerator Shake(int pixels, float seconds)
+        {
+            if (cam == null) yield break;
+            shakes++;
+            for (float t = 0; t < seconds; t += Time.deltaTime)
+            {
+                float fade = 1f - t / seconds;
+                int n = Mathf.FloorToInt(t * 40f);
+                float x = Mathf.Round(pixels * fade * ((n % 2 == 0) ? 1f : -1f));
+                float y = Mathf.Round(pixels * fade * ((n % 3 == 0) ? -1f : (n % 3 == 1) ? 1f : 0f));
+                cam.transform.position = new Vector3(x / 32f, y / 32f, -10f);
+                yield return null;
+            }
+            if (--shakes == 0) cam.transform.position = new Vector3(0f, 0f, -10f);
+        }
+
         IEnumerator Animate(BattleEvent e)
         {
             board.Views.TryGetValue(e.UnitId, out var v);
@@ -128,57 +168,62 @@ namespace Silence.View
                 case EventKind.Attack:
                 {
                     if (v == null || other == null) break;
-                    var from = v.Root.position;
                     var to = other.Root.position;
-                    bool player = v.Side == Side.Player;
                     if (v.Kind == UnitKind.Torpedo)
                     {
                         Sfx.Play("sfx_torpedo");
                         yield return board.MoveTo(v, other.Pos, 0.12f * Pace);
                         board.Explosion(to, false);
                     }
-                    else if (e.Text.Contains("Lance") || e.Text.Contains("Mass Driver") || e.Text.Contains("rakes"))
-                    {
-                        Sfx.Play("sfx_lance");
-                        yield return board.Beam(from, to, player ? Skin.Cyan : Skin.Hex("ffc46a"), e.Amount >= 9 ? 0.34f : 0.2f, 0.3f * Pace);
-                    }
-                    else if (e.Text.Contains("storm"))
-                    {
-                        Sfx.Play("sfx_launch");
-                        yield return board.Shots(from, to, Skin.Text, 4, 0.3f * Pace);
-                    }
-                    else
-                    {
-                        Sfx.Play(v.Capital ? "sfx_battery" : "sfx_shot", v.Capital ? 1f : 0.6f);
-                        yield return board.Shots(from, to, player ? Skin.Hex("c8f6ff") : Skin.Hex("ffc46a"), v.Capital ? 4 : 2, (v.Capital ? 0.26f : 0.18f) * Pace);
-                    }
+                    else yield return Volley(v, v.Root.position, to, e.Text, e.Amount);
                     break;
                 }
 
                 case EventKind.Damage:
+                {
                     if (v == null) break;
+                    int hullBefore = v.Hull;
                     v.Hull = Mathf.Max(0, v.Hull - e.Amount);
                     board.UpdateBars(v, Battle.Get(v.Id));
+                    // The blow lands on the side of the hull that faces whoever fired, not on its middle.
+                    Vector2 away = other != null && other != v ? (Vector2)(v.Root.position - other.Root.position) : Vector2.zero;
+                    var at = v.Root.position - (Vector3)(away.normalized * (v.Capital ? 0.7f : 0.2f));
+                    if (e.Absorbed > 0)
+                    {
+                        Sfx.Play("sfx_shield", 0.8f);
+                        board.ShieldFlare(at, v.Capital);
+                    }
                     if (e.Amount > 0)
                     {
                         Floater(v.Root.position, "-" + e.Amount, Skin.Bad, v.Capital ? 34 : 24);
+                        if (e.Absorbed > 0) Floater(v.Root.position + Vector3.down * 0.75f, $"SHIELDS TOOK {e.Absorbed}", Skin.Cyan, 16);
                         Sfx.Play("sfx_hit", 0.8f);
                         StartCoroutine(board.Flash(v, Skin.Bad, 0.25f));
-                        board.HitSpark(v.Root.position);
+                        board.HitSpark(at);
+                        if (v.Capital)
+                        {
+                            StartCoroutine(board.BarLoss(v, hullBefore));
+                            StartCoroutine(board.Recoil(v, away, Mathf.Clamp(e.Amount / 2f, 2f, 6f), 0.3f));
+                            if (e.Amount >= 5) StartCoroutine(Shake(e.Amount >= 9 ? 3 : 2, 0.2f));
+                        }
                     }
+                    else if (e.Absorbed > 0) Floater(v.Root.position, "SHIELDS HOLD", Skin.Cyan, 20);
                     else
                     {
-                        Floater(v.Root.position, "ABSORBED", Skin.Cyan, 20);
-                        Sfx.Play("sfx_shield", 0.8f);
-                        board.ShieldFlare(v.Root.position, v.Capital);
+                        // Nothing got through and no shield was up: the plate turned it.
+                        Floater(v.Root.position, "ARMOR HOLDS", Skin.Dim, 20);
+                        Sfx.Play("sfx_hit", 0.35f);
+                        StartCoroutine(board.Burst(at, Skin.Text, 0.5f, 0.18f));
                     }
                     yield return Wait(0.2f);
                     break;
+                }
 
                 case EventKind.Destroyed:
                     if (v == null) break;
                     Sfx.Play(v.Capital ? "sfx_explosion" : "sfx_pop", v.Capital ? 1f : 0.7f);
                     board.Explosion(v.Root.position, v.Capital);
+                    if (v.Capital) StartCoroutine(Shake(4, 0.35f));
                     board.Remove(v.Id);
                     yield return Wait(v.Capital ? 0.45f : 0.12f);
                     break;
@@ -198,9 +243,47 @@ namespace Silence.View
                     break;
 
                 case EventKind.Miss:
-                    if (v != null) Floater(v.Root.position, e.Text.Contains("misses") ? "MISS" : "NO TARGET", Skin.Dim, e.Text.Contains("misses") ? 24 : 16);
-                    yield return Wait(e.Text.Contains("misses") ? 0.25f : 0.05f);
+                {
+                    if (v == null) break;
+                    if (e.Text.Contains("point defence"))
+                    {
+                        // A craft's run that the target's guns broke up.
+                        if (other != null)
+                        {
+                            board.ShieldFlare(Vector3.Lerp(other.Root.position, v.Root.position, 0.4f), false);
+                            Floater(other.Root.position, "DRIVEN OFF", Skin.Good, 20);
+                        }
+                        Sfx.Play("sfx_shield", 0.6f);
+                        yield return Wait(0.2f);
+                        break;
+                    }
+                    if (!e.Text.Contains("misses"))
+                    {
+                        Floater(v.Root.position, "NO TARGET", Skin.Dim, 16);
+                        yield return Wait(0.05f);
+                        break;
+                    }
+                    // The guns still fire: the shot goes where the target was meant to be, and past it.
+                    string why = e.Text.Contains("arc") ? "OUT OF ARC" : e.Text.Contains("range") ? "OUT OF RANGE" : e.Text.Contains("blocked") ? "BLOCKED" : "NO TARGET";
+                    if (other != null)
+                    {
+                        var from = v.Root.position;
+                        var aim = other.Root.position;
+                        var line = (Vector2)(aim - from);
+                        var along = line.normalized;
+                        var wide = new Vector2(-along.y, along.x) * ((e.UnitId + Battle.Turn) % 2 == 0 ? 1f : -1f);
+                        Vector3 end;
+                        if (why == "BLOCKED") end = from + (Vector3)(line * 0.5f);
+                        else if (why == "OUT OF RANGE") end = from + (Vector3)(along * Mathf.Min(line.magnitude - 1.6f, line.magnitude * 0.7f));
+                        else end = aim + (Vector3)(wide * 1.5f + along * 2.5f);
+                        yield return Volley(v, from, end, e.Text, 0);
+                        if (why == "BLOCKED") StartCoroutine(board.Burst(end, Skin.Warn, 0.6f, 0.2f));
+                        Floater(other.Root.position, "MISS", Skin.Good, 24);
+                    }
+                    Floater(v.Root.position, why, Skin.Dim, 16);
+                    yield return Wait(0.25f);
                     break;
+                }
 
                 case EventKind.ShieldsRaised:
                     if (v == null) break;

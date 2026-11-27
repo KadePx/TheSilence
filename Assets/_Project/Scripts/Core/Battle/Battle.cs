@@ -662,6 +662,8 @@ namespace Silence.Core.Battle
             }
             Emit(EventKind.Damage, target.Id, attacker?.Id ?? -1, remaining,
                 $"{target.Name}{where} takes {remaining} hull damage of {amount} (shields {absorbed}, armor {armored}), hull {target.Hull}");
+            Log[Log.Count - 1].Absorbed = absorbed;
+            Log[Log.Count - 1].Armored = armored;
 
             if (target.Hull <= 0)
             {

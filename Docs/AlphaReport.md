@@ -871,3 +871,11 @@ Three PixelLab calls, 30 generations (859.6 of 1,000 spent). Screenshot: `ArtSou
 - The Concord's Council Vote urn has a skull on it, which is grimmer than the Concord is.
 - An enemy's order chip can sit on top of a neighbouring ship.
 - Balance still rests on bot runs; nothing here was checked with a physical mouse.
+
+## Battle board pass
+
+- Enemy order chips look for room: above the ship first, then below, either side and the corners, taking the place that covers least of other ships and chips.
+- Hits land on the side of the hull facing the attacker. The hull recoils, the lost slice of the hull bar stays white and drains, heavy hits and capital kills jolt the board, and the floater says what the shields took. "SHIELDS HOLD" and "ARMOR HOLDS" replace "ABSORBED". A miss now fires and goes wide, with the reason over the attacker.
+- The log is written in plain words: no unit numbers, die rolls or compass letters.
+- Five enemy types have their own hulls: Vat-warden, Bastion cruiser, Blade lancer, Line frigate, Torpedo skiff (50 PixelLab generations; about 910 of 1,000 used).
+- 225 EditMode tests pass. Not yet checked in Play Mode: none of the above has been seen on screen.

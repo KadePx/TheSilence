@@ -28,6 +28,8 @@ namespace Silence.Core.Battle
         public HexCoord From;
         public HexCoord To;
         public string Text;
+        /// <summary>On a Damage event: how much of the blow the shields took, and how much the armor.</summary>
+        public int Absorbed, Armored;
 
         public override string ToString() => $"T{Turn} {Phase} {Kind}: {Text}";
     }
