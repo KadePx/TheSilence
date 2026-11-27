@@ -63,7 +63,7 @@ namespace Silence.Data
             public int withdrawalDelay, longBattleTurns, longBattleDelay, shipyardDelayPerPurchase;
             public int flagshipRebuildOrdinals, flagshipRebuildMaxHullLoss;
             public int jumpLanes, jumpHullCost, mineLead, mineDamage, nemesisSlow, nemesisDodgeDelay, nemesisFleePercent, nemesisRankHull;
-            public int hailEdictDamage, hailEdictScrapPercent, hailBoardTurns, sabotageCost, sabotageAmount, healOfficerCost;
+            public int hailEdictDamage, hailEdictScrapPercent, hailBoardTurns, sabotageCost, sabotageAmount, healOfficerCost, hazardChance, hazardScrapPercent, eventsPerSector;
             public string[] slots;
             public string[] starterModules;
             public CardDto[] starterCards;
@@ -86,6 +86,7 @@ namespace Silence.Data
         class FactionDto
         {
             public string id, name, blurb, flagshipUnit, escortUnit, craftUnit, enemyCraftUnit, crewName, craftName, rivalName, thirdName;
+            public string briefing, rivalPasses, thirdPasses;
             public string sectorName, openingJournal, bossName, bossShip, bossPortrait, bossHail, bossHailEnraged;
             public string winAhead, winBehind, winThirdAhead, outpaced, lostAhead, lostBehind;
             public bool hasCouncil;
@@ -103,7 +104,8 @@ namespace Silence.Data
             {
                 Id = f.id, Name = f.name, Blurb = f.blurb ?? "", FlagshipUnit = f.flagshipUnit, EscortUnit = f.escortUnit, CraftUnit = f.craftUnit,
                 EnemyCraftUnit = f.enemyCraftUnit, CrewName = f.crewName, CraftName = f.craftName, RivalName = f.rivalName, ThirdName = f.thirdName,
-                SectorName = f.sectorName ?? "", OpeningJournal = f.openingJournal ?? "", BossName = f.bossName ?? "", BossShip = f.bossShip ?? "",
+                SectorName = f.sectorName ?? "", OpeningJournal = f.openingJournal ?? "",
+                Briefing = f.briefing ?? "", RivalPasses = f.rivalPasses ?? "", ThirdPasses = f.thirdPasses ?? "", BossName = f.bossName ?? "", BossShip = f.bossShip ?? "",
                 BossPortrait = f.bossPortrait ?? "", BossHail = f.bossHail ?? "", BossHailEnraged = f.bossHailEnraged ?? "",
                 WinAhead = f.winAhead ?? "", WinBehind = f.winBehind ?? "", WinThirdAhead = f.winThirdAhead ?? "", Outpaced = f.outpaced ?? "",
                 LostAhead = f.lostAhead ?? "", LostBehind = f.lostBehind ?? "",
@@ -139,6 +141,7 @@ namespace Silence.Data
                 NemesisSlow = c.nemesisSlow, NemesisDodgeDelay = c.nemesisDodgeDelay, NemesisFleePercent = c.nemesisFleePercent, NemesisRankHull = c.nemesisRankHull,
                 HailEdictDamage = c.hailEdictDamage, HailEdictScrapPercent = c.hailEdictScrapPercent, HailBoardTurns = c.hailBoardTurns,
                 SabotageCost = c.sabotageCost, SabotageAmount = c.sabotageAmount, HealOfficerCost = c.healOfficerCost > 0 ? c.healOfficerCost : 15,
+                HazardChance = c.hazardChance, HazardScrapPercent = c.hazardScrapPercent > 0 ? c.hazardScrapPercent : 130, EventsPerSector = c.eventsPerSector,
                 Slots = new List<string>(c.slots), StarterModules = new List<string>(c.starterModules),
             };
             foreach (var s in c.starterCards) content.Config.StarterCards.Add(new DeckCard(s.card, s.ship));
@@ -160,7 +163,7 @@ namespace Silence.Data
         [Serializable]
         class EncounterDto
         {
-            public string id, name, intro;
+            public string id, name, intro, aftermath;
             public int tier, scrap, turnLimit, scatterAsteroids, scatterDebris;
             public UnitDto[] units;
             public TerrainDto[] terrain;
@@ -181,7 +184,7 @@ namespace Silence.Data
             {
                 var def = new EncounterDef
                 {
-                    Id = e.id, Name = e.name, Intro = e.intro ?? "", Tier = e.tier, Scrap = e.scrap, TurnLimit = e.turnLimit,
+                    Id = e.id, Name = e.name, Intro = e.intro ?? "", Aftermath = e.aftermath ?? "", Tier = e.tier, Scrap = e.scrap, TurnLimit = e.turnLimit,
                     ScatterAsteroids = e.scatterAsteroids, ScatterDebris = e.scatterDebris,
                 };
                 foreach (var u in e.units ?? new UnitDto[0]) def.Units.Add(Unit(u));
@@ -198,7 +201,7 @@ namespace Silence.Data
         [Serializable]
         class NemesisDto
         {
-            public string id, name, title, ship, portrait, trait, tactic, hailFirst, hailEscaped, hailStandoff, hailFinal, trophy;
+            public string id, name, title, ship, portrait, trait, tactic, hailFirst, hailEscaped, hailStandoff, hailFinal, trophy, epitaph;
             public int scrap;
             public UnitDto[] rank1, rank2, rank3;
         }
@@ -206,8 +209,8 @@ namespace Silence.Data
         [Serializable]
         class RelicDto
         {
-            public string id, name, text;
-            public bool trophy, freeJumps;
+            public string id, name, text, icon;
+            public bool trophy, freeJumps, mineProof;
             public int firstTurnCommand, maxDarts, flagshipHull, heatCap, shields, rivalRate, scrapPercent, ordinalsPerVictory, fieldRepair;
         }
 
@@ -223,7 +226,7 @@ namespace Silence.Data
                 var def = new NemesisDef
                 {
                     Id = n.id, Name = n.name, Title = n.title ?? "", Ship = n.ship, Portrait = n.portrait ?? "", Trait = n.trait ?? "", Tactic = n.tactic ?? "",
-                    HailFirst = n.hailFirst ?? "", HailEscaped = n.hailEscaped ?? "", HailStandoff = n.hailStandoff ?? "", HailFinal = n.hailFinal ?? "",
+                    HailFirst = n.hailFirst ?? "", HailEscaped = n.hailEscaped ?? "", HailStandoff = n.hailStandoff ?? "", HailFinal = n.hailFinal ?? "", Epitaph = n.epitaph ?? "",
                     Trophy = n.trophy ?? "", Scrap = n.scrap,
                 };
                 var ranks = new[] { n.rank1, n.rank2, n.rank3 };
@@ -234,7 +237,8 @@ namespace Silence.Data
             foreach (var x in dto.relics ?? new RelicDto[0])
                 content.Relics.Add(new RelicDef
                 {
-                    Id = x.id, Name = x.name, Text = x.text ?? "", Trophy = x.trophy, FreeJumps = x.freeJumps,
+                    Id = x.id, Name = x.name, Text = x.text ?? "", Trophy = x.trophy, FreeJumps = x.freeJumps, MineProof = x.mineProof,
+                    Icon = string.IsNullOrEmpty(x.icon) ? "relic_" + x.id : x.icon,
                     FirstTurnCommand = x.firstTurnCommand, MaxDarts = x.maxDarts, FlagshipHull = x.flagshipHull, HeatCap = x.heatCap, Shields = x.shields,
                     RivalRate = x.rivalRate, ScrapPercent = x.scrapPercent, OrdinalsPerVictory = x.ordinalsPerVictory, FieldRepair = x.fieldRepair,
                 });

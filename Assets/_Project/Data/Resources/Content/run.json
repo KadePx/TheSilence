@@ -28,7 +28,10 @@
   "startApproval": 0,
   "maxApproval": 6,
   "starterOfficers": [],
-  "maxOfficers": 4
+  "maxOfficers": 4,
+  "briefing": "Nine days ago every receiver in the Ascendancy heard the same thing at the same moment: four seconds of nothing. Not static. Nothing, shaped like a voice. The Waymind choirs traced it to a point past the Ion Reef and then would not say what was there.\n\nThe Prime has decreed that the Ascendancy will reach the Silence first. The Concord heard it too and has voted to go. Something else is moving that way that does not vote and was not decreed.\n\nYou command the Sixth Verdict. The gate at the far side of the Reef is held by Marshal Oru Venn. Lumen expects a report.",
+  "rivalPasses": "The Concord fleet has passed you in the Reef. Lumen has been informed, and has asked for a reason.",
+  "thirdPasses": "Something overtook the fleet in the dark. Sensors logged it as weather. Four Ordinals on the night watch have been reassigned for describing a sound."
  },
  "config": {
   "startScrap": 30,
@@ -111,7 +114,10 @@
   "hailEdictScrapPercent": 150,
   "hailBoardTurns": 2,
   "sabotageCost": 25,
-  "sabotageAmount": 8
+  "sabotageAmount": 8,
+  "hazardChance": 33,
+  "hazardScrapPercent": 130,
+  "eventsPerSector": 5
  },
  "modules": [
   {

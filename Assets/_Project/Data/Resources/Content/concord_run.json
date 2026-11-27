@@ -31,7 +31,10 @@
    "teague",
    "solano"
   ],
-  "maxOfficers": 4
+  "maxOfficers": 4,
+  "briefing": "Nine days ago every relay in the Concord carried the same thing at the same moment: four seconds of nothing. Not static. Nothing, shaped like a voice. The Survey Board put a bearing on it, past the Ion Reef, and then the Board adjourned without a motion for the first time anyone remembers.\n\nThe Council voted nine to four to send a ship. The Ascendancy's Prime has simply ordered it. Something else is on the way there too, and nobody has been able to hail it.\n\nYou have the chair on the Long Promise. The gate at the far side of the Reef is held by High Inquisitor Calix Mor. The crews voted for you. Try to deserve it.",
+  "rivalPasses": "The Ascendancy fleet has passed you in the Reef. The Council has asked, politely, whether the chair needs help.",
+  "thirdPasses": "Something overtook the fleet in the dark. Sensors logged it as weather. The night watch has asked not to stand it alone again, and nobody voted against."
  },
  "config": {
   "startScrap": 30,
@@ -127,7 +130,10 @@
   "hailBoardTurns": 2,
   "sabotageCost": 25,
   "sabotageAmount": 8,
-  "healOfficerCost": 15
+  "healOfficerCost": 15,
+  "hazardChance": 33,
+  "hazardScrapPercent": 130,
+  "eventsPerSector": 5
  },
  "modules": [
   {

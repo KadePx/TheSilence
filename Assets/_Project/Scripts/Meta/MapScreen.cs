@@ -102,6 +102,9 @@ namespace Silence.Meta
                 case RunPhase.EventResult: ShowEventResult(); break;
                 case RunPhase.Shipyard: ShowShipyard(); break;
                 case RunPhase.Over: ShowRunOver(); break;
+                case RunPhase.Map:
+                    if (!run.BriefingSeen && run.CurrentNode < 0) ShowBriefing();
+                    break;
             }
         }
 
@@ -283,7 +286,9 @@ namespace Silence.Meta
                     var enc = content.Encounter(n.Encounter);
                     string tag = n.Kind == NodeKind.Boss ? "SECTOR BOSS" : n.Kind == NodeKind.Elite ? "ELITE" : "BATTLE";
                     string color = n.Kind == NodeKind.Battle ? "c9a24a" : "d9573f";
-                    return $"<color=#{color}>{tag}</color>  {enc.Name}: {enc.Intro}";
+                    string hazard = string.IsNullOrEmpty(n.Hazard) ? "" : $"   <color=#b48cf0>{Hazards.Name(n.Hazard).ToUpperInvariant()}:</color> {Hazards.Text(n.Hazard)} Salvage x{content.Config.HazardScrapPercent / 100f:0.0}.";
+                    string relics = n.Kind == NodeKind.Elite ? "   <color=#ffc46a>Carries a relic.</color>" : "";
+                    return $"<color=#{color}>{tag}</color>  {enc.Name}: {enc.Intro}{relics}{hazard}";
                 }
             }
         }
@@ -346,6 +351,8 @@ namespace Silence.Meta
                 relay.Exit = () => SetInfo(DefaultInfo());
                 relay.Click = _ => ClickNode(node.Id);
                 string label = NemesisHere(n) ? "Nemesis" : n.Kind == NodeKind.Nemesis ? "Battle" : KindName(n.Kind);
+                bool hazardous = !string.IsNullOrEmpty(n.Hazard) && !NemesisHere(n) && (n.Kind == NodeKind.Battle || n.Kind == NodeKind.Elite || n.Kind == NodeKind.Nemesis);
+                if (hazardous && !n.Visited) Ui.Stamp(mapRoot, Hazards.Name(n.Hazard), 12, p.x - 80, p.y + size / 2f + 24, 160, 14, TextAlignmentOptions.Center, Skin.Hex("b48cf0"));
                 Ui.Stamp(mapRoot, jumpTo ? label + " - jump" : label, 12, p.x - 80, p.y + size / 2f + 8, 160, 14, TextAlignmentOptions.Center,
                     jumpTo ? Skin.Cyan : NemesisHere(n) ? Skin.Bad : can ? Skin.BrassLight : Skin.Dim);
             }

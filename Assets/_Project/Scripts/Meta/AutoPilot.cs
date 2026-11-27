@@ -83,6 +83,7 @@ namespace Silence.Meta
                     }
                     break;
                 default:
+                    RunRules.DismissBriefing(run);
                     RunBot.Step(run, Game.Content);
                     Game.Save();
                     map.Refresh();

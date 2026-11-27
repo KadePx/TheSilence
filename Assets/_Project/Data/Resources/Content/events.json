@@ -297,6 +297,241 @@
      ]
     }
    ]
+  },
+  {
+   "id": "antecessor_marker",
+   "title": "The Marker",
+   "art": "event_marker",
+   "body": "It is nine kilometres tall and it is not in any catalogue. No seams, no ports, no heat. The Waymind says it is repeating the broadcast, very quietly, to nobody.\n\nThe Waymind also says it was here before the Reef was.",
+   "choices": [
+    {
+     "label": "Send Ordinals across to listen.",
+     "tag": "Expend 3 Ordinals",
+     "result": "Three go across. One comes back and will not stop humming. What the others left on the surface, the cutters bring home in a sealed case.",
+     "outcomes": [
+      {
+       "kind": "Ordinals",
+       "amount": -3,
+       "id": "",
+       "ship": 0
+      },
+      {
+       "kind": "GainRelic",
+       "amount": 0,
+       "id": "",
+       "ship": 0
+      }
+     ]
+    },
+    {
+     "label": "Take a bearing from it and go.",
+     "tag": "Rivals lose ground",
+     "result": "The line it draws through the Reef is straighter than any chart. You do not ask who drew it.",
+     "outcomes": [
+      {
+       "kind": "RivalsAdvance",
+       "amount": -5,
+       "id": "",
+       "ship": 0
+      }
+     ]
+    },
+    {
+     "label": "Log it as a navigational hazard.",
+     "tag": "No effect",
+     "result": "The entry is four words long. The Inquisition will want more, later, and will not get it.",
+     "outcomes": []
+    }
+   ]
+  },
+  {
+   "id": "chorus_passage",
+   "title": "Weather",
+   "art": "event_chorus",
+   "body": "The sensors call it weather: a front of something moving through the nebula, a day wide. It has a shape if you look for long enough. It is singing, on no frequency you have a name for.\n\nIt has not noticed you. You think.",
+   "choices": [
+    {
+     "label": "Go dark and let it pass.",
+     "tag": "Costs time",
+     "result": "Six hours on battery, with the bulkheads sweating. When the lights come back, nobody on the bridge can remember the tune.",
+     "outcomes": [
+      {
+       "kind": "RivalsAdvance",
+       "amount": 3,
+       "id": "",
+       "ship": 0
+      }
+     ]
+    },
+    {
+     "label": "Run in its wake.",
+     "tag": "Rivals lose ground, every ship -3 hull",
+     "result": "Whatever it is, the Reef opens for it. You follow close and the hulls ring like struck glass the whole way.",
+     "outcomes": [
+      {
+       "kind": "RivalsAdvance",
+       "amount": -7,
+       "id": "",
+       "ship": 0
+      },
+      {
+       "kind": "HullAll",
+       "amount": -3,
+       "id": "",
+       "ship": 0
+      }
+     ]
+    },
+    {
+     "label": "Cut a sample from the trail.",
+     "tag": "Flagship +3 max hull, adds Hull Breach",
+     "result": "The sample is warm. By morning it has grown across a frame and the frame is stronger. The breach it made getting there is your problem.",
+     "outcomes": [
+      {
+       "kind": "MaxHullFlagship",
+       "amount": 3,
+       "id": "",
+       "ship": 0
+      },
+      {
+       "kind": "AddJunk",
+       "amount": 1,
+       "id": "hull_breach",
+       "ship": 0
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "wreck_field",
+   "title": "The Kessane Line",
+   "art": "event_wrecks",
+   "body": "This is where the Ascendancy and the Concord met, eleven years ago, over a world neither of them kept. Nobody came back for the hulls. Some of them still have power. One of them still has a name you were taught to salute.",
+   "choices": [
+    {
+     "label": "Strip the hulls for plate.",
+     "tag": "+35 scrap, costs time",
+     "result": "The cutters work a full watch. The dead are logged by number and left where they are.",
+     "outcomes": [
+      {
+       "kind": "Scrap",
+       "amount": 35,
+       "id": "",
+       "ship": 0
+      },
+      {
+       "kind": "RivalsAdvance",
+       "amount": 3,
+       "id": "",
+       "ship": 0
+      }
+     ]
+    },
+    {
+     "label": "Recover the vat-cores.",
+     "tag": "+5 Ordinals",
+     "result": "Eleven years cold, and the cores still take. The Ordinals that walk out know the names of ships that no longer exist.",
+     "outcomes": [
+      {
+       "kind": "Ordinals",
+       "amount": 5,
+       "id": "",
+       "ship": 0
+      }
+     ]
+    },
+    {
+     "label": "Cut a lance mount out of the old flagship.",
+     "tag": "Gain Short Lance, adds Jammed Mount",
+     "result": "It fits. It was made to. The mount remembers its last firing order better than your gunners like.",
+     "outcomes": [
+      {
+       "kind": "AddCard",
+       "amount": 0,
+       "id": "short_lance",
+       "ship": 0
+      },
+      {
+       "kind": "AddJunk",
+       "amount": 1,
+       "id": "jammed_mount",
+       "ship": 0
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "black_market",
+   "title": "Lanternhouse",
+   "art": "event_market",
+   "body": "A hollow rock strung with lights, flying no colours. It sells to anyone and has been raided by everyone. The harbourmaster hails you by the wrong name on purpose and quotes you the Concord's rate.",
+   "choices": [
+    {
+     "label": "Buy what is under the counter.",
+     "tag": "Pay 45 scrap",
+     "result": "It comes wrapped in a flag you do not recognise. The harbourmaster says the last owner did not need it any more, and does not say why.",
+     "outcomes": [
+      {
+       "kind": "Scrap",
+       "amount": -45,
+       "id": "",
+       "ship": 0
+      },
+      {
+       "kind": "GainRelic",
+       "amount": 0,
+       "id": "",
+       "ship": 0
+      }
+     ]
+    },
+    {
+     "label": "Pay their fitters to clear the decks.",
+     "tag": "Pay 20 scrap",
+     "result": "They are fast, they are thorough, and three of them try to stay aboard.",
+     "outcomes": [
+      {
+       "kind": "Scrap",
+       "amount": -20,
+       "id": "",
+       "ship": 0
+      },
+      {
+       "kind": "RemoveJunk",
+       "amount": 2,
+       "id": "",
+       "ship": 0
+      }
+     ]
+    },
+    {
+     "label": "Sell them two darts.",
+     "tag": "+30 scrap",
+     "result": "They do not ask where the pilots went. Ordinals are not listed on the bill of sale.",
+     "outcomes": [
+      {
+       "kind": "Darts",
+       "amount": -2,
+       "id": "",
+       "ship": 0
+      },
+      {
+       "kind": "Scrap",
+       "amount": 30,
+       "id": "",
+       "ship": 0
+      }
+     ]
+    },
+    {
+     "label": "Note its position for the Inquisition.",
+     "tag": "No effect",
+     "result": "It will not be here when they come. It never is.",
+     "outcomes": []
+    }
+   ]
   }
  ]
 }

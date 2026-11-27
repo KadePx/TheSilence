@@ -56,7 +56,7 @@
   {
    "id": "council_session",
    "title": "Council in Session",
-   "art": "event_edict",
+   "art": "event_council",
    "body": "Forty delegates on a channel that was built for twelve. The fleet fund, the pace, the wounded: everything is on the order paper and the gate is not getting closer while they talk.\n\nYou have the chair.",
    "choices": [
     {
@@ -109,7 +109,7 @@
   {
    "id": "refugee_flotilla",
    "title": "Refugee Flotilla",
-   "art": "event_colony",
+   "art": "event_flotilla",
    "body": "Eleven ships that were never meant to leave orbit, strung out along the reef and losing air. They ran from a tithe-world when the vats were lit. They are asking for anything.",
    "choices": [
     {
@@ -267,6 +267,248 @@
        "ship": 0
       }
      ]
+    }
+   ]
+  },
+  {
+   "id": "antecessor_marker",
+   "title": "The Marker",
+   "art": "event_marker",
+   "body": "It is nine kilometres tall and it is not on any survey. No seams, no ports, no heat. Your signals officer says it is repeating the broadcast, very quietly, to nobody.\n\nShe also says the rock around it is younger than it is.",
+   "choices": [
+    {
+     "label": "Send a survey team across.",
+     "tag": "Expend 3 crew",
+     "result": "Three go across. One comes back and will not stop humming. What the others found on the surface comes home in a sealed case, with their names on it.",
+     "outcomes": [
+      {
+       "kind": "Ordinals",
+       "amount": -3,
+       "id": "",
+       "ship": 0
+      },
+      {
+       "kind": "GainRelic",
+       "amount": 0,
+       "id": "",
+       "ship": 0
+      }
+     ]
+    },
+    {
+     "label": "Take a bearing from it and go.",
+     "tag": "Rivals lose ground",
+     "result": "The line it draws through the Reef is straighter than any chart you own. Nobody moves to ask who drew it.",
+     "outcomes": [
+      {
+       "kind": "RivalsAdvance",
+       "amount": -5,
+       "id": "",
+       "ship": 0
+      }
+     ]
+    },
+    {
+     "label": "Put it to the Survey Board and move on.",
+     "tag": "+1 approval",
+     "result": "The Board thanks you for your restraint. It is the first thing they have agreed on all year.",
+     "outcomes": [
+      {
+       "kind": "Approval",
+       "amount": 1,
+       "id": "",
+       "ship": 0
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "chorus_passage",
+   "title": "Weather",
+   "art": "event_chorus",
+   "body": "The sensors call it weather: a front of something moving through the nebula, a day wide. It has a shape if you look for long enough. It is singing, on no channel you have a name for.\n\nHalf the watch wants to hail it. The other half has left the bridge.",
+   "choices": [
+    {
+     "label": "Go dark and let it pass.",
+     "tag": "Costs time",
+     "result": "Six hours on battery, with the bulkheads sweating. When the lights come back, nobody on the bridge can remember the tune.",
+     "outcomes": [
+      {
+       "kind": "RivalsAdvance",
+       "amount": 3,
+       "id": "",
+       "ship": 0
+      }
+     ]
+    },
+    {
+     "label": "Run in its wake.",
+     "tag": "Rivals lose ground, every ship -3 hull",
+     "result": "Whatever it is, the Reef opens for it. You follow close and the hulls ring like struck glass the whole way.",
+     "outcomes": [
+      {
+       "kind": "RivalsAdvance",
+       "amount": -7,
+       "id": "",
+       "ship": 0
+      },
+      {
+       "kind": "HullAll",
+       "amount": -3,
+       "id": "",
+       "ship": 0
+      }
+     ]
+    },
+    {
+     "label": "Hail it.",
+     "tag": "-1 approval, flagship +3 max hull",
+     "result": "It answers. Not in words. Something comes back along the beam and settles into the frames like frost, and the frames are stronger. The Council would like to know who authorised that.",
+     "outcomes": [
+      {
+       "kind": "Approval",
+       "amount": -1,
+       "id": "",
+       "ship": 0
+      },
+      {
+       "kind": "MaxHullFlagship",
+       "amount": 3,
+       "id": "",
+       "ship": 0
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "wreck_field",
+   "title": "The Kessane Line",
+   "art": "event_wrecks",
+   "body": "This is where the Concord and the Ascendancy met, eleven years ago, over a world neither of them kept. Nobody came back for the hulls. Some of them still have power. One of them is the Open Question, and half your crew had family aboard.",
+   "choices": [
+    {
+     "label": "Strip the hulls for plate.",
+     "tag": "+35 scrap, costs approval",
+     "result": "The cutters work a full watch. Nobody says anything. The vote of thanks afterwards does not carry.",
+     "outcomes": [
+      {
+       "kind": "Scrap",
+       "amount": 35,
+       "id": "",
+       "ship": 0
+      },
+      {
+       "kind": "Approval",
+       "amount": -1,
+       "id": "",
+       "ship": 0
+      }
+     ]
+    },
+    {
+     "label": "Bring the dead home.",
+     "tag": "+1 approval, costs time",
+     "result": "It takes a day you do not have. Every ship in the fleet sends a boat.",
+     "outcomes": [
+      {
+       "kind": "Approval",
+       "amount": 1,
+       "id": "",
+       "ship": 0
+      },
+      {
+       "kind": "RivalsAdvance",
+       "amount": 4,
+       "id": "",
+       "ship": 0
+      }
+     ]
+    },
+    {
+     "label": "Cut a gun mount out of the Open Question.",
+     "tag": "Gain Deck Guns, adds Jammed Mount",
+     "result": "It fits. It was made to. The crew that mans it has started calling it by a name.",
+     "outcomes": [
+      {
+       "kind": "AddCard",
+       "amount": 0,
+       "id": "deck_guns",
+       "ship": 0
+      },
+      {
+       "kind": "AddJunk",
+       "amount": 1,
+       "id": "jammed_mount",
+       "ship": 0
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "black_market",
+   "title": "Lanternhouse",
+   "art": "event_market",
+   "body": "A hollow rock strung with lights, flying no colours. It sells to anyone and has been raided by everyone. The harbourmaster knows your ship, your charter number and what you paid last time, and adds a tenth for the Council.",
+   "choices": [
+    {
+     "label": "Buy what is under the counter.",
+     "tag": "Pay 45 scrap",
+     "result": "It comes wrapped in a flag you do not recognise. The harbourmaster says the last owner did not need it any more, and does not say why.",
+     "outcomes": [
+      {
+       "kind": "Scrap",
+       "amount": -45,
+       "id": "",
+       "ship": 0
+      },
+      {
+       "kind": "GainRelic",
+       "amount": 0,
+       "id": "",
+       "ship": 0
+      }
+     ]
+    },
+    {
+     "label": "Pay their fitters to clear the decks.",
+     "tag": "Pay 20 scrap",
+     "result": "They are fast, they are thorough, and three of them ask to sign the charter.",
+     "outcomes": [
+      {
+       "kind": "Scrap",
+       "amount": -20,
+       "id": "",
+       "ship": 0
+      },
+      {
+       "kind": "RemoveJunk",
+       "amount": 2,
+       "id": "",
+       "ship": 0
+      }
+     ]
+    },
+    {
+     "label": "Sign on whoever wants to leave.",
+     "tag": "+5 crew",
+     "result": "More want to leave than you have berths for. You take the ones who can weld.",
+     "outcomes": [
+      {
+       "kind": "Ordinals",
+       "amount": 5,
+       "id": "",
+       "ship": 0
+      }
+     ]
+    },
+    {
+     "label": "Trade and go. Tell nobody where it is.",
+     "tag": "No effect",
+     "result": "They will have moved by the time anyone asks.",
+     "outcomes": []
     }
    ]
   }

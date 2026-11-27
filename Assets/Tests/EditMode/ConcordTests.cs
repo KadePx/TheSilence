@@ -346,12 +346,12 @@ namespace Silence.Tests
             b.Command = 9;
             var deck = T.Give(b, ConcordCards.DeckGuns, flag);
             Assert.IsNull(b.PlayCard(deck.Id, PlayTarget.At(target.Id)));
-            Assert.AreEqual(40 - 5, target.Hull);
+            Assert.AreEqual(40 - 6, target.Hull);
             var guns = T.Give(b, ConcordCards.OutriderGuns, escort);
             Assert.IsNull(b.PlayCard(guns.Id, PlayTarget.At(target.Id)));
-            Assert.AreEqual(40 - 5 - 5, target.Hull, "the escort's guns are her own");
+            Assert.AreEqual(40 - 6 - 5, target.Hull, "the escort's guns are her own");
             Assert.IsNull(b.CommandCraft(gunship.Id, gunship.Pos, target.Id));
-            Assert.AreEqual(40 - 5 - 5 - 4, target.Hull);
+            Assert.AreEqual(40 - 6 - 5 - 4, target.Hull);
         }
 
         [Test]

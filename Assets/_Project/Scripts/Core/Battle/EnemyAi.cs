@@ -105,7 +105,7 @@ namespace Silence.Core.Battle
                 {
                     if (u.Cycle.Length == 0) return null;
                     var step = u.Cycle[u.CycleIndex % u.Cycle.Length];
-                    var i = new Intent { UnitId = u.Id, Kind = step.Kind, Label = step.Label, Damage = step.Amount, Range = step.Range, Arcs = step.Arcs };
+                    var i = new Intent { UnitId = u.Id, Kind = step.Kind, Label = step.Label, Damage = step.Amount, Range = step.Range > 0 ? Reach(step.Range) : 0, Arcs = step.Arcs };
                     switch (step.Kind)
                     {
                         case IntentKind.PatchUp:
@@ -337,7 +337,7 @@ namespace Silence.Core.Battle
             if (d == 0) return int.MinValue / 2;
             var gun = u.Cycle.FirstOrDefault(s => s.Kind == IntentKind.Broadside);
             var arcs = gun != null ? gun.Arcs : Arc.Port | Arc.Starboard;
-            int range = gun != null ? gun.Range : 3;
+            int range = Reach(gun != null ? gun.Range : 3);
             score -= 3 * Math.Abs(d - Math.Min(2, range));
             if (d <= range && Arcs.InAny(end, f, tp, arcs) && Board.HasLineOfFire(end, tp)) score += 100;
             return score;

@@ -51,6 +51,8 @@ namespace Silence.Core.Run
         public List<int> Next = new List<int>();
         /// <summary>Jump lanes: nodes two layers on that can be reached from here at a cost in hull.</summary>
         public List<int> Jumps = new List<int>();
+        /// <summary>Hazard a fight here is fought in: "ion_storm", "asteroid_field", "nebula" or empty.</summary>
+        public string Hazard = "";
         public bool Visited;
     }
 
@@ -65,6 +67,8 @@ namespace Silence.Core.Run
         public string Note = "";
         /// <summary>A relic that came with the victory (already in <see cref="RunState.Relics"/>), or empty.</summary>
         public string Relic = "";
+        /// <summary>Relics to choose one of before anything else is taken (an elite's hold). Empty once chosen.</summary>
+        public List<string> RelicChoices = new List<string>();
     }
 
     /// <summary>An officer aboard the flagship. Wounded officers give nothing until a yard or a Council motion sees to them.</summary>
@@ -168,6 +172,12 @@ namespace Silence.Core.Run
         public string PendingHail = "";
         /// <summary>What the last jump cost or ran into (mines, a rough lane), for the map to show once.</summary>
         public string TravelNote = "";
+        /// <summary>Hazard of the pending battle (the node's own fight only).</summary>
+        public string PendingHazard = "";
+        /// <summary>The opening briefing has been read.</summary>
+        public bool BriefingSeen;
+        /// <summary>Story beats that fire once: the rival's fleet and the third fleet overtaking you.</summary>
+        public bool RivalPassed, ThirdPassed;
 
         public RewardOffer Reward = new RewardOffer();
         public ShopState Shop = new ShopState();

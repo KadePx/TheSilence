@@ -448,6 +448,9 @@ The next step is the paper prototype (M0); nothing goes into Unity until combat 
 - Hail replies are four fixed answers for the Ascendancy: Edict (enemy +2 damage, all aimed at the flagship, salvage x1.5), Open fire (+1 command on turn 1, grudge to 3), Board the relay (4 Ordinals, escorts idle for 2 turns), Say nothing.
 - Relics are passive numbers. Elites carry one from a pool of seven; each commander's wreck gives a trophy.
 - The Concord is playable (Long Promise and an Outrider, four gunships, no Expend cards). Officers are passive bonuses that a critical hit on the flagship wounds; the Council is an approval meter (0 to 6) earned by clean wins and spent on six motions between jumps. On its route the enemy is the Ascendancy, with its own boss (High Inquisitor Calix Mor) and three commanders.
+- Hazards: a third of the fights past the opening are in an ion storm (no shield regeneration), a nebula (all weapons reach 1 less) or a dense field (more rock), and pay 1.3 times the salvage. Not at the gate or in a nemesis fight.
+- Elites offer two relics and one is taken. A sector draws five of the nine written events (all nine made events crowd out fights, and the bot's win rate rose to 67 percent).
+- Story is told where the player already looks: a briefing before the first jump, an aftermath line with each fight's salvage, an epitaph for each commander, and events.
 - Each faction's run is its own set of content files; rules that differ between factions are data in the `faction` block, not branches in code.
 
 ### Open questions

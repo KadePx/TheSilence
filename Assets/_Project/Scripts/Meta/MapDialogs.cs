@@ -22,7 +22,7 @@ namespace Silence.Meta
             var roster = RunRules.Roster(run, content, enc);
             int rows = roster.Select(u => u.Unit).Distinct().Count();
             float w = boss ? 1180 : 980;
-            float h = 116 + (boss ? Mathf.Max((run.VennEnraged ? 150 : 110) + 36 + 64 + 22 + rows * 48, 340) : 64 + 22 + rows * 48 + (enc.Tier == 5 ? 44 : 0)) + 130;
+            float h = 116 + (boss ? Mathf.Max((run.VennEnraged ? 150 : 110) + 36 + 64 + 22 + rows * 48, 340) : 64 + 22 + rows * 48 + (enc.Tier == 5 ? 44 : 0) + (run.PendingHazard != "" && enc.Tier <= 2 ? 48 : 0)) + 130;
             var d = OpenDialog(w, h);
             string tier = boss ? "Sector boss" : enc.Tier == 5 ? "Nemesis" : enc.Tier == 2 ? "Elite battle" : enc.Tier == 4 ? "Ambush" : "Battle";
             Ui.Stamp(d, tier, 14, 40, 26, 400, 20, TextAlignmentOptions.Left, enc.Tier >= 2 ? Skin.Bad : Skin.Brass);
@@ -41,14 +41,22 @@ namespace Silence.Meta
                 textW = w - 380;
                 string hail = fac.BossHail;
                 if (run.VennEnraged) hail += "\n\n" + fac.BossHailEnraged;
-                Ui.Body(d, hail, 21, textX, y, textW, 200, TextAlignmentOptions.TopLeft, Skin.Hex("ffe0b0"));
-                y += run.VennEnraged ? 150 : 110;
+                // The same comms well the commanders speak from.
+                float speechH = run.VennEnraged ? 142 : 102;
+                var speech = Ui.Well(d, "Speech", textX, y, textW, speechH);
+                Ui.Label(speech.transform, hail, Skin.BodyBold, 16, Skin.Hex("ffe0b0"), 20, 16, textW - 40, speechH - 24, TextAlignmentOptions.TopLeft);
+                y += speechH + 12;
             }
 
             Ui.Body(d, enc.Intro, 20, textX, y, textW, 70, TextAlignmentOptions.TopLeft, Skin.Text);
             y += 64;
 
             var units = roster;
+            if (run.PendingHazard != "" && enc.Tier <= 2)
+            {
+                Ui.Body(d, $"<color=#b48cf0>{Hazards.Name(run.PendingHazard)}:</color> {Hazards.Text(run.PendingHazard)} Salvage x{content.Config.HazardScrapPercent / 100f:0.0}.", 16, textX, y, textW, 40);
+                y += 48;
+            }
             if (enc.Tier == 5)
             {
                 var reply = content.HailReplies.Find(x => x.Id == run.PendingHail);
@@ -95,10 +103,15 @@ namespace Silence.Meta
         void ShowReward()
         {
             var offer = run.Reward;
+            if (offer.RelicChoices.Count > 0)
+            {
+                ShowRelicChoice();
+                return;
+            }
             var d = OpenDialog(1040, 660);
             Ui.Stamp(d, "After action", 14, 40, 26, 400, 20, TextAlignmentOptions.Left, Skin.Brass);
             Ui.Heading(d, "Salvage", 32, 38, 50, 560, 40);
-            Ui.Body(d, offer.Note, 16, 40, 104, 960, 16, TextAlignmentOptions.TopLeft, Skin.Dim);
+            Ui.Body(d, offer.Note, 16, 40, 88, 960, 36, TextAlignmentOptions.TopLeft, Skin.Dim);
             Ui.Art(d, "res_scrap", 640, 40, 1f);
             Ui.Number(d, $"+{offer.Scrap} scrap", 24, 700, 52, 200, 24, TextAlignmentOptions.Left, Skin.Brass);
             if (offer.Ordinals > 0)
@@ -109,9 +122,10 @@ namespace Silence.Meta
             if (!string.IsNullOrEmpty(offer.Relic))
             {
                 var relic = content.Relic(offer.Relic);
-                Ui.Body(d, $"<color=#ffc46a>{(relic.Trophy ? "Trophy" : "Relic")}: {relic.Name}.</color> {relic.Text}", 16, 40, 128, 960, 16);
+                Ui.Art(d, ArtOr(relic.Icon, "icon_relic"), 40, 126, 1f);
+                Ui.Body(d, $"<color=#ffc46a>{(relic.Trophy ? "Trophy" : "Relic")}: {relic.Name}.</color> {relic.Text}", 16, 96, 134, 900, 16);
             }
-            Ui.Stamp(d, "Take one card for the command deck, or patch the fleet up", 12, 40, 150, 800, 14, TextAlignmentOptions.Left, Skin.BrassDark);
+            Ui.Stamp(d, "Take one card for the command deck, or patch the fleet up", 12, string.IsNullOrEmpty(offer.Relic) ? 40 : 96, 160, 800, 14, TextAlignmentOptions.Left, Skin.BrassDark);
 
             int n = offer.Cards.Count;
             float step = CardView.W + 28, x0 = (1040 - (step * (n - 1) + CardView.W)) / 2f + CardView.W / 2f;
@@ -134,7 +148,7 @@ namespace Silence.Meta
         void ShowEvent()
         {
             var ev = content.Event(run.EventId);
-            var d = OpenDialog(1500, 880);
+            var d = OpenDialog(1500, 470 + ev.Choices.Count * 116 + 34);
             EventArt(d, ev);
             Ui.Stamp(d, "Event", 14, 760, 34, 300, 20, TextAlignmentOptions.Left, Skin.Brass);
             Ui.Heading(d, ev.Title, 32, 758, 60, 700, 40);
@@ -174,13 +188,14 @@ namespace Silence.Meta
                     case OutcomeKind.Approval: parts.Add($"{sign} approval"); break;
                     case OutcomeKind.GainOfficer: parts.Add("An officer comes aboard"); break;
                     case OutcomeKind.HealOfficers: parts.Add("Wounded officers return to duty"); break;
+                    case OutcomeKind.GainRelic: parts.Add("Gain a relic"); break;
                     case OutcomeKind.HullFlagship: parts.Add($"Flagship {sign} hull"); break;
                     case OutcomeKind.HullAll: parts.Add($"Every ship {sign} hull"); break;
                     case OutcomeKind.MaxHullFlagship: parts.Add($"Flagship {sign} max hull"); break;
                     case OutcomeKind.Darts: parts.Add($"{sign} {content.Faction.CraftName}"); break;
                     case OutcomeKind.AddCard: parts.Add($"Gain {PaperCards.Get(o.Id).Name}"); break;
                     case OutcomeKind.AddJunk: parts.Add($"Adds {PaperCards.Get(o.Id).Name}"); break;
-                    case OutcomeKind.RemoveJunk: parts.Add("Removes a junk card"); break;
+                    case OutcomeKind.RemoveJunk: parts.Add(o.Amount > 1 ? $"Removes up to {o.Amount} junk cards" : "Removes a junk card"); break;
                     case OutcomeKind.RivalsAdvance:
                         parts.Add(o.Amount > 0 ? $"Rivals gain {o.Amount / 10f:0.0} node" : $"Rivals lose {-o.Amount / 10f:0.0} node");
                         break;

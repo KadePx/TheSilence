@@ -88,7 +88,8 @@
      "speed": 2,
      "facing": "W"
     }
-   ]
+   ],
+   "epitaph": "The audit is closed. Nobody in the Ascendancy will be told how it balanced."
   },
   {
    "id": "achter",
@@ -102,7 +103,7 @@
    "hailEscaped": "You gave me {scar}. I had the crew responsible spaced. Then I came to thank you in person.",
    "hailStandoff": "You would not close and I could not catch you. One of us was a coward. I have had mine shot.",
    "hailFinal": "No signal to withdraw has been loaded. I had the codes burned. Run out your guns.",
-   "trophy": "achters_helm",
+   "trophy": "achters_bell",
    "scrap": 34,
    "rank1": [
     {
@@ -151,7 +152,8 @@
      "speed": 2,
      "facing": "W"
     }
-   ]
+   ],
+   "epitaph": "Clean Hand's crew were found at their posts. They had not been given leave to abandon ship."
   },
   {
    "id": "rell",
@@ -235,7 +237,8 @@
      "speed": 0,
      "facing": "W"
     }
-   ]
+   ],
+   "epitaph": "The vats will be relit. It will be a month before anything walks out of them."
   }
  ],
  "relics": [
@@ -247,8 +250,8 @@
    "firstTurnCommand": 1
   },
   {
-   "id": "achters_helm",
-   "name": "Achter's Helm",
+   "id": "achters_bell",
+   "name": "Clean Hand's Bell",
    "text": "Flagship heat cap +2.",
    "trophy": true,
    "heatCap": 2
@@ -301,6 +304,18 @@
    "name": "Old Gate Codes",
    "text": "Jump lanes cost no hull.",
    "freeJumps": true
+  },
+  {
+   "id": "lost_compass",
+   "name": "The Lost Compass",
+   "text": "Mined lanes cost the fleet nothing.",
+   "mineProof": true
+  },
+  {
+   "id": "singing_shard",
+   "name": "Singing Shard",
+   "text": "Flagship +4 maximum hull.",
+   "flagshipHull": 4
   }
  ]
 }

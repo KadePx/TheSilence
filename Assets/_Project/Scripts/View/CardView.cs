@@ -26,7 +26,7 @@ namespace Silence.View
         TextMeshProUGUI costText;
         int baseCost;
 
-        public static CardView Create(Transform parent, CardDef def, string sourceName, string artSprite, int cost)
+        public static CardView Create(Transform parent, CardDef def, string sourceName, string artSprite, int cost, string rulesText = null)
         {
             var rt = Ui.Box(parent, "Card " + def.Name, 0, 0, W, H);
             rt.pivot = new Vector2(0.5f, 0f);
@@ -67,7 +67,7 @@ namespace Silence.View
             name.overflowMode = TextOverflowModes.Truncate;
 
             // Rules text: well 191x101 at (14,165). Six lines of about 25 characters.
-            var body = Ui.Label(rt, Highlight(def.Text), Skin.Body, 16, Skin.Text, 20, 169, 182, 96, TextAlignmentOptions.TopLeft);
+            var body = Ui.Label(rt, Highlight(rulesText ?? def.Text), Skin.Body, 16, Skin.Text, 20, 169, 182, 96, TextAlignmentOptions.TopLeft);
             body.overflowMode = TextOverflowModes.Truncate;
 
             // Footer: 191x12 at (14,276). Ship on the left, card type on the right.

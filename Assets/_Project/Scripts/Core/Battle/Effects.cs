@@ -40,7 +40,7 @@ namespace Silence.Core.Battle
             if (s == null || !s.Alive) return "source ship is gone";
             if (t == null || !t.Alive || t.Side == s.Side) return "needs an enemy target";
             if (!Hex.Arcs.InAny(s.Pos, s.Facing, t.Pos, Arcs)) return "target is outside the weapon's arc";
-            if (s.Pos.DistanceTo(t.Pos) > Range + b.SpotterRange) return "target is out of range";
+            if (s.Pos.DistanceTo(t.Pos) > b.Reach(Range) + b.SpotterRange) return "target is out of range";
             if (!b.Board.HasLineOfFire(s.Pos, t.Pos)) return "an asteroid blocks the line of fire";
             return null;
         }
@@ -440,7 +440,7 @@ namespace Silence.Core.Battle
 
         System.Collections.Generic.List<Unit> Hits(Battle b, Unit s)
             => b.LiveUnits(Side.Enemy).Where(e => Hex.Arcs.InAny(s.Pos, s.Facing, e.Pos, Arcs)
-                && s.Pos.DistanceTo(e.Pos) <= Range && b.Board.HasLineOfFire(s.Pos, e.Pos)).ToList();
+                && s.Pos.DistanceTo(e.Pos) <= b.Reach(Range) && b.Board.HasLineOfFire(s.Pos, e.Pos)).ToList();
 
         public override string Validate(Battle b, PlayContext ctx)
             => Hits(b, ctx.Source).Count == 0 ? "no enemy in the beam's arc and range" : null;

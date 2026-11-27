@@ -119,6 +119,12 @@ namespace Silence.View
             mode = battle.Outcome == BattleOutcome.Ongoing ? Mode.Idle : Mode.Over;
             Refresh();
             if (mode == Mode.Over) ShowEndScreen();
+            else if (!string.IsNullOrEmpty(battle.Hazard) && battle.Turn <= 1)
+            {
+                // Say once, where the eye already is, what is different about this field.
+                Flash($"<color=#b48cf0>{battle.Hazard.ToUpperInvariant()}</color>  {battle.HazardText}");
+                flashUntil = Time.unscaledTime + 9f;
+            }
         }
 
         // ---------------------------------------------------------------- input

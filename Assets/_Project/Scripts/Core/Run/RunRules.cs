@@ -68,6 +68,9 @@ namespace Silence.Core.Run
                 PlaceNemesis(r, c, rng, 2);
                 if (r.Nemesis.FellBack) r.ConcordProgress = cfg.ConcordStart; // a map with no lane for them: no head start for it
             }
+            // Hazards: some of the fights past the opening are in a storm, a nebula or a dense field, and pay more for it.
+            foreach (var n in r.Nodes)
+                if ((n.Kind == NodeKind.Battle || n.Kind == NodeKind.Elite) && n.Layer >= 2 && rng.Chance(cfg.HazardChance)) n.Hazard = rng.Pick(Hazards.All);
             Keep(r, rng);
             r.Journal.Add(c.Faction.OpeningJournal);
             return r;
@@ -81,6 +84,8 @@ namespace Silence.Core.Run
             var layers = new List<List<MapNode>>();
             var events = c.Events.Select(e => e.Id).ToList();
             rng.Shuffle(events);
+            // Only some of the written events turn up in any one sector: the rest are for another run.
+            if (c.Config.EventsPerSector > 0 && events.Count > c.Config.EventsPerSector) events.RemoveRange(c.Config.EventsPerSector, events.Count - c.Config.EventsPerSector);
             int nextEvent = 0;
 
             for (int layer = 0; layer <= last; layer++)
@@ -284,7 +289,8 @@ namespace Silence.Core.Run
         /// ship hull until the fleet catches up. Jump lanes are not mined.
         /// </summary>
         public static bool LanesMined(RunState r, RunContent c)
-            => r.CurrentNode >= 0 && c.Config.MineDamage > 0 && r.ConcordProgress - r.PlayerProgress >= c.Config.MineLead;
+            => r.CurrentNode >= 0 && c.Config.MineDamage > 0 && r.ConcordProgress - r.PlayerProgress >= c.Config.MineLead
+               && !r.Relics.Any(id => c.Relic(id).MineProof);
 
         static int RelicSum(RunState r, RunContent c, Func<RelicDef, int> value) => r.Relics.Sum(id => value(c.Relic(id)));
 
@@ -342,6 +348,18 @@ namespace Silence.Core.Run
             r.ConcordProgress += Math.Max(0, cfg.ConcordRate + pace + rng.NextInt(cfg.RivalSpread + 1));
             r.ChorusProgress += Math.Max(0, cfg.ChorusRate + pace + rng.NextInt(cfg.RivalSpread + 1));
 
+            // Story beats, once each: the rival's fleet, then the third fleet, getting ahead of you.
+            if (!r.RivalPassed && r.ConcordProgress > r.PlayerProgress && r.NodesVisited > 1)
+            {
+                r.RivalPassed = true;
+                if (c.Faction.RivalPasses != "") r.Journal.Add(c.Faction.RivalPasses);
+            }
+            if (!r.ThirdPassed && r.ChorusProgress > r.PlayerProgress && r.NodesVisited > 1)
+            {
+                r.ThirdPassed = true;
+                if (c.Faction.ThirdPasses != "") r.Journal.Add(c.Faction.ThirdPasses);
+            }
+
             // Slipping past the commander: they move to a lane further on, and their scouts report your course.
             var nem = r.Nemesis;
             if (nem.Hunting && nem.Node >= 0 && nem.Node != node.Id && r.Nodes[nem.Node].Layer <= node.Layer)
@@ -358,10 +376,12 @@ namespace Silence.Core.Run
                 case NodeKind.Elite:
                 case NodeKind.Boss:
                     r.PendingEncounter = node.Encounter;
-                    r.PendingRewardPercent = 100;
+                    r.PendingHazard = node.Hazard ?? "";
+                    r.PendingRewardPercent = r.PendingHazard != "" ? cfg.HazardScrapPercent : 100;
                     r.Phase = RunPhase.Battle;
                     break;
                 case NodeKind.Nemesis:
+                    r.PendingHazard = "";
                     r.PendingHail = "";
                     r.Phase = RunPhase.Hail;
                     break;
@@ -401,6 +421,12 @@ namespace Silence.Core.Run
             var b = new Battle.Battle(seed) { Title = enc.Name, Ordinals = r.Ordinals, DartsInHangar = r.Darts };
             if (enc.TurnLimit > 0) b.TurnLimit = enc.TurnLimit;
             b.CrewName = c.Faction.CrewName;
+            string hazard = enc.Tier <= 2 ? r.PendingHazard ?? "" : "";
+            b.Hazard = Hazards.Name(hazard);
+            b.HazardText = Hazards.Text(hazard);
+            if (b.Hazard != "") b.Title = $"{enc.Name} - {b.Hazard}";
+            b.NoShieldRegen = hazard == "ion_storm";
+            b.RangePenalty = hazard == "nebula" ? 1 : 0;
             b.DartSpec = UnitLibrary.Get(c.Faction.CraftUnit);
             b.GunshipSpec = UnitLibrary.Get(c.Faction.EnemyCraftUnit);
             b.FirstTurnCommand = RelicSum(r, c, x => x.FirstTurnCommand);
@@ -434,8 +460,8 @@ namespace Silence.Core.Run
                 taken.Add(HexCoord.FromOffset(col, row));
             }
             var terrainRng = new Pcg32(seed, 91UL);
-            Scatter(b, terrainRng, taken, enc.ScatterAsteroids, Terrain.Asteroid);
-            Scatter(b, terrainRng, taken, enc.ScatterDebris, Terrain.Debris);
+            Scatter(b, terrainRng, taken, enc.ScatterAsteroids + (hazard == "asteroid_field" ? 4 : 0), Terrain.Asteroid);
+            Scatter(b, terrainRng, taken, enc.ScatterDebris + (hazard == "asteroid_field" ? 2 : 0), Terrain.Debris);
 
             var ids = new int[r.Ships.Count];
             for (int i = 0; i < r.Ships.Count; i++)
@@ -609,7 +635,7 @@ namespace Silence.Core.Run
                 n.Node = -1;
                 n.LastOutcome = NemesisOutcome.Killed;
                 r.ConcordProgress = Math.Max(0, r.ConcordProgress - c.Config.NemesisSlow);
-                r.Journal.Add($"{def.Name} is dead. The Concord fleet has lost its eyes.");
+                r.Journal.Add($"{def.Name} is dead. {def.Epitaph}".Trim());
                 if (!string.IsNullOrEmpty(def.Trophy) && !r.Relics.Contains(def.Trophy))
                 {
                     GainRelic(r, c, def.Trophy);
@@ -754,19 +780,17 @@ namespace Silence.Core.Run
             if (enc.Tier == 2)
             {
                 // An elite carries something worth taking: one relic from the pool, never a commander's trophy.
+                // Two are offered and one is taken, so two runs through the same elite need not come out the same.
                 var pool = c.Relics.Where(x => !x.Trophy && !r.Relics.Contains(x.Id)).ToList();
-                if (pool.Count > 0)
-                {
-                    string relic = rng.Pick(pool).Id;
-                    GainRelic(r, c, relic);
-                    r.Reward.Relic = relic;
-                }
+                rng.Shuffle(pool);
+                r.Reward.RelicChoices = pool.Take(2).Select(x => x.Id).ToList();
             }
             r.Reward.Active = true;
             r.Reward.Scrap = scrap;
             r.Reward.Ordinals = Math.Max(0, ordinals);
             r.Reward.Cards = PickCards(r, c, rng, cfg.RewardCards + (enc.Tier == 2 || killed ? 1 : 0)).Select(x => new DeckCard(x.Card, x.Ship)).ToList();
-            r.Reward.Note = nemesisFight && !killed ? $"{enc.Name} got away. Their escorts did not." : $"{enc.Name} won in {b.Turn} turns.";
+            r.Reward.Note = nemesisFight && !killed ? $"{enc.Name} got away. Their escorts did not."
+                : killed ? $"{enc.Name} is dead. {c.Nemesis(r.Nemesis.Id).Epitaph}".Trim() : $"{enc.Name} won in {b.Turn} turns. {enc.Aftermath}".Trim();
             r.Journal.Add($"{enc.Name}: won in {b.Turn} turns.");
             r.Phase = RunPhase.Reward;
             Keep(r, rng);
@@ -823,10 +847,26 @@ namespace Silence.Core.Run
             return string.IsNullOrEmpty(x.RequiresModule) || r.Modules.Contains(x.RequiresModule);
         }
 
+        /// <summary>Take one of the relics an elite was carrying. It has to be done before the rest of the reward.</summary>
+        public static string ChooseRelic(RunState r, RunContent c, int index)
+        {
+            if (r.Phase != RunPhase.Reward || !r.Reward.Active) return "no reward is waiting";
+            if (index < 0 || index >= r.Reward.RelicChoices.Count) return "no such relic";
+            string id = r.Reward.RelicChoices[index];
+            GainRelic(r, c, id);
+            r.Reward.Relic = id;
+            r.Reward.RelicChoices.Clear();
+            return null;
+        }
+
+        /// <summary>The briefing has been read. Changes nothing else.</summary>
+        public static void DismissBriefing(RunState r) => r.BriefingSeen = true;
+
         /// <summary>Take one of the offered cards, or -1 to take none.</summary>
         public static string TakeReward(RunState r, int cardIndex)
         {
             if (r.Phase != RunPhase.Reward || !r.Reward.Active) return "no reward is waiting";
+            if (r.Reward.RelicChoices.Count > 0) return "choose a relic first";
             if (cardIndex >= r.Reward.Cards.Count) return "no such card";
             if (cardIndex >= 0) r.Deck.Add(r.Reward.Cards[cardIndex]);
             r.Reward.Active = false;
@@ -840,6 +880,7 @@ namespace Silence.Core.Run
         public static string TakeFieldRepair(RunState r, RunContent c)
         {
             if (r.Phase != RunPhase.Reward || !r.Reward.Active) return "no reward is waiting";
+            if (r.Reward.RelicChoices.Count > 0) return "choose a relic first";
             int hull = FieldRepairAmount(r, c);
             foreach (var s in r.Ships)
                 if (s.Alive) s.Hull = Math.Min(s.MaxHull, s.Hull + hull);
@@ -858,6 +899,7 @@ namespace Silence.Core.Run
                 if (o.Kind == OutcomeKind.Scrap && r.Scrap + o.Amount < 0) return $"needs {-o.Amount} scrap";
                 if (o.Kind == OutcomeKind.Ordinals && r.Ordinals + o.Amount < 0) return $"needs {-o.Amount} crew";
                 if (o.Kind == OutcomeKind.Approval && r.Approval + o.Amount < 0) return $"needs {-o.Amount} approval";
+                if (o.Kind == OutcomeKind.Darts && r.Darts + o.Amount < 0) return $"needs {-o.Amount} craft aboard";
             }
             return null;
         }
@@ -956,7 +998,17 @@ namespace Silence.Core.Run
                         r.VennEnraged = true;
                         effects.Add("the gate fleet will be reinforced");
                         break;
+                    case OutcomeKind.GainRelic:
+                    {
+                        var pool = c.Relics.Where(x => !x.Trophy && !r.Relics.Contains(x.Id)).ToList();
+                        if (pool.Count == 0) break;
+                        var relic = pool[(int)(((ulong)r.Seed + (ulong)r.NodesVisited * 13UL + (ulong)r.Relics.Count * 5UL) % (ulong)pool.Count)];
+                        GainRelic(r, c, relic.Id);
+                        effects.Add($"relic: {relic.Name} ({relic.Text.TrimEnd('.')})");
+                        break;
+                    }
                     case OutcomeKind.StartBattle:
+                        r.PendingHazard = "";
                         battle = o.Id;
                         r.PendingRewardPercent = o.Amount > 0 ? o.Amount : 100;
                         break;

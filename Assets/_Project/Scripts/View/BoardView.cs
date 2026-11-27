@@ -64,7 +64,11 @@ namespace Silence.View
 
             var bg = NewSprite(transform, "Background", ArtLibrary.Instance.Sprite("battle_bg_ionreef"), -100);
             bg.transform.localScale = Vector3.one * 3f;
-            bg.color = new Color(0.8f, 0.8f, 0.86f, 1f);
+            // A hazard colours the whole field, so it is felt before it is read.
+            bg.color = battle.Hazard == "Nebula" ? new Color(0.78f, 0.56f, 0.95f, 1f)
+                : battle.Hazard == "Ion storm" ? new Color(0.72f, 1f, 1f, 1f)
+                : battle.Hazard == "Dense field" ? new Color(0.86f, 0.78f, 0.7f, 1f)
+                : new Color(0.8f, 0.8f, 0.86f, 1f);
 
             foreach (var hex in battle.Board.All())
             {
@@ -183,6 +187,12 @@ namespace Silence.View
 
             v.Ring = NewSprite(v.Root, "Ring", Skin.HexOutline(HexPx, 3), -5);
             v.Ring.enabled = false;
+            if (u.IsCommander)
+            {
+                // The hunting commander's ship is always marked: a red hex under it, whatever else is selected.
+                var mark = NewSprite(v.Root, "Commander", Skin.HexOutline(HexPx, 2), -6);
+                mark.color = Skin.Alpha(Skin.Bad, 0.85f);
+            }
 
             if (v.Capital)
             {

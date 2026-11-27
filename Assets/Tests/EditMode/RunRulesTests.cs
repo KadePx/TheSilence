@@ -60,7 +60,7 @@ namespace Silence.Tests
                             RunRules.FinishBattle(r, c, b);
                             break;
                         }
-                        case RunPhase.Reward: RunRules.TakeReward(r, -1); break;
+                        case RunPhase.Reward: if (r.Reward.RelicChoices.Count > 0) RunRules.ChooseRelic(r, c, 0); RunRules.TakeReward(r, -1); break;
                         case RunPhase.Event: RunRules.ChooseEvent(r, c, c.Event(r.EventId).Choices.Count - 1); break;
                         case RunPhase.EventResult: RunRules.CloseEvent(r); break;
                         case RunPhase.Shipyard: RunRules.LeaveShipyard(r, c); break;
@@ -520,7 +520,9 @@ namespace Silence.Tests
             var r = Reach(NodeKind.Shipyard);
             Assert.AreEqual(RunPhase.Shipyard, r.Phase);
             r.Scrap = 200;
+            r.Flagship.MaxHull = UnitLibrary.Get(c.Faction.FlagshipUnit).Hull;
             r.Flagship.Hull = 20;
+            r.Deck.RemoveAll(d => d.Ship < 0); // junk picked up on the road here
             r.Deck.Add(new DeckCard("jammed_mount", -1));
             Assert.AreEqual(20, RunRules.RepairCost(r, c, 0));
             Assert.IsNull(RunRules.Repair(r, c, 0));
@@ -563,6 +565,9 @@ namespace Silence.Tests
             var r = Reach(NodeKind.Shipyard);
             r.Scrap = 500;
             r.Shop.Modules = new List<string> { "armored_plating", "lance_battery" };
+            // Whatever the road here handed out (an event can bolt on a lance or graft hull) is set aside first.
+            r.Deck.RemoveAll(d => d.Card == "short_lance");
+            r.Flagship.MaxHull = UnitLibrary.Get(c.Faction.FlagshipUnit).Hull;
 
             Assert.IsNull(RunRules.FitModule(r, c, "armored_plating"));
             Assert.AreEqual("armored_plating", r.Modules[3]);

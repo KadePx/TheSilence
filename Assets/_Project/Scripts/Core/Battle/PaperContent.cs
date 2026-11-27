@@ -49,17 +49,17 @@ namespace Silence.Core.Battle
         // ---- nemesis commanders (Concord). Each is hunted across a run and comes back changed. ----
 
         /// <summary>Captain Ilse Marrow's survey frigate: a long fore gun, and quick enough to keep you in front of it.</summary>
-        public static UnitSpec QuietLedger => Cycled("con_outrider",
+        public static UnitSpec QuietLedger => Cycled("con_quietledger",
             UnitSpec.Capital("Quiet Ledger", 20, 2, 1, 1, 0, 3, 1, 0, 0, 2, AiProfile.Frigate),
             IntentStep.Of(IntentKind.Maneuver), IntentStep.Fire("Survey Driver", 9, Arc.Fore, 5), IntentStep.Fire("Broadside", 6, Sides, 3));
 
         /// <summary>Wing-Speaker Tobiah Rask's flight tender: it fights through its gunships.</summary>
-        public static UnitSpec OpenHand => Cycled("con_tender",
+        public static UnitSpec OpenHand => Cycled("con_openhand",
             UnitSpec.Capital("Open Hand", 22, 1, 1, 1, 1, 3, 1, 0, 0, 1, AiProfile.Carrier),
             IntentStep.Of(IntentKind.LaunchCraft, 2), IntentStep.Of(IntentKind.JointFire), IntentStep.Fire("Broadside", 5, Sides, 3));
 
         /// <summary>Engineer-Prime Dessa Koyl's yard ship: thick plate, a short cutting beam, and it mends its escorts.</summary>
-        public static UnitSpec MendersOath => Cycled("con_trimaran",
+        public static UnitSpec MendersOath => Cycled("con_mendersoath",
             UnitSpec.Capital("Mender's Oath", 24, 3, 2, 2, 1, 3, 1, 0, 0, 1, AiProfile.Carrier),
             IntentStep.Fire("Cutting Beam", 8, Arc.Fore | Sides, 2), IntentStep.Of(IntentKind.PatchUp, 4), IntentStep.Fire("Broadside", 6, Sides, 3));
 

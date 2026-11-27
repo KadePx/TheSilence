@@ -15,7 +15,7 @@ namespace Silence.Core.Battle
         public int Heat;
 
         List<Unit> Hits(Battle b, Unit s)
-            => b.LiveUnits(Side.Enemy).Where(e => s.Pos.DistanceTo(e.Pos) <= Range && b.Board.HasLineOfFire(s.Pos, e.Pos)).ToList();
+            => b.LiveUnits(Side.Enemy).Where(e => s.Pos.DistanceTo(e.Pos) <= b.Reach(Range) && b.Board.HasLineOfFire(s.Pos, e.Pos)).ToList();
 
         public override string Validate(Battle b, PlayContext ctx)
             => Hits(b, ctx.Source).Count == 0 ? $"no enemy within {Range} hexes" : null;
@@ -49,7 +49,7 @@ namespace Silence.Core.Battle
             var s = ctx.Source;
             var t = ctx.Target;
             if (t == null || !t.Alive || t.Side != Side.Enemy) return "needs an enemy target";
-            if (s.Pos.DistanceTo(t.Pos) > Range) return "target is out of range";
+            if (s.Pos.DistanceTo(t.Pos) > b.Reach(Range)) return "target is out of range";
             if (!b.Board.HasLineOfFire(s.Pos, t.Pos)) return "an asteroid blocks the line of fire";
             return null;
         }
@@ -63,7 +63,7 @@ namespace Silence.Core.Battle
             {
                 if (!t.Alive)
                 {
-                    t = b.LiveUnits(Side.Enemy).Where(e => s.Pos.DistanceTo(e.Pos) <= Range && b.Board.HasLineOfFire(s.Pos, e.Pos))
+                    t = b.LiveUnits(Side.Enemy).Where(e => s.Pos.DistanceTo(e.Pos) <= b.Reach(Range) && b.Board.HasLineOfFire(s.Pos, e.Pos))
                         .OrderBy(e => e.Pos.DistanceTo(s.Pos)).ThenBy(e => e.Id).FirstOrDefault();
                     if (t == null) break;
                 }
@@ -174,7 +174,7 @@ namespace Silence.Core.Battle
         public static UnitSpec EnemyDart => Named("asc_dart", UnitSpec.Craft("Ordinal dart", 2, 4, 3, AiProfile.Gunship));
 
         /// <summary>Sector boss on the Concord's route: the High Inquisitor's ship. Leave the lance's fore arc before it fires.</summary>
-        public static UnitSpec NinthSentence => Named("asc_cruiser",
+        public static UnitSpec NinthSentence => Named("asc_ninth",
             UnitSpec.Capital("Ninth Sentence", 44, 3, 2, 2, 1, 4, 1, 0, 0, 1, AiProfile.Carrier),
             IntentStep.Of(IntentKind.LaunchCraft, 2), IntentStep.Fire("Grand Lance", 14, Arc.Fore, 5),
             IntentStep.Of(IntentKind.Maneuver), IntentStep.Of(IntentKind.JointFire), IntentStep.Fire("Broadside", 8, Sides, 3));
@@ -182,17 +182,17 @@ namespace Silence.Core.Battle
         // ---- Ascendancy commanders hunting a Concord run ----
 
         /// <summary>Inquisitor-Adjunct Vael's cruiser: the longest lance in the sector.</summary>
-        public static UnitSpec FinalTally => Named("asc_cruiser",
+        public static UnitSpec FinalTally => Named("asc_finaltally",
             UnitSpec.Capital("Final Tally", 22, 3, 2, 2, 1, 3, 1, 0, 0, 2, AiProfile.Frigate),
             IntentStep.Of(IntentKind.Maneuver), IntentStep.Fire("Audit Lance", 12, Arc.Fore, 5), IntentStep.Fire("Broadside", 7, Sides, 3));
 
         /// <summary>Lictor-Captain Achter's Blade: fast, and it never stops shooting.</summary>
-        public static UnitSpec CleanHand => Named("asc_blade",
+        public static UnitSpec CleanHand => Named("asc_cleanhand",
             UnitSpec.Capital("Clean Hand", 18, 1, 1, 1, 0, 3, 1, 0, 0, 3, AiProfile.Frigate),
             IntentStep.Fire("Fore guns", 8, Arc.Fore, 3), IntentStep.Of(IntentKind.Maneuver), IntentStep.Fire("Fore guns", 8, Arc.Fore, 3));
 
         /// <summary>Vat-Master Rell's ship: darts, and more darts.</summary>
-        public static UnitSpec TitheOfNine => Named("asc_cruiser",
+        public static UnitSpec TitheOfNine => Named("asc_titheofnine",
             UnitSpec.Capital("Tithe of Nine", 24, 2, 2, 2, 1, 3, 1, 0, 0, 1, AiProfile.Carrier),
             IntentStep.Of(IntentKind.LaunchCraft, 3), IntentStep.Of(IntentKind.JointFire), IntentStep.Fire("Broadside", 7, Sides, 3));
 
@@ -234,8 +234,8 @@ namespace Silence.Core.Battle
         public static readonly CardDef DeckGuns = new CardDef
         {
             Id = "deck_guns", Name = "Deck Guns", Cost = 1, Type = CardType.Weapon, Tags = "Weapon", Module = "Outrigger guns",
-            Text = "4 dmg, port or starboard arc, range 3, +1 Heat.", Target = TargetKind.Enemy,
-            Effects = new Effect[] { new AttackEffect { Damage = 4, Arcs = Sides, Range = 3, Heat = 1 } },
+            Text = "5 dmg, port or starboard arc, range 3, +1 Heat.", Target = TargetKind.Enemy,
+            Effects = new Effect[] { new AttackEffect { Damage = 5, Arcs = Sides, Range = 3, Heat = 1 } },
         };
 
         public static readonly CardDef PatchJob = new CardDef
@@ -269,8 +269,8 @@ namespace Silence.Core.Battle
         public static readonly CardDef LaunchWing = new CardDef
         {
             Id = "launch_wing", Name = "Launch Wing", Cost = 1, Type = CardType.Hangar, Tags = "Hangar · Swarm", Module = "Flight decks",
-            Text = "Launch 2 gunships next to the flagship (max 3 out); they act this turn.",
-            Effects = new Effect[] { new LaunchDartsEffect { Count = 2, MaxOut = 3 } },
+            Text = "Launch 2 gunships next to the flagship (max 4 out); they act this turn.",
+            Effects = new Effect[] { new LaunchDartsEffect { Count = 2, MaxOut = 4 } },
         };
 
         public static readonly CardDef CombatPatrol = new CardDef

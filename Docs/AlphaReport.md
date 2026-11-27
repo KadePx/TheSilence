@@ -545,3 +545,75 @@ generations, logged. 529.6 of the 1,000 are spent in all.
 - Officers have no portraits, and no posts: the spec's Rotate Crews (moving an officer between modules) is not built.
 - The Council is a list of motions. Blocs, and votes that can fail, are not built.
 - There is one hail reply set per faction, not per commander.
+
+## M4, part 1: more to find, more story, one look
+
+Aimed at three things: runs that differ more from each other, story in the places a player already looks, and
+screens that match each other.
+
+### Replayability
+
+- **Hazards.** About a third of the fights past the opening are in an ion storm (nobody's shields regenerate), a
+  nebula (every weapon on both sides reaches 1 hex less) or a dense field (twice the rock). The node says so in violet,
+  the briefing before the fight says what it does, the battlefield is tinted, the rule is shown once when the fight
+  starts, and weapon cards show their shortened range. Hazard fights pay 1.3 times the salvage.
+- **A choice of relic.** An elite now offers two relics and you take one, before the rest of the salvage.
+- **Three more relics** (15 in all), each with its own icon: the Lost Compass (mined lanes cost nothing), the Singing
+  Shard (+4 hull) and Clean Hand's Bell as Achter's trophy.
+- **Four more events for each faction** (nine each): the Marker, Weather, the Kessane Line and Lanternhouse. A sector
+  draws five of the nine, so no run sees them all. Events can now hand over a relic.
+
+### Story
+
+- **An opening briefing**, once per run, in each faction's voice: what the broadcast was, who else is going, who
+  holds the gate. Under it, five lines on how the map works. This is also the map's first-time help.
+- The four new events carry the setting: an Antecessor marker older than the Reef repeating the broadcast, the Chorus
+  passing as "weather", the old Kessane battlefield that both factions keep referring to, a market that sells to anyone.
+- **An aftermath line on every encounter**, shown with the salvage (what was in the picket's log, what the vat-ship
+  was carrying).
+- **An epitaph for every commander**, and one journal line each for the first time the rival fleet and the Chorus
+  get ahead of you.
+
+### Visual coherence: what was wrong and what was done
+
+| Found | Fix |
+| --- | --- |
+| The Concord's Council event showed the Ascendancy's kneeling Ordinals | Its own illustration; the Refugee Flotilla too |
+| All six commanders and the Concord route's boss flew ordinary frigate, tender and cruiser sprites | A ship for each (seven sprites, three facings each), shown in the hail and marked with a red hex on the board |
+| Every relic was the same small icon, listed as text | One icon per relic, shown as a shelf of icons and at double size when choosing |
+| The boss spoke as plain text, commanders from a comms well | Both use the comms well |
+| The faction picker was two small ships in a lot of empty plate | Flagships at double size, with escort, fit and what the fleet starts with |
+| Events with four choices ran off the bottom of the dialog | The dialog grows with the number of choices |
+
+### Numbers (200 bot runs each)
+
+| | Ascendancy | Concord |
+| --- | --- | --- |
+| Runs won / fleet lost / outpaced | 121 / 39 / 40 | 100 / 56 / 44 |
+| Turns fought per run | 48 | 67 |
+| Relics per run | 0.86 | 0.82 |
+
+With all nine events on the map the bot won 134 of 200 as the Ascendancy, because events were replacing fights. A
+sector now draws five. Deck Guns went from 4 to 5 and Launch Wing from three gunships out to four to shorten Concord
+fights; the bot's fights did not get shorter, so that is still open.
+
+### How it was checked
+
+209 EditMode tests pass (7 new: hazards, relic choice, the mine-proof relic, relic events, briefing and story
+flags). In Play Mode the briefing, a four-choice event, the relic choice, the map with hazard labels and the relic
+shelf, a nebula fight, the new faction picker, a return hail and a commander's ship on the board were put on screen
+and captured (`ArtSource/Screenshots/m4_*.png`). The autopilot played a full run with hazards and relic choices to
+a win with no errors logged. Not played with a physical mouse.
+
+### Art
+
+Six event illustrations, sixteen relic icons (one unused: it read as a trooper helmet) and seven ships: 140
+generations. 669.6 of the 1,000 are spent.
+
+### Still open
+
+- Hail replies are still one set per faction.
+- Scars are text and the red hex; the portraits do not change.
+- The Concord and Ascendancy line ships are shared between player and enemy.
+- No music. The tutorial and skirmish are Ascendancy only.
+- Hazards do not reach the gate or a nemesis fight.

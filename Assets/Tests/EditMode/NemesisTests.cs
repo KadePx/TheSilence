@@ -58,6 +58,7 @@ namespace Silence.Tests
                         break;
                     }
                     case RunPhase.Reward:
+                        if (r.Reward.RelicChoices.Count > 0) RunRules.ChooseRelic(r, c, 0);
                         RunRules.TakeReward(r, -1);
                         break;
                     case RunPhase.Event:
@@ -166,7 +167,7 @@ namespace Silence.Tests
             int progress = r.PlayerProgress, concord = r.ConcordProgress;
             Assert.IsNull(RunRules.Travel(r, c, target));
             Assert.AreEqual(progress + 20, r.PlayerProgress);
-            Assert.LessOrEqual(r.ConcordProgress - concord, c.Config.ConcordRate + c.Config.RivalSpread + c.Config.NemesisDodgeDelay);
+            Assert.LessOrEqual(r.ConcordProgress - concord, c.Config.ConcordRate + c.Config.RivalSpread + 2 * c.Config.NemesisDodgeDelay, "one jump of the rivals' time, plus at most a commander slipping past and falling back");
             foreach (var s in r.Ships) Assert.AreEqual(s.MaxHull - c.Config.JumpHullCost, s.Hull, s.Name);
             Assert.IsNotEmpty(r.TravelNote);
         }
@@ -211,6 +212,13 @@ namespace Silence.Tests
             Assert.IsNull(RunRules.Travel(r, c, next.Id));
             foreach (var s in r.Ships) Assert.AreEqual(s.MaxHull - c.Config.MineDamage, s.Hull, s.Name);
             StringAssert.Contains("mines", r.TravelNote);
+
+            // The Lost Compass reads the minefield: the lanes are clear to this fleet.
+            r.Phase = RunPhase.Map;
+            r.ConcordProgress = r.PlayerProgress + c.Config.MineLead + 20;
+            Assert.IsTrue(RunRules.LanesMined(r, c));
+            RunRules.GainRelic(r, c, "lost_compass");
+            Assert.IsFalse(RunRules.LanesMined(r, c));
         }
 
         [Test]
@@ -560,7 +568,7 @@ namespace Silence.Tests
         }
 
         [Test]
-        public void AnEliteCarriesARelicFromThePool()
+        public void AnEliteOffersTwoRelicsAndOneIsTakenBeforeAnythingElse()
         {
             for (long seed = 1; seed < 60; seed++)
             {
@@ -571,13 +579,196 @@ namespace Silence.Tests
                 var b = RunRules.BuildBattle(r, c);
                 Win(b);
                 RunRules.FinishBattle(r, c, b);
-                Assert.AreEqual(had + 1, r.Relics.Count);
-                Assert.AreEqual(r.Relics.Last(), r.Reward.Relic);
-                Assert.IsFalse(c.Relic(r.Reward.Relic).Trophy);
+                Assert.AreEqual(had, r.Relics.Count, "nothing is taken until it is chosen");
+                Assert.AreEqual(2, r.Reward.RelicChoices.Count);
+                Assert.AreNotEqual(r.Reward.RelicChoices[0], r.Reward.RelicChoices[1]);
+                foreach (string id in r.Reward.RelicChoices)
+                {
+                    Assert.IsFalse(c.Relic(id).Trophy);
+                    Assert.IsFalse(r.Relics.Contains(id));
+                }
                 Assert.AreEqual(c.Config.RewardCards + 1, r.Reward.Cards.Count);
+                Assert.IsNotNull(RunRules.TakeReward(r, 0), "the relic comes first");
+                Assert.IsNotNull(RunRules.TakeFieldRepair(r, c));
+                Assert.IsNotNull(RunRules.ChooseRelic(r, c, 2));
+                string pick = r.Reward.RelicChoices[1];
+                Assert.IsNull(RunRules.ChooseRelic(r, c, 1));
+                Assert.Contains(pick, r.Relics);
+                Assert.AreEqual(pick, r.Reward.Relic);
+                Assert.AreEqual(0, r.Reward.RelicChoices.Count);
+                Assert.IsNull(RunRules.TakeReward(r, 0));
+                Assert.AreEqual(RunPhase.Map, r.Phase);
                 return;
             }
             Assert.Fail("no run reached an elite");
+        }
+
+        // ---------------------------------------------------------------- hazards
+
+        RunState AtHazard(string hazard)
+        {
+            var r = RunRules.NewRun(5, c);
+            Assert.IsNull(RunRules.Travel(r, c, RunRules.Choices(r)[0].Id));
+            if (r.Phase != RunPhase.Battle) { r.PendingEncounter = c.Encounters.First(e => e.Tier == 1).Id; r.Phase = RunPhase.Battle; }
+            r.PendingHazard = hazard;
+            return r;
+        }
+
+        [Test]
+        public void SomeFightsPastTheOpeningAreInAHazardAndPayMore()
+        {
+            int hazards = 0, fights = 0;
+            var kinds = new HashSet<string>();
+            for (long seed = 1; seed <= 40; seed++)
+            {
+                var r = RunRules.NewRun(seed, c);
+                foreach (var n in r.Nodes)
+                {
+                    if (n.Hazard == "") continue;
+                    Assert.IsTrue(n.Kind == NodeKind.Battle || n.Kind == NodeKind.Elite || n.Kind == NodeKind.Nemesis, $"seed {seed}");
+                    Assert.GreaterOrEqual(n.Layer, 2, $"seed {seed}: the opening is clear space");
+                    Assert.IsNotEmpty(Hazards.Name(n.Hazard));
+                    Assert.IsNotEmpty(Hazards.Text(n.Hazard));
+                    kinds.Add(n.Hazard);
+                    hazards++;
+                }
+                fights += r.Nodes.Count(n => (n.Kind == NodeKind.Battle || n.Kind == NodeKind.Elite) && n.Layer >= 2);
+            }
+            Assert.AreEqual(Hazards.All.Length, kinds.Count);
+            Assert.That(hazards * 100 / fights, Is.InRange(12, 40));
+
+            var at = RunRules.NewRun(3, c);
+            var node = at.Nodes.First(n => n.Hazard != "" && n.Kind != NodeKind.Nemesis);
+            Assert.IsTrue(WalkTo(at, node.Id));
+            Assert.AreEqual(node.Hazard, at.PendingHazard);
+            Assert.AreEqual(c.Config.HazardScrapPercent, at.PendingRewardPercent);
+        }
+
+        [Test]
+        public void AnIonStormStopsEveryShieldFromComingBack()
+        {
+            var r = AtHazard("ion_storm");
+            var b = RunRules.BuildBattle(r, c);
+            Assert.AreEqual("Ion storm", b.Hazard);
+            b.Start();
+            var enemy = b.LiveUnits(Side.Enemy).First(u => u.IsCapital);
+            enemy.Shields[0] = 0;
+            b.Flagship.Shields[1] = 0;
+            b.EndTurn();
+            if (enemy.Alive) Assert.AreEqual(0, enemy.Shields[0]);
+            Assert.AreEqual(0, b.Flagship.Shields[1]);
+
+            var clear = RunRules.BuildBattle(AtHazard(""), c);
+            clear.Start();
+            clear.Flagship.Shields[2] = 0;
+            clear.EndTurn();
+            Assert.Greater(clear.Flagship.Shields[2], 0);
+        }
+
+        [Test]
+        public void ANebulaShortensEveryWeaponOnBothSides()
+        {
+            var b = T.Fleet(out var flag, out _);
+            b.RangePenalty = 1;
+            var target = b.AddUnit(PaperUnits.Frigate, Side.Enemy, 6, 3, HexDirection.W, 0);
+            b.Start();
+            var lance = T.Give(b, PaperCards.LanceVolley, flag);
+            StringAssert.Contains("range", b.CheckPlay(lance.Id, PlayTarget.At(target.Id)), "four hexes is now out of the lance's reach");
+            target.Pos = T.At(5, 3);
+            Assert.IsNull(b.CheckPlay(lance.Id, PlayTarget.At(target.Id)));
+            Assert.AreEqual(1, b.Reach(1), "nothing drops below 1");
+
+            target.CycleIndex = 1; // its broadside, range 3 on a clear day
+            b.EndTurn();
+            var fire = b.Intents.FirstOrDefault(i => i.Kind == IntentKind.Broadside);
+            if (fire != null) Assert.AreEqual(2, fire.Range);
+
+            var run = RunRules.BuildBattle(AtHazard("nebula"), c);
+            Assert.AreEqual(1, run.RangePenalty);
+        }
+
+        [Test]
+        public void ADenseFieldDoublesTheRockAndLeavesEveryShipClear()
+        {
+            int Rocks(Battle b)
+            {
+                int n = 0;
+                for (int col = 0; col < b.Board.Width; col++)
+                for (int row = 0; row < b.Board.Height; row++)
+                    if (b.Board.BlocksMovement(T.At(col, row))) n++;
+                return n;
+            }
+            var clear = RunRules.BuildBattle(AtHazard(""), c);
+            var dense = RunRules.BuildBattle(AtHazard("asteroid_field"), c);
+            Assert.GreaterOrEqual(Rocks(dense), Rocks(clear) + 4);
+            foreach (var u in dense.Units) Assert.IsFalse(dense.Board.BlocksMovement(u.Pos), u.Name);
+        }
+
+        [Test]
+        public void HazardsNeverReachTheGateOrANemesisFight()
+        {
+            var r = AtHail();
+            r.PendingHazard = "nebula";
+            Assert.IsNull(RunRules.ChooseHail(r, c, Reply("silence")));
+            Assert.AreEqual(0, RunRules.BuildBattle(r, c).RangePenalty);
+            r.PendingEncounter = c.Encounters.First(e => e.Tier == 3).Id;
+            r.PendingHazard = "ion_storm";
+            Assert.IsFalse(RunRules.BuildBattle(r, c).NoShieldRegen);
+        }
+
+        // ---------------------------------------------------------------- story
+
+        [Test]
+        public void TheBriefingIsShownOnceAndBeingOvertakenIsRemarkedOnOnce()
+        {
+            foreach (string id in ContentLoader.Factions)
+            {
+                var f = ContentLoader.Load(id);
+                Assert.Greater(f.Faction.Briefing.Length, 200, id);
+                Assert.IsNotEmpty(f.Faction.RivalPasses, id);
+                Assert.IsNotEmpty(f.Faction.ThirdPasses, id);
+                foreach (var n in f.Nemeses) Assert.IsNotEmpty(n.Epitaph, n.Id);
+
+                var r = RunRules.NewRun(4, f);
+                Assert.IsFalse(r.BriefingSeen);
+                RunRules.DismissBriefing(r);
+                Assert.IsTrue(RunJson.FromJson(RunJson.ToJson(r)).BriefingSeen);
+
+                RunRules.Travel(r, f, RunRules.Choices(r)[0].Id);
+                r.Phase = RunPhase.Map;
+                r.ConcordProgress = r.PlayerProgress + 30;
+                r.ChorusProgress = r.PlayerProgress + 30;
+                RunRules.Travel(r, f, RunRules.Choices(r)[0].Id);
+                Assert.IsTrue(r.RivalPassed && r.ThirdPassed);
+                Assert.Contains(f.Faction.RivalPasses, r.Journal);
+                Assert.Contains(f.Faction.ThirdPasses, r.Journal);
+                int lines = r.Journal.Count(l => l == f.Faction.RivalPasses);
+                r.Phase = RunPhase.Map;
+                RunRules.Travel(r, f, RunRules.Choices(r)[0].Id);
+                Assert.AreEqual(lines, r.Journal.Count(l => l == f.Faction.RivalPasses), "said once");
+            }
+        }
+
+        [Test]
+        public void AnEventCanHandOverARelic()
+        {
+            foreach (string id in ContentLoader.Factions)
+            {
+                var f = ContentLoader.Load(id);
+                var ev = f.Event("black_market");
+                int buy = ev.Choices.FindIndex(x => x.Outcomes.Any(o => o.Kind == OutcomeKind.GainRelic));
+                var r = RunRules.NewRun(2, f);
+                r.Phase = RunPhase.Event;
+                r.EventId = ev.Id;
+                r.Scrap = 10;
+                Assert.IsNotNull(RunRules.ChooseEvent(r, f, buy), "it is not free");
+                r.Scrap = 60;
+                Assert.IsNull(RunRules.ChooseEvent(r, f, buy));
+                Assert.AreEqual(1, r.Relics.Count);
+                Assert.IsFalse(f.Relic(r.Relics[0]).Trophy);
+                StringAssert.Contains(f.Relic(r.Relics[0]).Name, r.EventResult);
+                Assert.GreaterOrEqual(f.Events.Count, 9, id);
+            }
         }
 
         // ---------------------------------------------------------------- saves and whole runs

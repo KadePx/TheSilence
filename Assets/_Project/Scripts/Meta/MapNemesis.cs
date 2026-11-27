@@ -94,11 +94,21 @@ namespace Silence.Meta
             float speechH = Mathf.Ceil(said.preferredHeight) + 36;
             speech.rectTransform.sizeDelta = new Vector2(tw, speechH);
             y += speechH + 22;
+            // Their ship, beside what is known about it.
+            var hull = ArtLibrary.Instance.Sprite(UnitLibrary.Get(def.Ship).Id + "_E");
+            float shipW = 0;
+            if (hull != null)
+            {
+                shipW = 250;
+                var dock = Ui.Well(d, "Hull", w - 40 - 240, y, 240, 230);
+                Ui.Img(dock.transform, "Ship", hull, Mathf.Round((240 - hull.rect.width * 2f) / 2f), Mathf.Round((206 - hull.rect.height * 2f) / 2f), hull.rect.width * 2f, hull.rect.height * 2f);
+                Ui.Stamp(dock.transform, UnitLibrary.Get(def.Ship).Name, 12, 0, 206, 240, 14, TextAlignmentOptions.Center, Skin.Dim);
+            }
             Ui.Stamp(d, "Dossier", 12, tx, y, 300, 14, TextAlignmentOptions.Left, Skin.Brass);
             y += 22;
             foreach (string line in dossier)
             {
-                var text = Ui.Body(d, line, 16, tx, y, tw, 40, TextAlignmentOptions.TopLeft, line.StartsWith("Scar") || line.StartsWith("Refit") ? Skin.Warn : Skin.Dim);
+                var text = Ui.Body(d, line, 16, tx, y, tw - shipW, 40, TextAlignmentOptions.TopLeft, line.StartsWith("Scar") || line.StartsWith("Refit") ? Skin.Warn : Skin.Dim);
                 text.ForceMeshUpdate();
                 y += Mathf.Max(20f, Mathf.Ceil(text.preferredHeight)) + 6;
             }
@@ -169,16 +179,18 @@ namespace Silence.Meta
         float RelicShelf(float y)
         {
             if (run.Relics.Count == 0) return y;
-            float h = 34 + run.Relics.Count * 18 + 10;
+            const int perRow = 5;
+            int rows = (run.Relics.Count + perRow - 1) / perRow;
+            float h = 34 + rows * 54 + 8;
             var card = Ui.Panel(fleetRoot, "Relics", 0, y, FleetW, h);
             Ui.Stamp(card.transform, "Relics", 12, 16, 12, 200, 14, TextAlignmentOptions.Left, Skin.BrassDark);
             for (int i = 0; i < run.Relics.Count; i++)
             {
                 var relic = content.Relic(run.Relics[i]);
-                var line = Ui.Stamp(card.transform, relic.Name, 12, 16, 34 + i * 18, FleetW - 32, 14, TextAlignmentOptions.Left, relic.Trophy ? ConcordGold : Skin.Text);
-                line.raycastTarget = true;
-                var relay = line.gameObject.AddComponent<PointerRelay>();
-                relay.Enter = () => SetInfo($"<color=#c9a24a>RELIC</color>  {relic.Name}: {relic.Text}");
+                var icon = Ui.Art(card.transform, ArtOr(relic.Icon, "icon_relic"), 18 + (i % perRow) * 54, 32 + (i / perRow) * 54, 1f);
+                icon.raycastTarget = true;
+                var relay = icon.gameObject.AddComponent<PointerRelay>();
+                relay.Enter = () => SetInfo($"<color=#c9a24a>{(relic.Trophy ? "TROPHY" : "RELIC")}</color>  {relic.Name}: {relic.Text}");
                 relay.Exit = () => SetInfo(DefaultInfo());
             }
             return y + h + 8;

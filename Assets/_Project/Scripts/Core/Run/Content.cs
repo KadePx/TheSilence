@@ -21,6 +21,8 @@ namespace Silence.Core.Run
         /// <summary>0 opening, 1 standard, 2 elite, 3 boss, 4 only from events.</summary>
         public int Tier;
         public string Intro = "";
+        /// <summary>One line of what was found afterwards, shown with the salvage.</summary>
+        public string Aftermath = "";
         public List<EncounterUnit> Units = new List<EncounterUnit>();
         /// <summary>Fixed terrain as (col, row, asteroid?) triples.</summary>
         public List<(int col, int row, bool asteroid)> Terrain = new List<(int, int, bool)>();
@@ -36,7 +38,7 @@ namespace Silence.Core.Run
     {
         Scrap, Ordinals, HullFlagship, HullAll, MaxHullFlagship, Darts,
         AddCard, AddJunk, RemoveJunk, RivalsAdvance, EnrageBoss, StartBattle,
-        Approval, GainOfficer, HealOfficers,
+        Approval, GainOfficer, HealOfficers, GainRelic,
     }
 
     public sealed class EventOutcome
@@ -88,6 +90,34 @@ namespace Silence.Core.Run
         public int Price = 45;
     }
 
+    /// <summary>Hazards a battle can be fought in. What each does is code in <see cref="RunRules.BuildBattle"/>.</summary>
+    public static class Hazards
+    {
+        public static readonly string[] All = { "ion_storm", "asteroid_field", "nebula" };
+
+        public static string Name(string id)
+        {
+            switch (id)
+            {
+                case "ion_storm": return "Ion storm";
+                case "asteroid_field": return "Dense field";
+                case "nebula": return "Nebula";
+                default: return "";
+            }
+        }
+
+        public static string Text(string id)
+        {
+            switch (id)
+            {
+                case "ion_storm": return "Nobody's shields regenerate. What you strip stays stripped, and so does what they strip from you.";
+                case "asteroid_field": return "Twice the rock. Drift carefully and use it to break their lines of fire.";
+                case "nebula": return "Every weapon on both sides reaches 1 hex less.";
+                default: return "";
+            }
+        }
+    }
+
     /// <summary>A passive rule change carried for the rest of the run. All effects are plain numbers.</summary>
     public sealed class RelicDef
     {
@@ -103,6 +133,10 @@ namespace Silence.Core.Run
         public int ScrapPercent;
         public int OrdinalsPerVictory, FieldRepair;
         public bool FreeJumps;
+        /// <summary>Mined lanes cost this fleet nothing.</summary>
+        public bool MineProof;
+        /// <summary>Sprite name of its icon.</summary>
+        public string Icon = "";
     }
 
     /// <summary>One way to answer a commander's hail. The effect is code, keyed by <see cref="Id"/>.</summary>
@@ -132,6 +166,8 @@ namespace Silence.Core.Run
         public List<EncounterUnit>[] Escorts = { new List<EncounterUnit>(), new List<EncounterUnit>(), new List<EncounterUnit>() };
         /// <summary>Hail lines: first meeting, after escaping you, after a stand-off, and at rank 3.</summary>
         public string HailFirst = "", HailEscaped = "", HailStandoff = "", HailFinal = "";
+        /// <summary>What is said over the wreck.</summary>
+        public string Epitaph = "";
         /// <summary>Relic id taken from the wreck.</summary>
         public string Trophy = "";
         public int Scrap;
@@ -171,6 +207,10 @@ namespace Silence.Core.Run
         public int HailEdictDamage = 2, HailEdictScrapPercent = 150, HailBoardTurns = 2;
         /// <summary>Shipyard service: false beacons set both rivals back.</summary>
         public int SabotageCost = 25, SabotageAmount = 8;
+        /// <summary>Percent chance that a fight from the third layer on is in a hazard, and what its salvage is multiplied by.</summary>
+        public int HazardChance = 25, HazardScrapPercent = 130;
+        /// <summary>How many of the written events one sector draws on (0 = all of them).</summary>
+        public int EventsPerSector = 5;
         /// <summary>Shipyard service: the sickbay returns one wounded officer to duty.</summary>
         public int HealOfficerCost = 15;
         public List<string> StarterModules = new List<string>();
@@ -217,6 +257,10 @@ namespace Silence.Core.Run
         /// <summary>The rival on the top race marker (its fleet guards the gate) and the other one.</summary>
         public string RivalName = "Concord", ThirdName = "Chorus";
         public string SectorName = "", OpeningJournal = "";
+        /// <summary>The opening briefing, shown once before the first jump.</summary>
+        public string Briefing = "";
+        /// <summary>One line each for the first time the rival's fleet, and the third fleet, gets ahead of you.</summary>
+        public string RivalPasses = "", ThirdPasses = "";
         public string BossName = "", BossShip = "", BossPortrait = "", BossHail = "", BossHailEnraged = "";
         public string WinAhead = "", WinBehind = "", WinThirdAhead = "", Outpaced = "", LostAhead = "", LostBehind = "";
         /// <summary>True for a faction that votes: approval is earned in battle and spent on Council motions.</summary>

@@ -61,6 +61,7 @@ namespace Silence.Core.Run
                 }
                 case RunPhase.Reward:
                 {
+                    if (r.Reward.RelicChoices.Count > 0) RunRules.ChooseRelic(r, c, 0);
                     if (r.Flagship.Hull * 10 < r.Flagship.MaxHull * 6)
                     {
                         RunRules.TakeFieldRepair(r, c);

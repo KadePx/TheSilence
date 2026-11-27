@@ -71,6 +71,19 @@ namespace Silence.Core.Battle
         /// <summary>Combat Patrol: enemy attacks this turn that a craft beside the target will take instead.</summary>
         public int PatrolCharges;
 
+        // ---- hazards ----
+        /// <summary>Ion storm: nobody's shields come back at the end of a turn.</summary>
+        public bool NoShieldRegen;
+        /// <summary>Nebula: every weapon, on both sides, reaches this many hexes less (never below 1).</summary>
+        public int RangePenalty;
+        /// <summary>Short name of the hazard this fight is in, for the screen ("Ion storm"), or empty.</summary>
+        public string Hazard = "";
+        /// <summary>What that hazard changes, in a sentence.</summary>
+        public string HazardText = "";
+
+        /// <summary>A weapon's range as it is in this battle.</summary>
+        public int Reach(int range) => Math.Max(1, range - RangePenalty);
+
         public int WeaponBonusFor(Unit source) => source != null && source.IsFlagship ? FlagshipWeaponBonus : 0;
 
         /// <summary>Extra command on turn 1 only (a hail reply, a relic).</summary>
@@ -445,8 +458,9 @@ namespace Silence.Core.Battle
         {
             foreach (var u in Units.Where(u => u.Alive && u.IsCapital))
             {
+                int regen = NoShieldRegen ? 0 : u.ShieldRegen;
                 for (int i = 0; i < ArcIndex.Count; i++)
-                    u.Shields[i] = Math.Min(u.MaxShields, Math.Min(u.Shields[i], u.MaxShields) + u.ShieldRegen);
+                    u.Shields[i] = Math.Min(u.MaxShields, Math.Min(u.Shields[i], u.MaxShields) + regen);
                 Emit(EventKind.ShieldsRegen, u.Id, -1, u.ShieldRegen,
                     $"{u.Name} shields F{u.Shields[0]} S{u.Shields[1]} A{u.Shields[2]} P{u.Shields[3]}");
             }

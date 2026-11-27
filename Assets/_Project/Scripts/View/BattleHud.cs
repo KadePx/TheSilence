@@ -269,7 +269,7 @@ namespace Silence.View
             foreach (var c in Battle.Deck.Hand)
             {
                 var source = c.SourceId >= 0 ? Battle.Get(c.SourceId) : null;
-                var view = CardView.Create(handRoot, c.Def, source != null ? source.Name : "", ArtFor(c.Def, source), Battle.CostOf(c));
+                var view = CardView.Create(handRoot, c.Def, source != null ? source.Name : "", ArtFor(c.Def, source), Battle.CostOf(c), RulesText(c.Def));
                 view.InstanceId = c.Id;
                 var card = c;
                 view.Clicked = _ => OnCardClicked(card);
@@ -282,6 +282,13 @@ namespace Silence.View
         }
 
         TextMeshProUGUI crewLabel, craftLabel;
+
+        /// <summary>A card's text as it holds in this battle: in a nebula every "range N" on a weapon reads one less.</summary>
+        string RulesText(CardDef def)
+        {
+            if (Battle.RangePenalty <= 0 || def.Type != CardType.Weapon) return def.Text;
+            return System.Text.RegularExpressions.Regex.Replace(def.Text, @"(range |within )(\d+)", m => m.Groups[1].Value + Battle.Reach(int.Parse(m.Groups[2].Value)));
+        }
 
         /// <summary>What this fleet's hand-flown craft are called: "dart" or "gunship".</summary>
         string CraftWord => Battle != null && Battle.DartSpec.Name.ToLowerInvariant().Contains("gunship") ? "gunship" : "dart";

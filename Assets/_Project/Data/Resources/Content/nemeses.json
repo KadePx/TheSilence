@@ -88,7 +88,8 @@
      "speed": 2,
      "facing": "W"
     }
-   ]
+   ],
+   "epitaph": "Quiet Ledger's charts went down with her. The Concord is sounding the Reef blind."
   },
   {
    "id": "rask",
@@ -172,7 +173,8 @@
      "speed": 0,
      "facing": "W"
     }
-   ]
+   ],
+   "epitaph": "Forty crews are voting on who speaks for them now. It will take them days."
   },
   {
    "id": "koyl",
@@ -221,7 +223,8 @@
      "speed": 2,
      "facing": "W"
     }
-   ]
+   ],
+   "epitaph": "The Concord's yards have lost the only hand that could have rebuilt her."
   }
  ],
  "relics": [
@@ -287,6 +290,18 @@
    "name": "Old Gate Codes",
    "text": "Jump lanes cost no hull.",
    "freeJumps": true
+  },
+  {
+   "id": "lost_compass",
+   "name": "The Lost Compass",
+   "text": "Mined lanes cost the fleet nothing.",
+   "mineProof": true
+  },
+  {
+   "id": "singing_shard",
+   "name": "Singing Shard",
+   "text": "Flagship +4 maximum hull.",
+   "flagshipHull": 4
   }
  ]
 }

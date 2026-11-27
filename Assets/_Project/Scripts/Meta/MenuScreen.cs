@@ -124,7 +124,7 @@ namespace Silence.Meta
         {
             var shade = Ui.Fill(root, "PickerShade", 0, 0, Ui.RefW, Ui.RefH, new Color(0f, 0f, 0f, 0.8f));
             shade.raycastTarget = true;
-            const float w = 1240, h = 620;
+            const float w = 1240, h = 800;
             var d = Ui.Plate(shade.transform, "Picker", (Ui.RefW - w) / 2f, (Ui.RefH - h) / 2f, w, h).rectTransform;
             Ui.Stamp(d, $"New run - seed {seedValue}", 12, 40, 26, 600, 14, TextAlignmentOptions.Left, Skin.Brass);
             Ui.Heading(d, "Choose your fleet", 32, 38, 48, 800, 36);
@@ -135,19 +135,27 @@ namespace Silence.Meta
                 var content = ContentLoader.Load(id);
                 var f = content.Faction;
                 string faction = id;
-                var b = Ui.Btn(d, "", x, 120, 570, 460, () => { Game.AbandonRun(); Game.NewRun(seedValue, faction); });
+                var b = Ui.Btn(d, "", x, 120, 570, 640, () => { Game.AbandonRun(); Game.NewRun(seedValue, faction); });
                 var flag = Silence.Core.Battle.UnitLibrary.Get(f.FlagshipUnit);
-                var well = Ui.Well(b.transform, "Ship", 24, 24, 522, 190);
+                var escort = Silence.Core.Battle.UnitLibrary.Get(f.EscortUnit);
+                // The flagship at twice size, on the same kind of well the battle screen puts ships in.
+                var well = Ui.Well(b.transform, "Ship", 24, 24, 522, 290);
                 well.raycastTarget = false;
                 var sprite = ArtLibrary.Instance.Sprite(flag.Id + "_E128") ?? ArtLibrary.Instance.Sprite(flag.Id + "_E");
                 if (sprite != null)
                 {
-                    var img = Ui.Img(well.transform, "Art", sprite, (522 - sprite.rect.width) / 2f, (190 - sprite.rect.height) / 2f, sprite.rect.width, sprite.rect.height);
+                    float sw = sprite.rect.width * 2f, sh = sprite.rect.height * 2f;
+                    var img = Ui.Img(well.transform, "Art", sprite, Mathf.Round((522 - sw) / 2f), Mathf.Round((290 - sh) / 2f), sw, sh);
                     img.raycastTarget = false;
                 }
-                Ui.Heading(b.transform, f.Name, 32, 24, 230, 522, 36);
-                Ui.Stamp(b.transform, $"{flag.Name} - hull {flag.Hull}, speed {flag.MaxSpeed}", 12, 26, 274, 520, 14, TextAlignmentOptions.Left, Skin.Brass);
-                Ui.Body(b.transform, f.Blurb, 16, 26, 300, 518, 140, TextAlignmentOptions.TopLeft, Skin.Text);
+                Ui.Heading(b.transform, f.Name, 32, 24, 330, 522, 36);
+                Ui.Stamp(b.transform, $"{flag.Name} - hull {flag.Hull}, speed {flag.MaxSpeed}   /   {escort.Name} - hull {escort.Hull}", 12, 26, 374, 520, 14, TextAlignmentOptions.Left, Skin.Brass);
+                Ui.Body(b.transform, f.Blurb, 16, 26, 402, 518, 120, TextAlignmentOptions.TopLeft, Skin.Text);
+                var cfg = content.Config;
+                string fit = string.Join(", ", cfg.StarterModules.ConvertAll(m => content.Module(m).Name));
+                Ui.Stamp(b.transform, "Fitted", 12, 26, 530, 100, 14, TextAlignmentOptions.Left, Skin.BrassDark);
+                Ui.Body(b.transform, fit, 16, 26, 548, 518, 40, TextAlignmentOptions.TopLeft, Skin.Dim);
+                Ui.Stamp(b.transform, $"{cfg.StartOrdinals} {f.CrewName}   /   {cfg.StartDarts} {f.CraftName}   /   {content.Rewards.Count} cards to find" + (f.HasCouncil ? "   /   Council" : ""), 12, 26, 600, 518, 14, TextAlignmentOptions.Left, Skin.Brass);
                 x += 590;
             }
         }
