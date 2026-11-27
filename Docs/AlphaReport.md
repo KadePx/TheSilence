@@ -857,8 +857,17 @@ cycle: put every screen up on the play-test save, list what is wrong, fix, look 
 
 225 EditMode tests pass (no rule changed). Seen in screenshots only.
 
+### Card pictures show the action
+
+Kade: a piece of the ship is not enough; the cards should be more actiony, or carry icons. Every card now has its own
+64 px action picture (`Art/UI/Cards/Icons/card_<id>.png`, 46 of them: a lance firing, a hull being patched, a ballot
+going into the urn), drawn in front of the part of the ship the card comes from, which is dimmed to a backdrop in the
+colour of the card's type. Junk cards show the picture alone. A card with no picture falls back to the plain crop.
+Three PixelLab calls, 30 generations (859.6 of 1,000 spent). Screenshot: `ArtSource/Screenshots/m5_card_actions_deck.png`.
+
 ### Still open
 
-- Launch Wing and Combat Patrol share the gunship picture.
+- The action picture is 64 px in a window 182 wide; it cannot be drawn larger without a fractional scale.
+- The Concord's Council Vote urn has a skull on it, which is grimmer than the Concord is.
 - An enemy's order chip can sit on top of a neighbouring ship.
 - Balance still rests on bot runs; nothing here was checked with a physical mouse.

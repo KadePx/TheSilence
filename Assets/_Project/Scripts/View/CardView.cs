@@ -45,6 +45,10 @@ namespace Silence.View
             var window = Ui.Box(rt, "Art", 19, 61, 182, 88);
             window.gameObject.AddComponent<RectMask2D>();
             var art = Data.ArtLibrary.Instance.Sprite(artSprite);
+            // What the card does, drawn as an action: a lance firing, a hull being patched. It sits in front of the
+            // part of the ship the card comes from, which is dimmed to a backdrop in the colour of the card's type.
+            var action = Data.ArtLibrary.Instance.Sprite("card_" + def.Id);
+            if (action != null && junk) art = null;
             if (art != null)
             {
                 // A close crop of the part of the ship the card comes from (the spec's "crop of the source
@@ -55,8 +59,12 @@ namespace Silence.View
                 float ax = Mathf.Clamp(Mathf.Round(91f - focus.x * aw), 182f - aw, 0f), ay = Mathf.Clamp(Mathf.Round(44f - focus.y * ah), 88f - ah, 0f);
                 if (aw < 182f) ax = Mathf.Round((182f - aw) / 2f);
                 if (ah < 88f) ay = Mathf.Round((88f - ah) / 2f);
-                Ui.Img(window, "Sprite", art, ax, ay, aw, ah, junk ? new Color(1f, 0.8f, 0.7f) : Color.white);
+                var shade = action == null ? Color.white : Color.Lerp(TypeColor(def.Type), Color.white, 0.5f) * 0.42f;
+                shade.a = 1f;
+                Ui.Img(window, "Sprite", art, ax, ay, aw, ah, junk ? new Color(1f, 0.8f, 0.7f) : shade);
             }
+            if (action != null)
+                Ui.Img(window, "Action", action, Mathf.Round((182f - action.rect.width) / 2f), Mathf.Round((88f - action.rect.height) / 2f), action.rect.width, action.rect.height);
 
             // Cost in the hexagonal badge, centred on (28,28).
             view.costText = Ui.Number(rt, def.Unplayable ? "X" : cost.ToString(), 24, 9, 17, 40, 24, TextAlignmentOptions.Center, Skin.BrassLight);
