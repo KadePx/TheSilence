@@ -67,6 +67,14 @@ namespace Silence.Core.Run
         public string Relic = "";
     }
 
+    /// <summary>An officer aboard the flagship. Wounded officers give nothing until a yard or a Council motion sees to them.</summary>
+    [Serializable]
+    public sealed class OfficerState
+    {
+        public string Id = "";
+        public bool Wounded;
+    }
+
     /// <summary>
     /// The rival commander hunting this run. Each meeting they survive leaves a mark: a rank, a grudge,
     /// a scar from whatever hurt them most and a refit against it.
@@ -118,6 +126,8 @@ namespace Silence.Core.Run
     public sealed class RunState
     {
         public int Version = 1;
+        /// <summary>Faction id: which content the run is played with.</summary>
+        public string Faction = "ascendancy";
         public long Seed;
         public long RngState;
         public long RngIncrement;
@@ -148,6 +158,9 @@ namespace Silence.Core.Run
         /// <summary>Set by events: the sector boss brings an extra escort.</summary>
         public bool VennEnraged;
 
+        /// <summary>Council approval (factions that vote): earned by winning, spent on motions.</summary>
+        public int Approval;
+        public List<OfficerState> Officers = new List<OfficerState>();
         public NemesisState Nemesis = new NemesisState();
         /// <summary>Relic ids held. Their effects are numbers in the relic definitions.</summary>
         public List<string> Relics = new List<string>();

@@ -36,6 +36,7 @@ namespace Silence.Core.Run
     {
         Scrap, Ordinals, HullFlagship, HullAll, MaxHullFlagship, Darts,
         AddCard, AddJunk, RemoveJunk, RivalsAdvance, EnrageBoss, StartBattle,
+        Approval, GainOfficer, HealOfficers,
     }
 
     public sealed class EventOutcome
@@ -107,13 +108,13 @@ namespace Silence.Core.Run
     /// <summary>One way to answer a commander's hail. The effect is code, keyed by <see cref="Id"/>.</summary>
     public sealed class HailReply
     {
-        /// <summary>"edict", "fire", "board" or "silence".</summary>
         public string Id;
+        /// <summary>What it does, by code key: "edict" (enrage them), "fire" (first strike), "board" (silence the escorts) or "silence".</summary>
+        public string Effect = "silence";
         public string Label = "";
         public string Tag = "";
-        public string Effect = "";
-        /// <summary>Ordinals expended to give this reply.</summary>
-        public int Ordinals;
+        /// <summary>Crew expended to give this reply, or Council approval spent.</summary>
+        public int Ordinals, Approval;
     }
 
     /// <summary>A named rival commander: ship, escorts by rank, and what they say.</summary>
@@ -170,14 +171,65 @@ namespace Silence.Core.Run
         public int HailEdictDamage = 2, HailEdictScrapPercent = 150, HailBoardTurns = 2;
         /// <summary>Shipyard service: false beacons set both rivals back.</summary>
         public int SabotageCost = 25, SabotageAmount = 8;
+        /// <summary>Shipyard service: the sickbay returns one wounded officer to duty.</summary>
+        public int HealOfficerCost = 15;
         public List<string> StarterModules = new List<string>();
         public List<DeckCard> StarterCards = new List<DeckCard>();
         public List<string> Slots = new List<string>();
     }
 
+    /// <summary>A named officer aboard the flagship: a passive bonus while fit, nothing while wounded.</summary>
+    public sealed class OfficerDef
+    {
+        public string Id;
+        public string Name;
+        public string Role = "";
+        public string Text = "";
+        /// <summary>Added to every repair card; to the flagship's weapon cards; to each craft attack.</summary>
+        public int RepairBonus, WeaponBonus, CraftBonus;
+        public int FirstTurnDraw, CrewPerVictory, ShieldBonus;
+    }
+
+    /// <summary>Something the Council can be asked to vote through, paid for in approval.</summary>
+    public sealed class MotionDef
+    {
+        public string Id;
+        public string Name;
+        public string Text = "";
+        public int Cost = 1;
+        /// <summary>Hull to every ship, scrap, craft restocked, crew taken on, tenths of a node the rivals lose.</summary>
+        public int Hull, Scrap, Craft, Crew, RivalsBack;
+        /// <summary>Commission a new officer from those not aboard.</summary>
+        public bool Officer;
+        public bool HealOfficers;
+    }
+
+    /// <summary>Who the player is: names, voice and the lines the map and the end screens use. All from data.</summary>
+    public sealed class FactionDef
+    {
+        public string Id = "ascendancy";
+        public string Name = "The Ascendancy";
+        public string Blurb = "";
+        /// <summary>Unit ids of the two starting ships, the craft the hangar launches and the craft enemy carriers launch.</summary>
+        public string FlagshipUnit = "flagship", EscortUnit = "escort", CraftUnit = "dart", EnemyCraftUnit = "gunship";
+        /// <summary>What the crew pool and the hangar craft are called ("Ordinals", "darts").</summary>
+        public string CrewName = "Ordinals", CraftName = "darts";
+        /// <summary>The rival on the top race marker (its fleet guards the gate) and the other one.</summary>
+        public string RivalName = "Concord", ThirdName = "Chorus";
+        public string SectorName = "", OpeningJournal = "";
+        public string BossName = "", BossShip = "", BossPortrait = "", BossHail = "", BossHailEnraged = "";
+        public string WinAhead = "", WinBehind = "", WinThirdAhead = "", Outpaced = "", LostAhead = "", LostBehind = "";
+        /// <summary>True for a faction that votes: approval is earned in battle and spent on Council motions.</summary>
+        public bool HasCouncil;
+        public int StartApproval, MaxApproval = 6;
+        public List<string> StarterOfficers = new List<string>();
+        public int MaxOfficers = 4;
+    }
+
     /// <summary>All run content, loaded from data by the Data layer and handed to <see cref="RunRules"/>.</summary>
     public sealed class RunContent
     {
+        public FactionDef Faction = new FactionDef();
         public RunConfig Config = new RunConfig();
         public List<EncounterDef> Encounters = new List<EncounterDef>();
         public List<EventDef> Events = new List<EventDef>();
@@ -186,9 +238,12 @@ namespace Silence.Core.Run
         public List<RelicDef> Relics = new List<RelicDef>();
         public List<NemesisDef> Nemeses = new List<NemesisDef>();
         public List<HailReply> HailReplies = new List<HailReply>();
+        public List<OfficerDef> Officers = new List<OfficerDef>();
+        public List<MotionDef> Motions = new List<MotionDef>();
 
         public EncounterDef Encounter(string id) => Encounters.Find(e => e.Id == id) ?? throw new ArgumentException($"unknown encounter '{id}'");
         public EventDef Event(string id) => Events.Find(e => e.Id == id) ?? throw new ArgumentException($"unknown event '{id}'");
+        public OfficerDef Officer(string id) => Officers.Find(x => x.Id == id) ?? throw new ArgumentException($"unknown officer '{id}'");
         public RelicDef Relic(string id) => Relics.Find(x => x.Id == id) ?? throw new ArgumentException($"unknown relic '{id}'");
         public NemesisDef Nemesis(string id) => Nemeses.Find(x => x.Id == id) ?? throw new ArgumentException($"unknown nemesis '{id}'");
         public ModuleDef Module(string id) => Modules.Find(m => m.Id == id) ?? throw new ArgumentException($"unknown module '{id}'");

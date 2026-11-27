@@ -21,9 +21,12 @@ the sprint plan.
   animates those events. The same holds for the map: every click is a `RunRules` call.
 - Dependencies flow Core <- Data <- View <- Meta <- Editor. Meta uses View's UI kit (`Ui`, `Skin`,
   `CardView`) and hands battles to the Battle scene through `BattleLauncher`. Tests reference Core and Data only.
-- Content: cards and unit templates are code in Core (`PaperCards`, `PaperUnits`; their effects and AI are
-  code). Encounters, events, modules, the reward pool, nemesis commanders, hail replies, relics and run tuning are JSON in
-  `Assets/_Project/Data/Resources/Content/`, loaded by `Silence.Data.ContentLoader`.
+- Content: cards and unit templates are code in Core (`PaperCards`, `PaperUnits`, and `ConcordCards`, `ConcordUnits`
+  for the Concord's fleet and the Ascendancy as an enemy; their effects and AI are code). Encounters, events, modules, the reward pool, nemesis commanders, hail replies, relics and run tuning are JSON in
+  `Assets/_Project/Data/Resources/Content/`, loaded by `Silence.Data.ContentLoader`. Each playable faction has its
+  own four files (`run`, `encounters`, `events`, `nemeses`; the Concord's are prefixed `concord_`) and its own
+  `RunContent`; `RunState.Faction` says which one a run uses. Names, voice and what differs between factions are in
+  the `faction` block of its run file, not in code.
 - Screens build their UI in code at runtime (no scene wiring). Scenes hold only a camera and a light; a
   `RuntimeInitializeOnLoadMethod` adds the right screen object by scene name.
 - Sprites, fonts and sounds are looked up by name through `ArtLibrary` (`Resources/ArtLibrary.asset`).
@@ -50,7 +53,8 @@ the sprint plan.
   with `file`). 150 bot runs; reports win rates per encounter, battle length, dodges, heat, and how often each card is
   played when drawn. Writes `Temp/sim.txt`. The bot is weak, so read trends, not absolutes.
 - Race and nemesis numbers: `Tools/sim/race_nemesis_sim.cs` the same way (200 bot runs; nemesis fights by commander,
-  jump lanes taken, mined lanes, where runs are lost). Writes `Temp/m3sim.txt`.
+  jump lanes taken, mined lanes, where runs are lost). Writes `Temp/m3sim.txt`. Put `concord` in
+  `Temp/sim-faction.txt` first to run it for the Concord.
 
 ## Art
 

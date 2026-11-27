@@ -36,16 +36,16 @@ namespace Silence.Core.Run
             var cfg = c.Config;
             var r = new RunState
             {
-                Seed = seed, Scrap = cfg.StartScrap, Ordinals = cfg.StartOrdinals, MaxOrdinals = cfg.MaxOrdinals,
+                Seed = seed, Faction = c.Faction.Id, Scrap = cfg.StartScrap, Ordinals = cfg.StartOrdinals, MaxOrdinals = cfg.MaxOrdinals,
                 Darts = cfg.StartDarts, MaxDarts = cfg.MaxDarts, BossLayer = cfg.Layers,
                 ConcordProgress = cfg.ConcordStart, ChorusProgress = cfg.ChorusStart,
             };
             var rng = new Pcg32(unchecked((ulong)seed), 77UL);
 
-            var flag = UnitLibrary.Get("flagship");
-            var escort = UnitLibrary.Get("escort");
-            r.Ships.Add(new ShipState { Unit = "flagship", Name = flag.Name, Hull = flag.Hull, MaxHull = flag.Hull });
-            r.Ships.Add(new ShipState { Unit = "escort", Name = escort.Name, Hull = escort.Hull, MaxHull = escort.Hull });
+            var flag = UnitLibrary.Get(c.Faction.FlagshipUnit);
+            var escort = UnitLibrary.Get(c.Faction.EscortUnit);
+            r.Ships.Add(new ShipState { Unit = c.Faction.FlagshipUnit, Name = flag.Name, Hull = flag.Hull, MaxHull = flag.Hull });
+            r.Ships.Add(new ShipState { Unit = c.Faction.EscortUnit, Name = escort.Name, Hull = escort.Hull, MaxHull = escort.Hull });
 
             foreach (string id in cfg.StarterModules)
             {
@@ -57,6 +57,9 @@ namespace Silence.Core.Run
             }
             r.Deck.AddRange(cfg.StarterCards);
 
+            r.Approval = c.Faction.StartApproval;
+            foreach (string id in c.Faction.StarterOfficers) r.Officers.Add(new OfficerState { Id = c.Officer(id).Id });
+
             GenerateMap(r, c, rng);
             AddJumpLanes(r, cfg, rng);
             if (c.Nemeses.Count > 0)
@@ -66,7 +69,7 @@ namespace Silence.Core.Run
                 if (r.Nemesis.FellBack) r.ConcordProgress = cfg.ConcordStart; // a map with no lane for them: no head start for it
             }
             Keep(r, rng);
-            r.Journal.Add("The broadcast reached everyone at once. The Sixth Verdict makes for the Ion Reef gate.");
+            r.Journal.Add(c.Faction.OpeningJournal);
             return r;
         }
 
@@ -397,7 +400,15 @@ namespace Silence.Core.Run
             ulong seed = BattleSeed(r);
             var b = new Battle.Battle(seed) { Title = enc.Name, Ordinals = r.Ordinals, DartsInHangar = r.Darts };
             if (enc.TurnLimit > 0) b.TurnLimit = enc.TurnLimit;
+            b.CrewName = c.Faction.CrewName;
+            b.DartSpec = UnitLibrary.Get(c.Faction.CraftUnit);
+            b.GunshipSpec = UnitLibrary.Get(c.Faction.EnemyCraftUnit);
             b.FirstTurnCommand = RelicSum(r, c, x => x.FirstTurnCommand);
+            var fit = r.Flagship.Alive ? r.Officers.Where(o => !o.Wounded).Select(o => c.Officer(o.Id)).ToList() : new List<OfficerDef>();
+            b.RepairBonus = fit.Sum(o => o.RepairBonus);
+            b.FlagshipWeaponBonus = fit.Sum(o => o.WeaponBonus);
+            b.CraftDamageBonus = fit.Sum(o => o.CraftBonus);
+            b.FirstTurnDraw = fit.Sum(o => o.FirstTurnDraw);
 
             var units = Roster(r, c, enc);
             var nem = r.Nemesis;
@@ -446,7 +457,7 @@ namespace Silence.Core.Run
                         spec.Armor[ArcIndex.Fore] += m.ArmorFore;
                     }
                     spec.HeatCap += RelicSum(r, c, x => x.HeatCap);
-                    spec.Shields += RelicSum(r, c, x => x.Shields);
+                    spec.Shields += RelicSum(r, c, x => x.Shields) + fit.Sum(o => o.ShieldBonus);
                     spec.MaxSpeed = Math.Max(1, spec.MaxSpeed);
                 }
                 var unit = b.AddUnit(spec, Side.Player, playerCol, i == FlagshipIndex ? 2 : 4, HexDirection.E, 1, i == FlagshipIndex);
@@ -520,7 +531,8 @@ namespace Silence.Core.Run
         }
 
         /// <summary>Why a hail reply can't be given (it costs Ordinals the fleet does not have), or null.</summary>
-        public static string CanReply(RunState r, HailReply reply) => r.Ordinals < reply.Ordinals ? $"needs {reply.Ordinals} Ordinals" : null;
+        public static string CanReply(RunState r, HailReply reply)
+            => r.Ordinals < reply.Ordinals ? $"needs {reply.Ordinals} crew" : r.Approval < reply.Approval ? $"needs {reply.Approval} approval" : null;
 
         /// <summary>Answer the commander's hail. The reply shapes the battle that follows at once.</summary>
         public static string ChooseHail(RunState r, RunContent c, int replyIndex)
@@ -531,10 +543,11 @@ namespace Silence.Core.Run
             string blocked = CanReply(r, reply);
             if (blocked != null) return blocked;
             r.Ordinals -= reply.Ordinals;
-            r.PendingHail = reply.Id;
-            if (reply.Id == "fire") r.Nemesis.Grudge = 3;
+            r.Approval -= reply.Approval;
+            r.PendingHail = reply.Effect;
+            if (reply.Effect == "fire") r.Nemesis.Grudge = 3;
             r.PendingEncounter = NemesisEncounterId;
-            r.PendingRewardPercent = reply.Id == "edict" ? c.Config.HailEdictScrapPercent : 100;
+            r.PendingRewardPercent = reply.Effect == "edict" ? c.Config.HailEdictScrapPercent : 100;
             r.Journal.Add($"{c.Nemesis(r.Nemesis.Id).Name} hailed. Reply: {reply.Tag}.");
             r.Phase = RunPhase.Battle;
             return null;
@@ -544,11 +557,12 @@ namespace Silence.Core.Run
         public static string HailEffect(RunContent c, HailReply reply)
         {
             var cfg = c.Config;
-            switch (reply.Id)
+            string price = reply.Approval > 0 ? $"Spend {reply.Approval} approval" : $"Expend {reply.Ordinals} {c.Faction.CrewName}";
+            switch (reply.Effect)
             {
                 case "edict": return $"Enraged: every enemy attack deals +{cfg.HailEdictDamage} and all of it is aimed at the flagship. Salvage x{cfg.HailEdictScrapPercent / 100}.{cfg.HailEdictScrapPercent % 100 / 10}";
                 case "fire": return "+1 command on turn 1. Their grudge goes to 3: if they get away they return at rank III";
-                case "board": return $"Expend {reply.Ordinals} Ordinals: their escorts get no orders for the first {cfg.HailBoardTurns} turns";
+                case "board": return $"{price}: their escorts get no orders for the first {cfg.HailBoardTurns} turns";
                 default: return "No effect";
             }
         }
@@ -560,7 +574,7 @@ namespace Silence.Core.Run
         {
             switch (source)
             {
-                case "lance": return "a lance burn the length of the prow";
+                case "lance": return "a burn the length of the prow";
                 case "guns": return "one flank's batteries slagged by broadsides";
                 case "craft": return "a hangar deck gutted by darts";
                 case "other": return "three decks sealed after the boarding";
@@ -573,7 +587,7 @@ namespace Silence.Core.Run
         {
             switch (source)
             {
-                case "lance": return "Lance baffles: every lance hit deals 3 less";
+                case "lance": return "Baffles: every lance or mass driver hit deals 3 less";
                 case "guns": return "Flank plating: +2 armor port and starboard";
                 case "craft": return "Point defence: darts deal 1 less";
                 case "other": return "Sealed decks: +6 hull";
@@ -659,6 +673,22 @@ namespace Silence.Core.Run
                 if (!unit.Alive) ship.Alive = false;
             }
 
+            // Officers: every critical hit on the flagship puts one in the sickbay; losing the flagship puts them all there.
+            var flagUnit = players.Find(u => u.IsFlagship);
+            if (flagUnit != null && r.Officers.Count > 0)
+            {
+                int hurt = flagUnit.Alive ? b.Log.Count(e => e.Kind == EventKind.Critical && e.UnitId == flagUnit.Id) : r.Officers.Count;
+                for (int i = 0; i < hurt; i++)
+                {
+                    var well = r.Officers.Where(o => !o.Wounded).ToList();
+                    if (well.Count == 0) break;
+                    var hit = rng.Pick(well);
+                    hit.Wounded = true;
+                    r.Journal.Add($"{c.Officer(hit.Id).Name} was wounded.");
+                }
+            }
+            bool lostShip = players.Any(u => !u.Alive);
+
             // Junk left in the deck stays with the fleet; junk that was exhausted (a fire put out) is gone.
             r.Deck.RemoveAll(d => d.Ship < 0);
             foreach (var pile in new[] { b.Deck.DrawPile, b.Deck.Hand, b.Deck.Discard })
@@ -690,9 +720,10 @@ namespace Silence.Core.Run
                 {
                     r.ConcordProgress += cfg.WithdrawalDelay;
                     r.ChorusProgress += cfg.WithdrawalDelay;
+                    if (c.Faction.HasCouncil) r.Approval = Math.Max(0, r.Approval - 1);
                     r.Journal.Add($"{enc.Name}: both fleets disengaged after {b.Turn} turns. Time lost, nothing gained.");
                     if (nemesisFight) ResolveNemesis(r, c, b, rng);
-                    RecoverFlagship(r, cfg);
+                    RecoverFlagship(r, c);
                     r.Phase = RunPhase.Map;
                 }
                 Keep(r, rng);
@@ -700,8 +731,8 @@ namespace Silence.Core.Run
             }
 
             r.BattlesWon++;
-            if (!r.Escort.Alive && r.Escort.Hull == 0 && players.Any(u => !u.IsFlagship && !u.Alive)) r.Journal.Add($"{enc.Name}: the Blade was lost.");
-            RecoverFlagship(r, cfg);
+            if (!r.Escort.Alive && r.Escort.Hull == 0 && players.Any(u => !u.IsFlagship && !u.Alive)) r.Journal.Add($"{enc.Name}: the {r.Escort.Name} was lost.");
+            RecoverFlagship(r, c);
 
             if (enc.Tier == 3)
             {
@@ -712,7 +743,10 @@ namespace Silence.Core.Run
             }
 
             int scrap = (enc.Scrap + rng.NextInt(9)) * (r.PendingRewardPercent + RelicSum(r, c, x => x.ScrapPercent)) / 100;
-            int ordinals = Math.Min(cfg.OrdinalsPerVictory + RelicSum(r, c, x => x.OrdinalsPerVictory), r.MaxOrdinals - r.Ordinals);
+            int perVictory = cfg.OrdinalsPerVictory + RelicSum(r, c, x => x.OrdinalsPerVictory) + r.Officers.Where(o => !o.Wounded).Sum(o => c.Officer(o.Id).CrewPerVictory);
+            int ordinals = Math.Min(perVictory, r.MaxOrdinals - r.Ordinals);
+            // The Council watches results: a clean win earns approval, a win that cost a ship earns none.
+            if (c.Faction.HasCouncil && !lostShip) r.Approval = Math.Min(c.Faction.MaxApproval, r.Approval + (enc.Tier == 2 ? 2 : 1));
             r.Scrap += scrap;
             r.Ordinals += Math.Max(0, ordinals);
             if (nemesisFight) ResolveNemesis(r, c, b, rng);
@@ -742,8 +776,9 @@ namespace Silence.Core.Run
         /// The flagship rule: if it was lost but the battle was survived, it is rebuilt at a high cost
         /// (Ordinals and permanent hull) and comes back at half strength.
         /// </summary>
-        static void RecoverFlagship(RunState r, RunConfig cfg)
+        static void RecoverFlagship(RunState r, RunContent c)
         {
+            var cfg = c.Config;
             var flag = r.Flagship;
             if (flag.Alive) return;
             flag.Alive = true;
@@ -751,7 +786,7 @@ namespace Silence.Core.Run
             flag.Hull = flag.MaxHull / 2;
             int paid = Math.Min(r.Ordinals, cfg.FlagshipRebuildOrdinals);
             r.Ordinals -= paid;
-            r.Journal.Add($"The Sixth Verdict was rebuilt from her wreck: {paid} Ordinals spent, {cfg.FlagshipRebuildMaxHullLoss} hull lost for good.");
+            r.Journal.Add($"The {flag.Name} was rebuilt from her wreck: {paid} {c.Faction.CrewName} spent, {cfg.FlagshipRebuildMaxHullLoss} hull lost for good.");
         }
 
         static void End(RunState r, RunResult result)
@@ -821,7 +856,8 @@ namespace Silence.Core.Run
             foreach (var o in choice.Outcomes)
             {
                 if (o.Kind == OutcomeKind.Scrap && r.Scrap + o.Amount < 0) return $"needs {-o.Amount} scrap";
-                if (o.Kind == OutcomeKind.Ordinals && r.Ordinals + o.Amount < 0) return $"needs {-o.Amount} Ordinals";
+                if (o.Kind == OutcomeKind.Ordinals && r.Ordinals + o.Amount < 0) return $"needs {-o.Amount} crew";
+                if (o.Kind == OutcomeKind.Approval && r.Approval + o.Amount < 0) return $"needs {-o.Amount} approval";
             }
             return null;
         }
@@ -849,7 +885,7 @@ namespace Silence.Core.Run
                     {
                         int before = r.Ordinals;
                         r.Ordinals = Math.Max(0, Math.Min(r.MaxOrdinals, r.Ordinals + o.Amount));
-                        effects.Add($"{Signed(r.Ordinals - before)} Ordinals");
+                        effects.Add($"{Signed(r.Ordinals - before)} {c.Faction.CrewName}");
                         break;
                     }
                     case OutcomeKind.HullFlagship:
@@ -898,6 +934,23 @@ namespace Silence.Core.Run
                         r.ConcordProgress += o.Amount;
                         r.ChorusProgress += o.Amount;
                         effects.Add(o.Amount > 0 ? "the rivals gain ground" : "the rivals lose ground");
+                        break;
+                    case OutcomeKind.Approval:
+                    {
+                        int before = r.Approval;
+                        r.Approval = Math.Max(0, Math.Min(c.Faction.MaxApproval, r.Approval + o.Amount));
+                        effects.Add($"{Signed(r.Approval - before)} approval");
+                        break;
+                    }
+                    case OutcomeKind.GainOfficer:
+                    {
+                        string name = CommissionOfficer(r, c);
+                        if (name != null) effects.Add($"{name} came aboard");
+                        break;
+                    }
+                    case OutcomeKind.HealOfficers:
+                        foreach (var officer in r.Officers) officer.Wounded = false;
+                        effects.Add("every officer is back on duty");
                         break;
                     case OutcomeKind.EnrageBoss:
                         r.VennEnraged = true;
@@ -1064,7 +1117,7 @@ namespace Silence.Core.Run
             if (err != null) return err;
             r.Escort.Alive = true;
             r.Escort.Hull = r.Escort.MaxHull;
-            r.Journal.Add("A new Blade joined the fleet.");
+            r.Journal.Add($"A new {r.Escort.Name} joined the fleet.");
             return null;
         }
 
@@ -1084,6 +1137,72 @@ namespace Silence.Core.Run
             string err = Pay(r, c.Config.OrdinalCost * c.Config.OrdinalsPerPurchase);
             if (err != null) return err;
             r.Ordinals = Math.Min(r.MaxOrdinals, r.Ordinals + c.Config.OrdinalsPerPurchase);
+            return null;
+        }
+
+        // ================================================================ officers and the Council
+
+        /// <summary>Bring aboard an officer the fleet does not have yet, if there is a berth. Returns their name, or null.</summary>
+        static string CommissionOfficer(RunState r, RunContent c)
+        {
+            if (r.Officers.Count >= c.Faction.MaxOfficers) return null;
+            var pool = c.Officers.Where(o => r.Officers.All(have => have.Id != o.Id)).ToList();
+            if (pool.Count == 0) return null;
+            // Chosen from the run seed and the roster so far, so a vote and an event on the same node do not conflict over the run RNG.
+            var pick = pool[(int)(((ulong)r.Seed + (ulong)r.Officers.Count * 31UL + (ulong)r.NodesVisited * 7UL) % (ulong)pool.Count)];
+            r.Officers.Add(new OfficerState { Id = pick.Id });
+            r.Journal.Add($"{pick.Name}, {pick.Role}, came aboard.");
+            return pick.Name;
+        }
+
+        /// <summary>Why the Council can't be asked for this now, or null.</summary>
+        public static string CanCallVote(RunState r, RunContent c, MotionDef m)
+        {
+            if (!c.Faction.HasCouncil) return "this fleet answers to nobody's vote";
+            if (r.Phase != RunPhase.Map) return "the Council sits between jumps";
+            if (r.Approval < m.Cost) return $"needs {m.Cost} approval";
+            if (m.Officer && r.Officers.Count >= c.Faction.MaxOfficers) return "every officer's berth is taken";
+            if (m.Officer && c.Officers.All(o => r.Officers.Any(have => have.Id == o.Id))) return "nobody is left to commission";
+            if (m.HealOfficers && r.Officers.All(o => !o.Wounded)) return "no officer is wounded";
+            if (m.Hull > 0 && r.Ships.All(s => !s.Alive || s.Hull >= s.MaxHull)) return "no ship is damaged";
+            if (m.Craft > 0 && r.Darts >= r.MaxDarts) return "the hangar is full";
+            if (m.Crew > 0 && r.Ordinals >= r.MaxOrdinals) return "the crew is at strength";
+            return null;
+        }
+
+        /// <summary>Put a motion to the Council: approval is spent and the fleet gets what it voted for at once.</summary>
+        public static string CallVote(RunState r, RunContent c, int motionIndex)
+        {
+            if (motionIndex < 0 || motionIndex >= c.Motions.Count) return "no such motion";
+            var m = c.Motions[motionIndex];
+            string blocked = CanCallVote(r, c, m);
+            if (blocked != null) return blocked;
+            r.Approval -= m.Cost;
+            if (m.Hull > 0)
+                foreach (var s in r.Ships.Where(s => s.Alive)) s.Hull = Math.Min(s.MaxHull, s.Hull + m.Hull);
+            r.Scrap += m.Scrap;
+            if (m.Craft > 0) r.Darts = Math.Min(r.MaxDarts, r.Darts + m.Craft);
+            if (m.Crew > 0) r.Ordinals = Math.Min(r.MaxOrdinals, r.Ordinals + m.Crew);
+            if (m.RivalsBack > 0)
+            {
+                r.ConcordProgress = Math.Max(0, r.ConcordProgress - m.RivalsBack);
+                r.ChorusProgress = Math.Max(0, r.ChorusProgress - m.RivalsBack);
+            }
+            if (m.HealOfficers)
+                foreach (var officer in r.Officers) officer.Wounded = false;
+            if (m.Officer) CommissionOfficer(r, c);
+            r.Journal.Add($"The Council voted: {m.Name}.");
+            return null;
+        }
+
+        /// <summary>Shipyard sickbay: one wounded officer back on duty.</summary>
+        public static string HealOfficer(RunState r, RunContent c)
+        {
+            var patient = r.Officers.Find(x => x.Wounded);
+            if (patient == null) return "no officer is wounded";
+            string err = Pay(r, c.Config.HealOfficerCost);
+            if (err != null) return err;
+            patient.Wounded = false;
             return null;
         }
 

@@ -14,22 +14,33 @@ namespace Silence.Data
     /// </summary>
     public static class ContentLoader
     {
-        static RunContent cached;
+        public const string Ascendancy = "ascendancy", Concord = "concord";
+        public static readonly string[] Factions = { Ascendancy, Concord };
 
-        public static RunContent Load(bool reload = false)
+        static readonly Dictionary<string, RunContent> cached = new Dictionary<string, RunContent>();
+
+        public static RunContent Load(bool reload = false) => Load(Ascendancy, reload);
+
+        /// <summary>
+        /// A faction's whole run: its fleet, cards on offer, the enemies on its route, events, commanders and relics.
+        /// The Ascendancy's files have no prefix; every other faction's are prefixed with its id (concord_run.json).
+        /// </summary>
+        public static RunContent Load(string faction, bool reload = false)
         {
-            if (cached != null && !reload) return cached;
+            if (string.IsNullOrEmpty(faction)) faction = Ascendancy;
+            if (!reload && cached.TryGetValue(faction, out var have)) return have;
+            string prefix = faction == Ascendancy ? "Content/" : $"Content/{faction}_";
             var content = new RunContent();
-            ReadRun(Text("Content/run"), content);
-            ReadEncounters(Text("Content/encounters"), content);
-            ReadEvents(Text("Content/events"), content);
-            ReadNemeses(Text("Content/nemeses"), content);
-            cached = content;
+            ReadRun(Text(prefix + "run"), content);
+            ReadEncounters(Text(prefix + "encounters"), content);
+            ReadEvents(Text(prefix + "events"), content);
+            ReadNemeses(Text(prefix + "nemeses"), content);
+            cached[faction] = content;
             return content;
         }
 
         /// <summary>Forget the loaded content so the next <see cref="Load"/> reads the files again.</summary>
-        public static void Invalidate() => cached = null;
+        public static void Invalidate() => cached.Clear();
 
         static string Text(string path)
         {
@@ -52,7 +63,7 @@ namespace Silence.Data
             public int withdrawalDelay, longBattleTurns, longBattleDelay, shipyardDelayPerPurchase;
             public int flagshipRebuildOrdinals, flagshipRebuildMaxHullLoss;
             public int jumpLanes, jumpHullCost, mineLead, mineDamage, nemesisSlow, nemesisDodgeDelay, nemesisFleePercent, nemesisRankHull;
-            public int hailEdictDamage, hailEdictScrapPercent, hailBoardTurns, sabotageCost, sabotageAmount;
+            public int hailEdictDamage, hailEdictScrapPercent, hailBoardTurns, sabotageCost, sabotageAmount, healOfficerCost;
             public string[] slots;
             public string[] starterModules;
             public CardDto[] starterCards;
@@ -66,13 +77,51 @@ namespace Silence.Data
             public int hull, heatCap, maxSpeed, shields, armorFore;
         }
 
+        [Serializable] class OfficerDto { public string id, name, role, text; public int repairBonus, weaponBonus, craftBonus, firstTurnDraw, crewPerVictory, shieldBonus; }
+        [Serializable] class MotionDto { public string id, name, text; public int cost, hull, scrap, craft, rivalsBack, crew; public bool officer, healOfficers; }
+
         [Serializable] class RewardDto { public string card; public int ship; public string requiresModule; public int weight; public int price; }
 
-        [Serializable] class RunDto { public ConfigDto config; public ModuleDto[] modules; public RewardDto[] rewards; }
+        [Serializable]
+        class FactionDto
+        {
+            public string id, name, blurb, flagshipUnit, escortUnit, craftUnit, enemyCraftUnit, crewName, craftName, rivalName, thirdName;
+            public string sectorName, openingJournal, bossName, bossShip, bossPortrait, bossHail, bossHailEnraged;
+            public string winAhead, winBehind, winThirdAhead, outpaced, lostAhead, lostBehind;
+            public bool hasCouncil;
+            public int startApproval, maxApproval, maxOfficers;
+            public string[] starterOfficers;
+        }
+
+        [Serializable] class RunDto { public FactionDto faction; public ConfigDto config; public ModuleDto[] modules; public RewardDto[] rewards; public OfficerDto[] officers; public MotionDto[] motions; }
 
         static void ReadRun(string json, RunContent content)
         {
             var dto = JsonUtility.FromJson<RunDto>(json);
+            var f = dto.faction;
+            content.Faction = new FactionDef
+            {
+                Id = f.id, Name = f.name, Blurb = f.blurb ?? "", FlagshipUnit = f.flagshipUnit, EscortUnit = f.escortUnit, CraftUnit = f.craftUnit,
+                EnemyCraftUnit = f.enemyCraftUnit, CrewName = f.crewName, CraftName = f.craftName, RivalName = f.rivalName, ThirdName = f.thirdName,
+                SectorName = f.sectorName ?? "", OpeningJournal = f.openingJournal ?? "", BossName = f.bossName ?? "", BossShip = f.bossShip ?? "",
+                BossPortrait = f.bossPortrait ?? "", BossHail = f.bossHail ?? "", BossHailEnraged = f.bossHailEnraged ?? "",
+                WinAhead = f.winAhead ?? "", WinBehind = f.winBehind ?? "", WinThirdAhead = f.winThirdAhead ?? "", Outpaced = f.outpaced ?? "",
+                LostAhead = f.lostAhead ?? "", LostBehind = f.lostBehind ?? "",
+                HasCouncil = f.hasCouncil, StartApproval = f.startApproval, MaxApproval = f.maxApproval > 0 ? f.maxApproval : 6,
+                MaxOfficers = f.maxOfficers > 0 ? f.maxOfficers : 4, StarterOfficers = new List<string>(f.starterOfficers ?? new string[0]),
+            };
+            foreach (var o in dto.officers ?? new OfficerDto[0])
+                content.Officers.Add(new OfficerDef
+                {
+                    Id = o.id, Name = o.name, Role = o.role ?? "", Text = o.text ?? "", RepairBonus = o.repairBonus, WeaponBonus = o.weaponBonus,
+                    CraftBonus = o.craftBonus, FirstTurnDraw = o.firstTurnDraw, CrewPerVictory = o.crewPerVictory, ShieldBonus = o.shieldBonus,
+                });
+            foreach (var m in dto.motions ?? new MotionDto[0])
+                content.Motions.Add(new MotionDef
+                {
+                    Id = m.id, Name = m.name, Text = m.text ?? "", Cost = m.cost, Hull = m.hull, Scrap = m.scrap, Craft = m.craft, Officer = m.officer,
+                    HealOfficers = m.healOfficers, RivalsBack = m.rivalsBack, Crew = m.crew,
+                });
             var c = dto.config;
             content.Config = new RunConfig
             {
@@ -89,7 +138,7 @@ namespace Silence.Data
                 JumpLanes = c.jumpLanes, JumpHullCost = c.jumpHullCost, MineLead = c.mineLead, MineDamage = c.mineDamage,
                 NemesisSlow = c.nemesisSlow, NemesisDodgeDelay = c.nemesisDodgeDelay, NemesisFleePercent = c.nemesisFleePercent, NemesisRankHull = c.nemesisRankHull,
                 HailEdictDamage = c.hailEdictDamage, HailEdictScrapPercent = c.hailEdictScrapPercent, HailBoardTurns = c.hailBoardTurns,
-                SabotageCost = c.sabotageCost, SabotageAmount = c.sabotageAmount,
+                SabotageCost = c.sabotageCost, SabotageAmount = c.sabotageAmount, HealOfficerCost = c.healOfficerCost > 0 ? c.healOfficerCost : 15,
                 Slots = new List<string>(c.slots), StarterModules = new List<string>(c.starterModules),
             };
             foreach (var s in c.starterCards) content.Config.StarterCards.Add(new DeckCard(s.card, s.ship));
@@ -144,7 +193,7 @@ namespace Silence.Data
 
         // ---------------------------------------------------------------- nemeses.json
 
-        [Serializable] class ReplyDto { public string id, label, tag; public int ordinals; }
+        [Serializable] class ReplyDto { public string id, label, tag, effect; public int ordinals, approval; }
 
         [Serializable]
         class NemesisDto
@@ -168,7 +217,7 @@ namespace Silence.Data
         {
             var dto = JsonUtility.FromJson<NemesesDto>(json);
             foreach (var h in dto.hailReplies ?? new ReplyDto[0])
-                content.HailReplies.Add(new HailReply { Id = h.id, Label = h.label, Tag = h.tag ?? "", Ordinals = h.ordinals });
+                content.HailReplies.Add(new HailReply { Id = h.id, Effect = string.IsNullOrEmpty(h.effect) ? h.id : h.effect, Label = h.label, Tag = h.tag ?? "", Ordinals = h.ordinals, Approval = h.approval });
             foreach (var n in dto.nemeses ?? new NemesisDto[0])
             {
                 var def = new NemesisDef

@@ -1,0 +1,274 @@
+{
+ "events": [
+  {
+   "id": "tithe_convoy",
+   "title": "The Tithe Convoy",
+   "art": "event_convoy",
+   "body": "Six bulk haulers under Ascendancy escort, running slow. Your sensors read the holds as cargo. Your engineer reads them as nine thousand people grown to order and not yet told what for.\n\nThe floor is open.",
+   "choices": [
+    {
+     "label": "Take the escort and open the holds.",
+     "tag": "Battle",
+     "result": "The motion carries before the count is finished. Gunships are on the rails.",
+     "outcomes": [
+      {
+       "kind": "StartBattle",
+       "amount": 150,
+       "id": "asc_convoy",
+       "ship": 0
+      },
+      {
+       "kind": "Approval",
+       "amount": 1,
+       "id": "",
+       "ship": 0
+      }
+     ]
+    },
+    {
+     "label": "Shadow it and copy its route tables.",
+     "tag": "Rivals lose ground",
+     "result": "You follow at the edge of their scans for an hour. The tables say where the Prime's fleet means to be, and so where it is not.",
+     "outcomes": [
+      {
+       "kind": "RivalsAdvance",
+       "amount": -6,
+       "id": "",
+       "ship": 0
+      }
+     ]
+    },
+    {
+     "label": "Let it pass. We are not here for this.",
+     "tag": "Costs approval",
+     "result": "Nobody argues. Nobody looks at anybody either.",
+     "outcomes": [
+      {
+       "kind": "Approval",
+       "amount": -1,
+       "id": "",
+       "ship": 0
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "council_session",
+   "title": "Council in Session",
+   "art": "event_edict",
+   "body": "Forty delegates on a channel that was built for twelve. The fleet fund, the pace, the wounded: everything is on the order paper and the gate is not getting closer while they talk.\n\nYou have the chair.",
+   "choices": [
+    {
+     "label": "Move the fleet fund.",
+     "tag": "+35 scrap",
+     "result": "Carried on a show of hands. The treasurer mutters something about precedent and signs.",
+     "outcomes": [
+      {
+       "kind": "Scrap",
+       "amount": 35,
+       "id": "",
+       "ship": 0
+      }
+     ]
+    },
+    {
+     "label": "Move that the wounded be seen to first.",
+     "tag": "Heals officers, mends hulls",
+     "result": "Relief crews go across before the session closes. It is the one motion nobody speaks against.",
+     "outcomes": [
+      {
+       "kind": "HealOfficers",
+       "amount": 0,
+       "id": "",
+       "ship": 0
+      },
+      {
+       "kind": "HullAll",
+       "amount": 4,
+       "id": "",
+       "ship": 0
+      }
+     ]
+    },
+    {
+     "label": "Move the previous question and get under way.",
+     "tag": "+1 approval",
+     "result": "You close the debate in four minutes. They respect that more than anything you could have given them.",
+     "outcomes": [
+      {
+       "kind": "Approval",
+       "amount": 1,
+       "id": "",
+       "ship": 0
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "refugee_flotilla",
+   "title": "Refugee Flotilla",
+   "art": "event_colony",
+   "body": "Eleven ships that were never meant to leave orbit, strung out along the reef and losing air. They ran from a tithe-world when the vats were lit. They are asking for anything.",
+   "choices": [
+    {
+     "label": "Take the able hands aboard and tow the rest.",
+     "tag": "+6 crew, costs time",
+     "result": "It takes most of a day. The new hands are angry, tired and very good with a cutting torch.",
+     "outcomes": [
+      {
+       "kind": "Ordinals",
+       "amount": 6,
+       "id": "",
+       "ship": 0
+      },
+      {
+       "kind": "RivalsAdvance",
+       "amount": 4,
+       "id": "",
+       "ship": 0
+      }
+     ]
+    },
+    {
+     "label": "Give them air and parts from stores.",
+     "tag": "Pay 20 scrap",
+     "result": "You leave them breathing and under way. Somebody over there starts a list of your names.",
+     "outcomes": [
+      {
+       "kind": "Scrap",
+       "amount": -20,
+       "id": "",
+       "ship": 0
+      },
+      {
+       "kind": "Approval",
+       "amount": 1,
+       "id": "",
+       "ship": 0
+      }
+     ]
+    },
+    {
+     "label": "Mark their position and move on.",
+     "tag": "Costs approval",
+     "result": "The channel stays open for a long time after you stop answering it.",
+     "outcomes": [
+      {
+       "kind": "Approval",
+       "amount": -1,
+       "id": "",
+       "ship": 0
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "derelict",
+   "title": "Derelict in the Reef",
+   "art": "event_derelict",
+   "body": "A hulk hangs in the static, older than the Concord and black as a pulled tooth. No charter mark, no registry. Something inside it is still drawing power.\n\nYour survey crews are already arguing about who goes.",
+   "choices": [
+    {
+     "label": "Send a survey party.",
+     "tag": "Expend 3 crew",
+     "result": "Three go in and do not come out. What they sent back first is a spotting solution better than anything in the fleet.",
+     "outcomes": [
+      {
+       "kind": "Ordinals",
+       "amount": -3,
+       "id": "",
+       "ship": 0
+      },
+      {
+       "kind": "AddCard",
+       "amount": 0,
+       "id": "spotter_data",
+       "ship": 0
+      }
+     ]
+    },
+    {
+     "label": "Cut the hull plate off it and go.",
+     "tag": "+30 scrap, risk",
+     "result": "The plate comes away clean. The fire it starts on your own deck does not.",
+     "outcomes": [
+      {
+       "kind": "Scrap",
+       "amount": 30,
+       "id": "",
+       "ship": 0
+      },
+      {
+       "kind": "AddJunk",
+       "amount": 1,
+       "id": "fire_on_deck",
+       "ship": 0
+      }
+     ]
+    },
+    {
+     "label": "Log it for the Survey Board. Hold course.",
+     "tag": "No effect",
+     "result": "A position, a time, a recommendation that nobody come back.",
+     "outcomes": []
+    }
+   ]
+  },
+  {
+   "id": "waymind_corpse",
+   "title": "The Waymind's Corpse",
+   "art": "event_waymind",
+   "body": "An Ascendancy navigator-mind adrift in its cradle, cut loose from a ship that is no longer anywhere. It is still plotting courses. It sends them to you, one after another, each one perfect, each one to a place that does not exist.",
+   "choices": [
+    {
+     "label": "Wire it into the helm for one jump.",
+     "tag": "Rivals lose ground, risk",
+     "result": "The course it gives you is real. The engineers refuse to say what the helm did for those nine seconds.",
+     "outcomes": [
+      {
+       "kind": "RivalsAdvance",
+       "amount": -8,
+       "id": "",
+       "ship": 0
+      },
+      {
+       "kind": "AddJunk",
+       "amount": 1,
+       "id": "jammed_mount",
+       "ship": 0
+      }
+     ]
+    },
+    {
+     "label": "Strip the cradle for its cooling loop.",
+     "tag": "Gain Cold Discipline",
+     "result": "It does not object. It has stopped sending courses by the time the loop is out.",
+     "outcomes": [
+      {
+       "kind": "AddCard",
+       "amount": 0,
+       "id": "cold_discipline",
+       "ship": 0
+      }
+     ]
+    },
+    {
+     "label": "Put it out of its misery.",
+     "tag": "+1 approval",
+     "result": "One round. The vote to spend it was unanimous.",
+     "outcomes": [
+      {
+       "kind": "Approval",
+       "amount": 1,
+       "id": "",
+       "ship": 0
+      }
+     ]
+    }
+   ]
+  }
+ ]
+}

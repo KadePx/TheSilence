@@ -1,0 +1,306 @@
+{
+ "hailReplies": [
+  {
+   "id": "charter",
+   "effect": "edict",
+   "label": "Read them the charter: stand down, or be boarded under it.",
+   "tag": "Charter",
+   "ordinals": 0,
+   "approval": 0
+  },
+  {
+   "id": "fire",
+   "effect": "fire",
+   "label": "All batteries.",
+   "tag": "First strike",
+   "ordinals": 0,
+   "approval": 0
+  },
+  {
+   "id": "jam",
+   "effect": "board",
+   "label": "Put it to a vote: every relay in the fleet jams theirs.",
+   "tag": "Council",
+   "ordinals": 0,
+   "approval": 1
+  },
+  {
+   "id": "silence",
+   "effect": "silence",
+   "label": "Close the channel.",
+   "tag": "Silence",
+   "ordinals": 0,
+   "approval": 0
+  }
+ ],
+ "nemeses": [
+  {
+   "id": "vael",
+   "name": "Inquisitor-Adjunct Seraphine Vael",
+   "title": "The Auditor",
+   "ship": "final_tally",
+   "portrait": "portrait_vael",
+   "trait": "Marksman: her lance reaches 5 hexes.",
+   "tactic": "Final Tally keeps her bow on you and fires the Audit Lance down it. Get out of her fore arc before it fires.",
+   "hailFirst": "Long Promise. You are carrying four hundred and eleven persons not entered in any ledger. I am here to correct the ledger.",
+   "hailEscaped": "You cost me {scar}. It has been entered against your name, with interest. Shall we settle?",
+   "hailStandoff": "An inconclusive result. I have never filed one before. I do not intend to file a second.",
+   "hailFinal": "The audit closes today. Final Tally does not withdraw, and you will not be given the chance.",
+   "trophy": "vaels_seal",
+   "scrap": 34,
+   "rank1": [
+    {
+     "unit": "asc_blade",
+     "col": 7,
+     "row": 1,
+     "speed": 2,
+     "facing": "W"
+    }
+   ],
+   "rank2": [
+    {
+     "unit": "asc_blade",
+     "col": 7,
+     "row": 1,
+     "speed": 2,
+     "facing": "W"
+    },
+    {
+     "unit": "asc_blade",
+     "col": 7,
+     "row": 5,
+     "speed": 2,
+     "facing": "W"
+    }
+   ],
+   "rank3": [
+    {
+     "unit": "asc_blade",
+     "col": 7,
+     "row": 1,
+     "speed": 2,
+     "facing": "W"
+    },
+    {
+     "unit": "asc_cruiser",
+     "col": 7,
+     "row": 5,
+     "speed": 2,
+     "facing": "W"
+    }
+   ]
+  },
+  {
+   "id": "achter",
+   "name": "Lictor-Captain Dorn Achter",
+   "title": "The Scourge",
+   "ship": "clean_hand",
+   "portrait": "portrait_achter",
+   "trait": "Relentless: Clean Hand fires two turns in three, and she is fast.",
+   "tactic": "Clean Hand and her Blades come straight in and shoot only forward. Turn them: a Blade that has to come about is a Blade that is not firing.",
+   "hailFirst": "A ship that votes. I have executed captains for less than asking. Yours asks everybody.",
+   "hailEscaped": "You gave me {scar}. I had the crew responsible spaced. Then I came to thank you in person.",
+   "hailStandoff": "You would not close and I could not catch you. One of us was a coward. I have had mine shot.",
+   "hailFinal": "No signal to withdraw has been loaded. I had the codes burned. Run out your guns.",
+   "trophy": "achters_helm",
+   "scrap": 34,
+   "rank1": [
+    {
+     "unit": "asc_blade",
+     "col": 7,
+     "row": 1,
+     "speed": 2,
+     "facing": "W"
+    }
+   ],
+   "rank2": [
+    {
+     "unit": "asc_blade",
+     "col": 7,
+     "row": 1,
+     "speed": 2,
+     "facing": "W"
+    },
+    {
+     "unit": "asc_blade",
+     "col": 7,
+     "row": 5,
+     "speed": 2,
+     "facing": "W"
+    }
+   ],
+   "rank3": [
+    {
+     "unit": "asc_blade",
+     "col": 7,
+     "row": 1,
+     "speed": 2,
+     "facing": "W"
+    },
+    {
+     "unit": "asc_blade",
+     "col": 7,
+     "row": 5,
+     "speed": 2,
+     "facing": "W"
+    },
+    {
+     "unit": "asc_blade",
+     "col": 8,
+     "row": 6,
+     "speed": 2,
+     "facing": "W"
+    }
+   ]
+  },
+  {
+   "id": "rell",
+   "name": "Vat-Master Ioun Rell",
+   "title": "The Shepherd",
+   "ship": "tithe_of_nine",
+   "portrait": "portrait_rell",
+   "trait": "Shepherd: launches two darts at a time and calls Joint Fire.",
+   "tactic": "Tithe of Nine hangs back and spends darts. Kill them as they launch, or go through them for the vat-ship.",
+   "hailFirst": "I grow four hundred a week. I will spend all of them on you and be whole again by the end of the month. Can your Council say the same?",
+   "hailEscaped": "You left me {scar}, and took two hundred of mine. I have regrown them. I gave them your ship to hate.",
+   "hailStandoff": "We spent the same and neither of us bought anything. I can afford that. You cannot.",
+   "hailFinal": "The vats are empty and every one of them is in the air. There is nothing left to save, so I am not leaving.",
+   "trophy": "rells_vat_key",
+   "scrap": 34,
+   "rank1": [
+    {
+     "unit": "asc_blade",
+     "col": 7,
+     "row": 1,
+     "speed": 2,
+     "facing": "W"
+    },
+    {
+     "unit": "asc_dart",
+     "col": 7,
+     "row": 5,
+     "speed": 0,
+     "facing": "W"
+    }
+   ],
+   "rank2": [
+    {
+     "unit": "asc_blade",
+     "col": 7,
+     "row": 1,
+     "speed": 2,
+     "facing": "W"
+    },
+    {
+     "unit": "asc_dart",
+     "col": 7,
+     "row": 5,
+     "speed": 0,
+     "facing": "W"
+    },
+    {
+     "unit": "asc_dart",
+     "col": 8,
+     "row": 5,
+     "speed": 0,
+     "facing": "W"
+    }
+   ],
+   "rank3": [
+    {
+     "unit": "asc_cruiser",
+     "col": 7,
+     "row": 1,
+     "speed": 2,
+     "facing": "W"
+    },
+    {
+     "unit": "asc_dart",
+     "col": 7,
+     "row": 5,
+     "speed": 0,
+     "facing": "W"
+    },
+    {
+     "unit": "asc_dart",
+     "col": 8,
+     "row": 5,
+     "speed": 0,
+     "facing": "W"
+    },
+    {
+     "unit": "asc_dart",
+     "col": 8,
+     "row": 1,
+     "speed": 0,
+     "facing": "W"
+    }
+   ]
+  }
+ ],
+ "relics": [
+  {
+   "id": "vaels_seal",
+   "name": "Vael's Seal",
+   "text": "+1 command on the first turn of every battle.",
+   "trophy": true,
+   "firstTurnCommand": 1
+  },
+  {
+   "id": "achters_helm",
+   "name": "Achter's Helm",
+   "text": "Flagship heat cap +2.",
+   "trophy": true,
+   "heatCap": 2
+  },
+  {
+   "id": "rells_vat_key",
+   "name": "Rell's Vat Key",
+   "text": "The hangar holds 2 more gunships.",
+   "trophy": true,
+   "maxDarts": 2
+  },
+  {
+   "id": "reef_charts",
+   "name": "Reef Charts",
+   "text": "Both rival fleets move a little slower on every jump.",
+   "rivalRate": -1
+  },
+  {
+   "id": "tithe_ledger",
+   "name": "Tithe Ledger",
+   "text": "+25 percent scrap from every battle.",
+   "scrapPercent": 25
+  },
+  {
+   "id": "vat_seal",
+   "name": "Muster Roll",
+   "text": "+2 crew after every victory.",
+   "ordinalsPerVictory": 2
+  },
+  {
+   "id": "cold_core",
+   "name": "Cold Core",
+   "text": "Flagship heat cap +2.",
+   "heatCap": 2
+  },
+  {
+   "id": "aegis_lattice",
+   "name": "Aegis Lattice",
+   "text": "Flagship shields +1 on every arc.",
+   "shields": 1
+  },
+  {
+   "id": "quartermasters_writ",
+   "name": "Quartermaster's Writ",
+   "text": "Field repairs mend 3 more hull.",
+   "fieldRepair": 3
+  },
+  {
+   "id": "gate_codes",
+   "name": "Old Gate Codes",
+   "text": "Jump lanes cost no hull.",
+   "freeJumps": true
+  }
+ ]
+}

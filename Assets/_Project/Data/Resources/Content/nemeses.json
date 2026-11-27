@@ -4,25 +4,33 @@
    "id": "edict",
    "label": "By decree of the Prime: power down and be catalogued.",
    "tag": "Edict",
-   "ordinals": 0
+   "ordinals": 0,
+   "effect": "edict",
+   "approval": 0
   },
   {
    "id": "fire",
    "label": "Open fire.",
    "tag": "First strike",
-   "ordinals": 0
+   "ordinals": 0,
+   "effect": "fire",
+   "approval": 0
   },
   {
    "id": "board",
    "label": "Board their relay and cut the channel.",
    "tag": "Boarding",
-   "ordinals": 4
+   "ordinals": 4,
+   "effect": "board",
+   "approval": 0
   },
   {
    "id": "silence",
    "label": "Say nothing.",
    "tag": "Silence",
-   "ordinals": 0
+   "ordinals": 0,
+   "effect": "silence",
+   "approval": 0
   }
  ],
  "nemeses": [

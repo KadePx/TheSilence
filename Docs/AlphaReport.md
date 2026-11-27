@@ -462,3 +462,86 @@ driven from script, not with a mouse.
 - Interception (a rival fleet you can fight to slow it) is covered only by the nemesis, and only for the Concord.
   The Chorus marker still does nothing but change the epilogue.
 - No nemesis carries over between runs.
+
+## M3, part 2: the Concord as a playable side
+
+New run now asks which fleet to take out. The Concord is a second, complete route through Sector I: its own
+flagship, deck, modules, officers and Council, fighting the Ascendancy instead of being fought by it.
+
+### The fleet
+
+- **Long Promise** (trimaran carrier): hull 36, armor 2, shields 3, Speed 2, heat cap 7. Tougher and slower than the
+  Sixth Verdict. Her escort is an **Outrider** with side guns. The hangar flies four **gunships** (3 hull, 3 damage)
+  instead of six darts.
+- **15 new cards.** Mass Driver (10 damage, fore, range 5, shoves the target a hex or slams it into what is behind),
+  Deck Guns, Patch Job, Council Vote (draw 1, +1 command next turn), Ring Shield, Ring Barrage (3 to everything within
+  2), Launch Wing, Combat Patrol (a gunship beside a ship takes the next shot at it), Ripple Salvo (four hits of 3 that
+  move on when the target dies), Patch Crews, Cutting Beam (7, adjacent, ignores armor), Long Scan, Spotter Data
+  (next weapon +3 damage and +1 range), Outrider Guns, Torpedo Run.
+- **9 modules** in four slots (Bow, Drum, Outriggers, Aft), two or three to choose between in each.
+- The Concord has no Expend cards. Its crew pool works the same way underneath (at 0 every card costs 1 more) but
+  nothing spends it on purpose.
+
+### Officers
+
+Six named officers, two aboard at the start, four berths. Each is a passive bonus: the engineer adds 2 to every
+repair card, the navigator draws a sixth card on turn 1, the gunnery officer adds 1 to the flagship's weapons, the
+flight boss adds 1 to every gunship attack, the quartermaster brings 2 crew per victory, the shield technician adds
+1 shield. **Every critical hit on the flagship wounds one**, and a wounded officer gives nothing until a shipyard's
+sickbay (15 scrap) or a Council motion sees to them. Losing the flagship wounds them all.
+
+### The Council
+
+Approval, 0 to 6. A clean win earns 1 (an elite 2), a win that cost a ship earns none, a stand-off loses 1. It is
+spent between jumps on six motions: emergency repairs, relief crews for the wounded, gunships from reserve, a
+requisition of scrap, commissioning an officer, and running dark to set both rivals back. Events on the Concord's
+route also move approval, and one hail reply (jamming the commander's relay) is paid for in it.
+
+### The Ascendancy as the enemy
+
+Blades, lance-cruisers and vat-wardens that launch darts; ten encounters; the High Inquisitor Calix Mor on the Ninth
+Sentence at the gate; five events written for a fleet that votes; and three Ascendancy commanders to be hunted by:
+Inquisitor-Adjunct Seraphine Vael, Lictor-Captain Dorn Achter and Vat-Master Ioun Rell, each with their own hails,
+escorts and trophy.
+
+### Numbers (200 bot runs each)
+
+| | Ascendancy | Concord |
+| --- | --- | --- |
+| Runs won / fleet lost / outpaced | 123 / 39 / 38 | 103 / 54 / 43 |
+| Turns fought per run | 49 | 70 |
+| Nemesis fights won | 229 of 256 | 218 of 243 |
+| Commander killed / broke off | 34 / 196 | 24 / 195 |
+| Runs that saw mined lanes | 35 | 76 |
+| Gate fights won | 123 of 173 | 103 of 173 |
+
+The first Concord numbers were 165 runs won and 2 fleets lost: repairs from three sources out-healed everything the
+Ascendancy could do. The enemy's guns went up, the engineer's bonus and Patch Crews came down, and emergency repairs
+now cost 2 approval.
+
+### How it was checked
+
+202 EditMode tests pass, 21 of them new (`ConcordTests.cs`): every reference in both factions' content resolves,
+each new card does what its text says, officers, wounds, the Council, events, saves, and whole bot runs. In Play
+Mode the faction picker, the Concord map with officers and approval, the Council's order paper, a vote, and a Concord
+battle were put on screen and captured (`ArtSource/Screenshots/m3_faction_picker.png`, `m3_concord_*.png`,
+`m3_council.png`). The autopilot then played that run to the end in the editor and won it, with no errors logged.
+None of it was played with a physical mouse.
+
+### Art
+
+Four Ascendancy portraits (the Inquisitor and the three commanders) and three Concord resource icons: 50
+generations, logged. 529.6 of the 1,000 are spent in all.
+
+### Still open
+
+- **Concord battles run long**: 70 turns a run against 49. The Mass Driver is the only big hit and it costs 2 of 3
+  command. Long fights also hand the Ascendancy the race (mined lanes in 76 runs of 200).
+- **Card art on Concord cards is one crop of the Long Promise** for nearly every card. The crop table was built for
+  the Sixth Verdict.
+- The Concord enemies of an Ascendancy run and the Concord player ships share sprites, as do the Ascendancy ones.
+  The Outrider, the Blade and the gunship have no card-size drawing.
+- The tutorial and the skirmish menu are Ascendancy only.
+- Officers have no portraits, and no posts: the spec's Rotate Crews (moving an officer between modules) is not built.
+- The Council is a list of motions. Blocs, and votes that can fail, are not built.
+- There is one hail reply set per faction, not per commander.

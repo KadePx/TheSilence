@@ -78,7 +78,8 @@ namespace Silence.Meta
                     {
                         long seed = run.Seed + 1;
                         Game.AbandonRun();
-                        Game.NewRun(seed);
+                        string faction = run.Faction;
+                        Game.NewRun(seed, faction);
                     }
                     break;
                 default:

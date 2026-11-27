@@ -19,7 +19,8 @@ namespace Silence.Meta
         public const string MenuScene = "Menu", MapScene = "Map", BattleScene = "Battle";
 
         public static RunState Run { get; private set; }
-        public static RunContent Content => ContentLoader.Load();
+        /// <summary>The content of the faction being played (the Ascendancy when no run is loaded).</summary>
+        public static RunContent Content => ContentLoader.Load(Run != null ? Run.Faction : ContentLoader.Ascendancy);
 
         /// <summary>The editor can enter Play Mode without reloading code, so statics are cleared by hand.</summary>
         [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
@@ -36,9 +37,9 @@ namespace Silence.Meta
 
         public static long RandomSeed() => Math.Abs(DateTime.UtcNow.Ticks % 1000000);
 
-        public static void NewRun(long seed)
+        public static void NewRun(long seed, string faction = ContentLoader.Ascendancy)
         {
-            Run = RunRules.NewRun(seed, Content);
+            Run = RunRules.NewRun(seed, ContentLoader.Load(faction));
             Save();
             SceneManager.LoadScene(MapScene);
         }

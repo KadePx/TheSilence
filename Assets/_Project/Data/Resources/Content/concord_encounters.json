@@ -1,0 +1,396 @@
+{
+ "encounters": [
+  {
+   "id": "asc_picket",
+   "name": "Ascendancy Picket",
+   "tier": 0,
+   "scrap": 22,
+   "turnLimit": 0,
+   "intro": "One Blade and its darts, logging everything that passes. It has already logged you.",
+   "units": [
+    {
+     "unit": "asc_blade",
+     "col": 8,
+     "row": 2,
+     "speed": 2,
+     "facing": "W"
+    },
+    {
+     "unit": "asc_dart",
+     "col": 8,
+     "row": 1,
+     "speed": 0,
+     "facing": "W"
+    },
+    {
+     "unit": "asc_dart",
+     "col": 8,
+     "row": 5,
+     "speed": 0,
+     "facing": "W"
+    }
+   ],
+   "terrain": [],
+   "scatterAsteroids": 2,
+   "scatterDebris": 1,
+   "reinforcements": []
+  },
+  {
+   "id": "asc_scouts",
+   "name": "Tithe Scouts",
+   "tier": 0,
+   "scrap": 22,
+   "turnLimit": 0,
+   "intro": "Two Blades running ahead of a harvest fleet. Fast, thin, and they shoot only forward.",
+   "units": [
+    {
+     "unit": "asc_blade",
+     "col": 8,
+     "row": 2,
+     "speed": 2,
+     "facing": "W"
+    },
+    {
+     "unit": "asc_blade",
+     "col": 8,
+     "row": 4,
+     "speed": 2,
+     "facing": "W"
+    },
+    {
+     "unit": "asc_dart",
+     "col": 8,
+     "row": 6,
+     "speed": 0,
+     "facing": "W"
+    }
+   ],
+   "terrain": [],
+   "scatterAsteroids": 2,
+   "scatterDebris": 1,
+   "reinforcements": []
+  },
+  {
+   "id": "asc_patrol",
+   "name": "Lance Patrol",
+   "tier": 1,
+   "scrap": 30,
+   "turnLimit": 0,
+   "intro": "A lance-cruiser with a Blade on its flank. Stay out of the cruiser's bow.",
+   "units": [
+    {
+     "unit": "asc_cruiser",
+     "col": 8,
+     "row": 3,
+     "speed": 2,
+     "facing": "W"
+    },
+    {
+     "unit": "asc_blade",
+     "col": 7,
+     "row": 1,
+     "speed": 2,
+     "facing": "W"
+    },
+    {
+     "unit": "asc_dart",
+     "col": 8,
+     "row": 5,
+     "speed": 0,
+     "facing": "W"
+    }
+   ],
+   "terrain": [
+    {
+     "col": 4,
+     "row": 3,
+     "asteroid": true
+    }
+   ],
+   "scatterAsteroids": 1,
+   "scatterDebris": 1,
+   "reinforcements": []
+  },
+  {
+   "id": "asc_wolfpack",
+   "name": "Blade Pack",
+   "tier": 1,
+   "scrap": 30,
+   "turnLimit": 0,
+   "intro": "Three Blades hunting in a line. Each one alone is nothing.",
+   "units": [
+    {
+     "unit": "asc_blade",
+     "col": 8,
+     "row": 3,
+     "speed": 2,
+     "facing": "W"
+    },
+    {
+     "unit": "asc_blade",
+     "col": 7,
+     "row": 1,
+     "speed": 2,
+     "facing": "W"
+    },
+    {
+     "unit": "asc_blade",
+     "col": 7,
+     "row": 5,
+     "speed": 2,
+     "facing": "W"
+    }
+   ],
+   "terrain": [],
+   "scatterAsteroids": 3,
+   "scatterDebris": 1,
+   "reinforcements": []
+  },
+  {
+   "id": "asc_warden_group",
+   "name": "Vat-Warden",
+   "tier": 1,
+   "scrap": 32,
+   "turnLimit": 0,
+   "intro": "A vat-ship spending darts by the handful, and a Blade to keep you off it.",
+   "units": [
+    {
+     "unit": "asc_warden",
+     "col": 8,
+     "row": 3,
+     "speed": 1,
+     "facing": "W"
+    },
+    {
+     "unit": "asc_blade",
+     "col": 7,
+     "row": 2,
+     "speed": 2,
+     "facing": "W"
+    },
+    {
+     "unit": "asc_dart",
+     "col": 8,
+     "row": 5,
+     "speed": 0,
+     "facing": "W"
+    },
+    {
+     "unit": "asc_dart",
+     "col": 7,
+     "row": 5,
+     "speed": 0,
+     "facing": "W"
+    }
+   ],
+   "terrain": [],
+   "scatterAsteroids": 2,
+   "scatterDebris": 2,
+   "reinforcements": []
+  },
+  {
+   "id": "asc_lance_line",
+   "name": "Lance Line",
+   "tier": 1,
+   "scrap": 32,
+   "turnLimit": 0,
+   "intro": "Two cruisers holding a lane with their bows. Whatever you do, do it from the side.",
+   "units": [
+    {
+     "unit": "asc_cruiser",
+     "col": 7,
+     "row": 1,
+     "speed": 1,
+     "facing": "W"
+    },
+    {
+     "unit": "asc_cruiser",
+     "col": 7,
+     "row": 5,
+     "speed": 1,
+     "facing": "W"
+    }
+   ],
+   "terrain": [
+    {
+     "col": 4,
+     "row": 3,
+     "asteroid": true
+    }
+   ],
+   "scatterAsteroids": 1,
+   "scatterDebris": 1,
+   "reinforcements": []
+  },
+  {
+   "id": "asc_tithe_fleet",
+   "name": "Tithe Fleet",
+   "tier": 2,
+   "scrap": 52,
+   "turnLimit": 0,
+   "intro": "A harvest going home: the vat-ship, a cruiser and a Blade. They will spend all of it to keep the cargo.",
+   "units": [
+    {
+     "unit": "asc_warden",
+     "col": 8,
+     "row": 3,
+     "speed": 1,
+     "facing": "W"
+    },
+    {
+     "unit": "asc_cruiser",
+     "col": 7,
+     "row": 1,
+     "speed": 2,
+     "facing": "W"
+    },
+    {
+     "unit": "asc_blade",
+     "col": 7,
+     "row": 5,
+     "speed": 2,
+     "facing": "W"
+    }
+   ],
+   "terrain": [
+    {
+     "col": 4,
+     "row": 3,
+     "asteroid": true
+    },
+    {
+     "col": 5,
+     "row": 1,
+     "asteroid": false
+    }
+   ],
+   "scatterAsteroids": 0,
+   "scatterDebris": 0,
+   "reinforcements": []
+  },
+  {
+   "id": "asc_executioners",
+   "name": "Executioners",
+   "tier": 2,
+   "scrap": 56,
+   "turnLimit": 0,
+   "intro": "Two cruisers and a Blade sent for a named ship. The name is yours.",
+   "units": [
+    {
+     "unit": "asc_cruiser",
+     "col": 8,
+     "row": 2,
+     "speed": 2,
+     "facing": "W"
+    },
+    {
+     "unit": "asc_cruiser",
+     "col": 8,
+     "row": 4,
+     "speed": 2,
+     "facing": "W"
+    },
+    {
+     "unit": "asc_blade",
+     "col": 8,
+     "row": 6,
+     "speed": 2,
+     "facing": "W"
+    }
+   ],
+   "terrain": [],
+   "scatterAsteroids": 3,
+   "scatterDebris": 1,
+   "reinforcements": []
+  },
+  {
+   "id": "inquisitor",
+   "name": "The Inquisitor at the Gate",
+   "tier": 3,
+   "scrap": 0,
+   "turnLimit": 35,
+   "intro": "The Ninth Sentence holds the Ion Reef gate. Leave the Grand Lance's fore arc before it fires.",
+   "units": [
+    {
+     "unit": "ninth_sentence",
+     "col": 8,
+     "row": 3,
+     "speed": 1,
+     "facing": "W"
+    },
+    {
+     "unit": "asc_cruiser",
+     "col": 7,
+     "row": 1,
+     "speed": 2,
+     "facing": "W"
+    }
+   ],
+   "terrain": [
+    {
+     "col": 4,
+     "row": 3,
+     "asteroid": true
+    },
+    {
+     "col": 3,
+     "row": 6,
+     "asteroid": false
+    }
+   ],
+   "scatterAsteroids": 1,
+   "scatterDebris": 1,
+   "reinforcements": [
+    {
+     "unit": "asc_blade",
+     "col": 7,
+     "row": 5,
+     "speed": 2,
+     "facing": "W"
+    }
+   ]
+  },
+  {
+   "id": "asc_convoy",
+   "name": "Tithe Convoy Escort",
+   "tier": 4,
+   "scrap": 34,
+   "turnLimit": 0,
+   "intro": "Two Blades and their darts between you and the holds.",
+   "units": [
+    {
+     "unit": "asc_blade",
+     "col": 7,
+     "row": 2,
+     "speed": 2,
+     "facing": "W"
+    },
+    {
+     "unit": "asc_blade",
+     "col": 7,
+     "row": 4,
+     "speed": 2,
+     "facing": "W"
+    },
+    {
+     "unit": "asc_dart",
+     "col": 8,
+     "row": 1,
+     "speed": 0,
+     "facing": "W"
+    },
+    {
+     "unit": "asc_dart",
+     "col": 8,
+     "row": 5,
+     "speed": 0,
+     "facing": "W"
+    }
+   ],
+   "terrain": [],
+   "scatterAsteroids": 2,
+   "scatterDebris": 3,
+   "reinforcements": []
+  }
+ ]
+}

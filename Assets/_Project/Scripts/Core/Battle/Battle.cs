@@ -51,8 +51,28 @@ namespace Silence.Core.Battle
         public int DartsInHangar = -1;
         /// <summary>Shown on the battle screen ("Intercept at the Ring").</summary>
         public string Title = "";
+        /// <summary>What the crew pool is called for this fleet ("Ordinals", "Crew").</summary>
+        public string CrewName = "Ordinals";
         /// <summary>False keeps the draw pile in the order the cards were added (the tutorial's fixed opening hands).</summary>
         public bool ShuffleAtStart = true;
+        // ---- officers and Concord cards ----
+        /// <summary>Added to every repair card (an engineer aboard).</summary>
+        public int RepairBonus;
+        /// <summary>Added to the flagship's weapon cards (a gunnery officer).</summary>
+        public int FlagshipWeaponBonus;
+        /// <summary>Added to each attack by the player's craft (a flight boss).</summary>
+        public int CraftDamageBonus;
+        /// <summary>Extra cards drawn on turn 1 (a navigator).</summary>
+        public int FirstTurnDraw;
+        /// <summary>Command added at the start of the next turn (Council Vote), then cleared.</summary>
+        public int NextTurnCommand;
+        /// <summary>Spotter Data: the next weapon card this turn deals this much more and reaches this much further.</summary>
+        public int SpotterBonus, SpotterRange;
+        /// <summary>Combat Patrol: enemy attacks this turn that a craft beside the target will take instead.</summary>
+        public int PatrolCharges;
+
+        public int WeaponBonusFor(Unit source) => source != null && source.IsFlagship ? FlagshipWeaponBonus : 0;
+
         /// <summary>Extra command on turn 1 only (a hail reply, a relic).</summary>
         public int FirstTurnCommand;
         /// <summary>Added to every enemy attack (an enraged commander).</summary>
@@ -245,7 +265,7 @@ namespace Silence.Core.Battle
             Emit(EventKind.CardPlayed, source?.Id ?? -1, target?.Id ?? -1, cost,
                 $"Play {def.Name}" + (target != null ? $" on {target.Name}" : "") + (expend ? " (Expend)" : ""));
 
-            damageSource = def.Tags.Contains("Lance") ? "lance" : def.Type == CardType.Weapon ? "guns" : "other";
+            damageSource = def.Tags.Contains("Lance") || def.Tags.Contains("Driver") ? "lance" : def.Type == CardType.Weapon ? "guns" : "other";
             foreach (var e in def.Effects)
             {
                 e.Apply(this, ctx);
@@ -285,7 +305,7 @@ namespace Silence.Core.Battle
             if (target != null)
             {
                 damageSource = "craft";
-                int dmg = Math.Max(0, c.AttackDamage - target.CraftWard);
+                int dmg = Math.Max(0, c.AttackDamage + CraftDamageBonus - target.CraftWard);
                 for (int i = 0; i < c.CraftAttacks && target.Alive; i++)
                 {
                     Emit(EventKind.Attack, c.Id, target.Id, dmg, $"{c.Name} attacks {target.Name}");
@@ -380,9 +400,10 @@ namespace Silence.Core.Battle
             PlanIntents();
 
             SetPhase(BattlePhase.Command);
-            Command = CommandPerTurn + (Turn == 1 ? FirstTurnCommand : 0);
+            Command = CommandPerTurn + (Turn == 1 ? FirstTurnCommand : 0) + NextTurnCommand;
+            NextTurnCommand = 0;
             Emit(EventKind.Command, -1, -1, Command, $"{Command} command");
-            DrawCards(HandSize - Deck.Hand.Count);
+            DrawCards(HandSize - Deck.Hand.Count + (Turn == 1 ? FirstTurnDraw : 0));
         }
 
         void DoDrift()
@@ -465,6 +486,9 @@ namespace Silence.Core.Battle
             Deck.Discard.AddRange(Deck.Hand);
             Deck.Hand.Clear();
             Command = 0;
+            SpotterBonus = 0;
+            SpotterRange = 0;
+            PatrolCharges = 0;
             foreach (var u in Units)
             {
                 u.LanceBonus = 0;

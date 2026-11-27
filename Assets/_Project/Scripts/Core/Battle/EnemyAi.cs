@@ -194,6 +194,16 @@ namespace Silence.Core.Battle
         /// <summary>A guarding escort next to the target takes the attack instead (Screening Maneuver).</summary>
         Unit Screen(Unit target)
         {
+            if (PatrolCharges > 0 && target.IsCapital)
+            {
+                var cover = LiveUnits(Side.Player).Where(c => c.Kind == UnitKind.Craft && c.Pos.DistanceTo(target.Pos) == 1).OrderBy(c => c.Id).FirstOrDefault();
+                if (cover != null)
+                {
+                    PatrolCharges--;
+                    Emit(EventKind.Buff, cover.Id, target.Id, 0, $"{cover.Name} #{cover.Id} flies into the shot meant for {target.Name}");
+                    return cover;
+                }
+            }
             var guard = LiveUnits(Side.Player).FirstOrDefault(g => g.Guarding && g != target && g.Pos.DistanceTo(target.Pos) == 1);
             if (guard == null) return target;
             guard.Guarding = false;

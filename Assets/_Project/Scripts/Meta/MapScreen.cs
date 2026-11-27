@@ -111,7 +111,7 @@ namespace Silence.Meta
             if (run.Phase != RunPhase.Map) return "";
             if (run.CurrentNode < 0) return "Choose where to enter the Ion Reef. Brass rings mark the nodes you can reach.";
             if (RunRules.LanesMined(run, content))
-                return $"<color=#d9573f>The Concord is ahead and has mined the lanes: every jump costs each ship {content.Config.MineDamage} hull until you catch up.</color> Jump lanes are clear.";
+                return $"<color=#d9573f>The {content.Faction.RivalName} is ahead and has mined the lanes: every jump costs each ship {content.Config.MineDamage} hull until you catch up.</color> Jump lanes are clear.";
             return "Choose the next node. Every jump moves the rival fleets along the track above.";
         }
 
@@ -123,13 +123,15 @@ namespace Silence.Meta
         void RefreshTop()
         {
             Ui.Clear(topRoot);
-            Ui.Heading(topRoot, "Sector I - The Ion Reef", 16, 28, 18, 520, 20);
+            var f = content.Faction;
+            Ui.Heading(topRoot, f.SectorName, 16, 28, 18, 520, 20);
             float x = 560;
             x = Resource(x, "res_scrap", "Scrap", run.Scrap.ToString(), Skin.Brass);
-            x = Resource(x, "res_ordinals", "Ordinals", $"{run.Ordinals}/{run.MaxOrdinals}", Skin.Cyan);
-            x = Resource(x, "res_darts", "Darts", $"{run.Darts}/{run.MaxDarts}", Skin.Text);
+            x = Resource(x, CrewIcon, f.CrewName, $"{run.Ordinals}/{run.MaxOrdinals}", Skin.Cyan);
+            x = Resource(x, CraftIcon, Cap(f.CraftName), $"{run.Darts}/{run.MaxDarts}", Skin.Text);
             x = Resource(x, "icon_junk", "Junk", run.JunkCount().ToString(), run.JunkCount() > 0 ? Skin.Warn : Skin.Dim);
-            Ui.Stamp(topRoot, $"Seed {run.Seed}", 12, 1440, 20, 170, 14, TextAlignmentOptions.Right, Skin.Faint);
+            if (f.HasCouncil) Resource(x, ArtOr("res_approval", "icon_relic"), "Approval", $"{run.Approval}/{f.MaxApproval}", Skin.Brass);
+            else Ui.Stamp(topRoot, $"Seed {run.Seed}", 12, 1440, 20, 170, 14, TextAlignmentOptions.Right, Skin.Faint);
             Ui.Btn(topRoot, "Deck", 1630, 8, 130, 37, ShowDeck, 16);
             Ui.Btn(topRoot, "Menu", 1768, 8, 134, 37, () => { Game.Save(); Game.ToMenu(); }, 16);
         }
@@ -175,6 +177,7 @@ namespace Silence.Meta
                 }
             }
 
+            y = OfficerPanel(y);
             y = RelicShelf(y);
             Ui.Btn(fleetRoot, $"Deck - {run.Deck.Count} cards", 0, y, FleetW, 40, ShowDeck, 16);
             y += 50;
@@ -209,12 +212,13 @@ namespace Silence.Meta
             Ui.Art(t, "node_boss", x1 + 14, yLine - 24, 1f);
             Ui.Stamp(t, "Gate", 12, x1 + 66, yLine - 6, 60, 14);
 
-            Marker(t, x0, x1, yLine, run.ConcordProgress, length, "Concord", Skin.Hex("ffc46a"), false, yLine + 24, 12);
-            Marker(t, x0, x1, yLine, run.ChorusProgress, length, "Chorus", Skin.Hex("5fffc8"), false, yLine + 36, 12);
+            string rival = content.Faction.RivalName, third = content.Faction.ThirdName;
+            Marker(t, x0, x1, yLine, run.ConcordProgress, length, rival, rival == "Concord" ? Skin.Hex("ffc46a") : Skin.Hex("e8eef8"), false, yLine + 24, 12);
+            Marker(t, x0, x1, yLine, run.ChorusProgress, length, third, Skin.Hex("5fffc8"), false, yLine + 36, 12);
             Marker(t, x0, x1, yLine, run.PlayerProgress, length, "You", Color.white, true, yLine - 40, 12);
 
-            Ui.Body(t, Lead("Concord", run.ConcordProgress), 16, 18, 34, 290, 16, TextAlignmentOptions.TopLeft, Skin.Dim);
-            Ui.Body(t, Lead("Chorus", run.ChorusProgress), 16, 18, 54, 290, 16, TextAlignmentOptions.TopLeft, Skin.Dim);
+            Ui.Body(t, Lead(rival, run.ConcordProgress), 16, 18, 34, 300, 16, TextAlignmentOptions.TopLeft, Skin.Dim).textWrappingMode = TextWrappingModes.NoWrap;
+            Ui.Body(t, Lead(third, run.ChorusProgress), 16, 18, 54, 300, 16, TextAlignmentOptions.TopLeft, Skin.Dim).textWrappingMode = TextWrappingModes.NoWrap;
             if (run.Nemesis.Hunting)
                 Ui.Stamp(t, $"{content.Nemesis(run.Nemesis.Id).Name.Split(' ').Last()} hunts you - rank {Roman(run.Nemesis.Rank)}", 12, 18, 78, 230, 14, TextAlignmentOptions.Left, Skin.Bad);
         }
@@ -442,8 +446,10 @@ namespace Silence.Meta
         {
             var def = PaperCards.Get(card.Card);
             string source = card.Ship >= 0 && card.Ship < run.Ships.Count ? run.Ships[card.Ship].Name : "";
+            string ship = UnitLibrary.Get(card.Ship >= 0 && card.Ship < run.Ships.Count ? run.Ships[card.Ship].Unit : content.Faction.FlagshipUnit).Id;
             string art = def.IsJunk ? (def.Id == "fire_on_deck" ? "status_fire" : "status_warning")
-                : def.Type == CardType.Hangar ? "asc_dart_E" : card.Ship == 1 ? "asc_blade_E" : "asc_cruiser_E128";
+                : def.Type == CardType.Hangar ? UnitLibrary.Get(content.Faction.CraftUnit).Id + "_E"
+                : ArtLibrary.Instance.Sprite(ship + "_E128") != null ? ship + "_E128" : ship + "_E";
             var view = CardView.Create(parent, def, source, art, def.Cost);
             view.Rect.anchoredPosition = new Vector2(Mathf.Round(centreX), -Mathf.Round(bottomY));
             return view;

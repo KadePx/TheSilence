@@ -1,3 +1,4 @@
+using Silence.Data;
 using Silence.View;
 using TMPro;
 using UnityEngine;
@@ -60,7 +61,7 @@ namespace Silence.Meta
             y += 72;
             message = Ui.Body(panel.transform, Game.HasSave ? "A run is in progress." : "", 15, 50, y, 400, 40, TextAlignmentOptions.Top, Skin.Dim);
 
-            Ui.Stamp(root, "Alpha build - milestone M2", 12, 20, Ui.RefH - 30, 600, 18, TextAlignmentOptions.Left, Skin.Faint);
+            Ui.Stamp(root, "Alpha build - milestone M3", 12, 20, Ui.RefH - 30, 600, 18, TextAlignmentOptions.Left, Skin.Faint);
             seed = Game.RandomSeed().ToString();
             ShowSeed();
         }
@@ -115,8 +116,40 @@ namespace Silence.Meta
                 return;
             }
             if (!long.TryParse(seed, out long value) || seed.Length == 0) value = Game.RandomSeed();
-            Game.AbandonRun();
-            Game.NewRun(value);
+            ShowFactionPicker(value);
+        }
+
+        /// <summary>Which fleet to take out: one large button per playable faction, with its flagship and what sets it apart.</summary>
+        void ShowFactionPicker(long seedValue)
+        {
+            var shade = Ui.Fill(root, "PickerShade", 0, 0, Ui.RefW, Ui.RefH, new Color(0f, 0f, 0f, 0.8f));
+            shade.raycastTarget = true;
+            const float w = 1240, h = 620;
+            var d = Ui.Plate(shade.transform, "Picker", (Ui.RefW - w) / 2f, (Ui.RefH - h) / 2f, w, h).rectTransform;
+            Ui.Stamp(d, $"New run - seed {seedValue}", 12, 40, 26, 600, 14, TextAlignmentOptions.Left, Skin.Brass);
+            Ui.Heading(d, "Choose your fleet", 32, 38, 48, 800, 36);
+            Ui.Btn(d, "Back", w - 190, 30, 150, 48, () => Destroy(shade.gameObject), 16);
+            float x = 40;
+            foreach (string id in ContentLoader.Factions)
+            {
+                var content = ContentLoader.Load(id);
+                var f = content.Faction;
+                string faction = id;
+                var b = Ui.Btn(d, "", x, 120, 570, 460, () => { Game.AbandonRun(); Game.NewRun(seedValue, faction); });
+                var flag = Silence.Core.Battle.UnitLibrary.Get(f.FlagshipUnit);
+                var well = Ui.Well(b.transform, "Ship", 24, 24, 522, 190);
+                well.raycastTarget = false;
+                var sprite = ArtLibrary.Instance.Sprite(flag.Id + "_E128") ?? ArtLibrary.Instance.Sprite(flag.Id + "_E");
+                if (sprite != null)
+                {
+                    var img = Ui.Img(well.transform, "Art", sprite, (522 - sprite.rect.width) / 2f, (190 - sprite.rect.height) / 2f, sprite.rect.width, sprite.rect.height);
+                    img.raycastTarget = false;
+                }
+                Ui.Heading(b.transform, f.Name, 32, 24, 230, 522, 36);
+                Ui.Stamp(b.transform, $"{flag.Name} - hull {flag.Hull}, speed {flag.MaxSpeed}", 12, 26, 274, 520, 14, TextAlignmentOptions.Left, Skin.Brass);
+                Ui.Body(b.transform, f.Blurb, 16, 26, 300, 518, 140, TextAlignmentOptions.TopLeft, Skin.Text);
+                x += 590;
+            }
         }
 
         static void Quit()

@@ -24,6 +24,12 @@ namespace Silence.Core.Battle
         public int Range;
         public int Heat;
         public bool IsLance;
+        /// <summary>A heavy fore gun that is not a lance (the Mass Driver): commanders' baffles work against it too.</summary>
+        public bool Heavy;
+        /// <summary>Hexes the target is shoved directly away after the hit; a blocked shove deals <see cref="SlamDamage"/> instead.</summary>
+        public int Push;
+        public const int SlamDamage = 2;
+        public bool IgnoreArmor;
         public int ExpendBonus;
         public bool ExpendIgnoresShields;
 
@@ -34,7 +40,7 @@ namespace Silence.Core.Battle
             if (s == null || !s.Alive) return "source ship is gone";
             if (t == null || !t.Alive || t.Side == s.Side) return "needs an enemy target";
             if (!Hex.Arcs.InAny(s.Pos, s.Facing, t.Pos, Arcs)) return "target is outside the weapon's arc";
-            if (s.Pos.DistanceTo(t.Pos) > Range) return "target is out of range";
+            if (s.Pos.DistanceTo(t.Pos) > Range + b.SpotterRange) return "target is out of range";
             if (!b.Board.HasLineOfFire(s.Pos, t.Pos)) return "an asteroid blocks the line of fire";
             return null;
         }
@@ -42,14 +48,15 @@ namespace Silence.Core.Battle
         /// <summary>Damage and flags this attack would use on a target right now (marks, Expend, Overcharge, Waymind).</summary>
         public (int damage, DamageFlags flags) Resolve(Battle b, Unit s, Unit t, bool expended)
         {
-            int dmg = Damage + t.MarkBonus;
-            var flags = new DamageFlags();
+            int dmg = Damage + t.MarkBonus + b.WeaponBonusFor(s) + b.SpotterBonus;
+            var flags = new DamageFlags { IgnoreArmor = IgnoreArmor };
             if (expended)
             {
                 dmg += ExpendBonus;
                 flags.IgnoreShields = ExpendIgnoresShields;
             }
-            if (IsLance) dmg = Math.Max(0, dmg + s.LanceBonus - t.LanceWard);
+            if (IsLance) dmg += s.LanceBonus;
+            if (IsLance || Heavy) dmg = Math.Max(0, dmg - t.LanceWard);
             if (b.WaymindPrimed)
             {
                 flags.IgnoreArmor = true;
@@ -65,9 +72,35 @@ namespace Silence.Core.Battle
             var (dmg, flags) = Resolve(b, s, t, ctx.Expended);
             if (IsLance) s.LanceBonus = 0;
             b.WaymindPrimed = false;
+            b.SpotterBonus = 0;
+            b.SpotterRange = 0;
             b.AddHeat(s, Heat);
             b.Emit(EventKind.Attack, s.Id, t.Id, dmg, $"{s.Name} fires {ctx.Card.Def.Name} at {t.Name}");
             b.DealDamage(t, dmg, s.Pos, flags, s);
+            for (int i = 0; i < Push && t.Alive && b.Outcome == BattleOutcome.Ongoing; i++) Shove(b, s, t);
+        }
+
+        /// <summary>Shove the target one hex directly away from the shooter; into rock, wreckage or another unit it is slammed instead.</summary>
+        static void Shove(Battle b, Unit s, Unit t)
+        {
+            int now = s.Pos.DistanceTo(t.Pos);
+            HexCoord? away = null;
+            int best = now;
+            for (int d = 0; d < HexDirections.Count; d++)
+            {
+                var n = t.Pos.Neighbor((HexDirection)d);
+                int dist = s.Pos.DistanceTo(n);
+                if (dist > best && b.Board.InBounds(n)) { best = dist; away = n; }
+            }
+            if (away == null) return;
+            if (!b.IsFree(away.Value))
+            {
+                b.Emit(EventKind.Collision, t.Id, -1, SlamDamage, $"{t.Name} is slammed back for {SlamDamage}", t.Pos, away.Value);
+                b.DealDamage(t, SlamDamage, s.Pos, new DamageFlags { Direct = true }, s);
+                return;
+            }
+            b.Emit(EventKind.Moved, t.Id, -1, 1, $"{t.Name} is shoved back", t.Pos, away.Value);
+            t.Pos = away.Value;
         }
     }
 
@@ -473,7 +506,7 @@ namespace Silence.Core.Battle
         {
             var t = ctx.Target;
             int before = t.Hull;
-            t.Hull = System.Math.Min(t.MaxHull, t.Hull + Amount);
+            t.Hull = System.Math.Min(t.MaxHull, t.Hull + Amount + b.RepairBonus);
             b.Emit(EventKind.Repaired, t.Id, -1, t.Hull - before, $"{t.Name} repairs {t.Hull - before} hull ({t.Hull})");
         }
     }

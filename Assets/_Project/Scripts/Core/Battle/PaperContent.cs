@@ -108,7 +108,7 @@ namespace Silence.Core.Battle
                 case "quiet_ledger": return PaperUnits.QuietLedger;
                 case "open_hand": return PaperUnits.OpenHand;
                 case "menders_oath": return PaperUnits.MendersOath;
-                default: throw new System.ArgumentException($"unknown unit '{id}'");
+                default: return ConcordUnits.Get(id) ?? throw new System.ArgumentException($"unknown unit '{id}'");
             }
         }
     }
@@ -370,6 +370,8 @@ namespace Silence.Core.Battle
         public static CardDef Get(string id)
         {
             foreach (var c in Everything)
+                if (c.Id == id) return c;
+            foreach (var c in ConcordCards.Everything)
                 if (c.Id == id) return c;
             throw new System.ArgumentException($"unknown card '{id}'");
         }

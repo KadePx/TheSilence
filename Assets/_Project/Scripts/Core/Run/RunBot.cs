@@ -13,6 +13,8 @@ namespace Silence.Core.Run
         {
             "overcharge_lances", "precision_edict", "seal_the_decks", "cold_discipline", "hold_the_line", "short_lance",
             "waymind_targeting", "escort_guns", "broadside_battery", "hard_about", "scry_the_void", "flak_lattice", "brace",
+            // Concord
+            "spotter_data", "outrider_torpedo", "patch_job", "council_vote", "ring_shield", "outrider_guns", "deck_guns", "long_scan", "combat_patrol",
         };
 
         /// <summary>Play a new run to its end and return the final state.</summary>
@@ -30,6 +32,14 @@ namespace Silence.Core.Run
             {
                 case RunPhase.Map:
                 {
+                    // The Council first: mend the fleet when it is hurt, see to the wounded, otherwise bank the approval.
+                    for (int i = 0; i < c.Motions.Count; i++)
+                    {
+                        var m = c.Motions[i];
+                        bool want = (m.Hull > 0 && r.Flagship.Hull * 10 < r.Flagship.MaxHull * 7) || (m.HealOfficers && r.Officers.Count(o => o.Wounded) >= 2)
+                                    || (m.Officer && r.Approval >= m.Cost + 1) || (m.Craft > 0 && r.Darts == 0);
+                        if (want && RunRules.CanCallVote(r, c, m) == null) RunRules.CallVote(r, c, i);
+                    }
                     var next = RunRules.Choices(r).OrderByDescending(n => RouteScore(r, c, n)).ThenBy(n => n.Id).First();
                     RunRules.Travel(r, c, next.Id);
                     break;
@@ -37,7 +47,7 @@ namespace Silence.Core.Run
                 case RunPhase.Hail:
                 {
                     // The plain player: says nothing, except at rank III where a grudge no longer matters and the extra command does.
-                    int reply = c.HailReplies.FindIndex(x => x.Id == (r.Nemesis.Rank >= 3 ? "fire" : "silence"));
+                    int reply = c.HailReplies.FindIndex(x => x.Effect == (r.Nemesis.Rank >= 3 ? "fire" : "silence"));
                     if (reply < 0 || RunRules.ChooseHail(r, c, reply) != null) RunRules.ChooseHail(r, c, c.HailReplies.Count - 1);
                     break;
                 }
@@ -92,6 +102,7 @@ namespace Silence.Core.Run
                     if (r.Escort.Alive) RunRules.Repair(r, c, RunRules.EscortIndex);
                     while (r.JunkCount() > 0 && RunRules.RemoveJunk(r, c) == null) { }
                     while (r.Darts < r.MaxDarts && r.Scrap >= c.Config.DartCost + 10 && RunRules.BuyDart(r, c) == null) { }
+                    while (r.Officers.Any(o => o.Wounded) && r.Scrap >= c.Config.HealOfficerCost + 20 && RunRules.HealOfficer(r, c) == null) { }
                     if (RunRules.ConcordAhead(r) && r.Scrap >= c.Config.SabotageCost + 20) RunRules.Sabotage(r, c);
                     while (r.Ordinals <= r.MaxOrdinals - c.Config.OrdinalsPerPurchase && RunRules.BuyOrdinals(r, c) == null) { }
                     RunRules.LeaveShipyard(r, c);

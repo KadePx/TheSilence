@@ -77,6 +77,9 @@ namespace Silence.Core.Battle
                 case "vent_plasma": case "cold_discipline": return 0;
                 case "redline": return 1;
                 case "decimation_order": case "waymind_targeting": case "precision_edict": case "overcharge_lances": return 1;
+                case "council_vote": case "long_scan": case "spotter_data": return 1;
+                case "mass_driver": return 3;
+                case "launch_wing": case "combat_patrol": return 5;
                 case "hard_about": case "come_about": return 2;
                 case "scry_the_void": return 1;
                 case "lance_volley": return 3;
@@ -101,6 +104,19 @@ namespace Silence.Core.Battle
                     return hot != null && b.PlayCard(card.Id, PlayTarget.At(hot.Id)) == null;
                 case "cold_discipline":
                     return b.LiveUnits(Side.Player).Any(u => u.IsCapital && u.Heat > u.HeatCap - 3) && b.PlayCard(card.Id, PlayTarget.None) == null;
+                case "patch_job":
+                {
+                    var worst = b.LiveUnits(Side.Player).Where(u => u.IsCapital && u.MaxHull - u.Hull >= 4).OrderBy(u => u.Hull).FirstOrDefault();
+                    return worst != null && b.PlayCard(card.Id, PlayTarget.At(worst.Id)) == null;
+                }
+                case "patch_crews":
+                    return b.LiveUnits(Side.Player).Where(u => u.IsCapital).Sum(u => System.Math.Min(3, u.MaxHull - u.Hull)) >= 3 && b.PlayCard(card.Id, PlayTarget.None) == null;
+                case "combat_patrol":
+                    return b.Intents.Any(i => !i.Cancelled && i.Damage > 0 && (i.Kind == IntentKind.Broadside || i.Kind == IntentKind.CraftAttack))
+                           && b.PlayCard(card.Id, PlayTarget.None) == null;
+                case "spotter_data":
+                    return HasPlayableWeapon(b, card) && b.PlayCard(card.Id, PlayTarget.None) == null;
+                case "ring_shield":
                 case "brace":
                     var threatened = b.Intents.Where(i => !i.Cancelled).Select(i => b.Get(i.TargetId)).FirstOrDefault(u => u != null && u.Side == Side.Player);
                     return threatened != null && b.PlayCard(card.Id, PlayTarget.At(threatened.Id)) == null;

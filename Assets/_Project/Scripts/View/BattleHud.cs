@@ -58,9 +58,9 @@ namespace Silence.View
             turnText = Ui.Heading(top.transform, "TURN 1", 16, 28, 18, 140, 20);
             phaseText = Ui.Heading(top.transform, "", 16, 160, 18, 260, 20, TextAlignmentOptions.Left, Skin.BrassLight);
             titleText = Ui.Heading(top.transform, "", 16, 460, 18, 1000, 20, TextAlignmentOptions.Center, Skin.Dim);
-            Ui.Stamp(top.transform, "Ordinals", 12, 1330, 20, 70, 14, TextAlignmentOptions.Right, Skin.Dim);
+            crewLabel = Ui.Stamp(top.transform, "Ordinals", 12, 1300, 20, 100, 14, TextAlignmentOptions.Right, Skin.Dim);
             ordinalsText = Ui.Number(top.transform, "24", 24, 1408, 14, 50, 24, TextAlignmentOptions.Left, Skin.Cyan);
-            Ui.Stamp(top.transform, "Darts", 12, 1470, 20, 60, 14, TextAlignmentOptions.Right, Skin.Dim);
+            craftLabel = Ui.Stamp(top.transform, "Darts", 12, 1440, 20, 90, 14, TextAlignmentOptions.Right, Skin.Dim);
             dartsText = Ui.Number(top.transform, "6", 24, 1538, 14, 50, 24, TextAlignmentOptions.Left, Skin.Text);
             Ui.Btn(top.transform, "Log", 1630, 8, 84, 37, ToggleLog, 16);
             Ui.Btn(top.transform, "Help", 1720, 8, 88, 37, ShowHelp, 16);
@@ -159,8 +159,8 @@ namespace Silence.View
                 : "<color=#555b6a>CARDS  none you can afford</color>");
             if (dartsOut > 0)
                 lines.Add(darts > 0
-                    ? $"<color=#7fdcf2>DARTS</color>  {darts} ready: click one to move it"
-                    : "<color=#555b6a>DARTS  all have acted</color>");
+                    ? $"<color=#7fdcf2>{CraftWord.ToUpperInvariant()}S</color>  {darts} ready: click one to move it"
+                    : $"<color=#555b6a>{CraftWord.ToUpperInvariant()}S  all have acted</color>");
             int helms = Battle.LiveUnits(Side.Player).Count(u => u.IsCapital && !u.ThrottleUsed);
             lines.Add(helms > 0
                 ? "<color=#7fdcf2>HELM</color>  set speed with - + on a ship card"
@@ -170,7 +170,7 @@ namespace Silence.View
             bool nothingLeft = playable == 0 && darts == 0;
             var parts = new List<string>();
             if (playable > 0) parts.Add($"{playable} card{(playable > 1 ? "s" : "")}");
-            if (darts > 0) parts.Add($"{darts} dart{(darts > 1 ? "s" : "")}");
+            if (darts > 0) parts.Add($"{darts} {CraftWord}{(darts > 1 ? "s" : "")}");
             endHint.text = nothingLeft ? "<color=#e8c870>Nothing left to do</color>" : string.Join(" and ", parts) + " still open";
             endGlow.enabled = nothingLeft || (InTutorial && Step.EndTurn && !Step.Darts);
         }
@@ -216,6 +216,8 @@ namespace Silence.View
             ordinalsText.text = Battle.Ordinals.ToString();
             ordinalsText.color = Battle.Ordinals <= 0 ? Skin.Bad : Skin.Cyan;
             dartsText.text = Battle.DartsInHangar < 0 ? "-" : Battle.DartsInHangar.ToString();
+            crewLabel.text = Battle.CrewName;
+            craftLabel.text = char.ToUpperInvariant(CraftWord[0]) + CraftWord.Substring(1) + "s";
 
             for (int i = 0; i < pips.Count; i++)
             {
@@ -279,12 +281,19 @@ namespace Silence.View
             RefreshHandState();
         }
 
-        static string ArtFor(CardDef def, Unit source)
+        TextMeshProUGUI crewLabel, craftLabel;
+
+        /// <summary>What this fleet's hand-flown craft are called: "dart" or "gunship".</summary>
+        string CraftWord => Battle != null && Battle.DartSpec.Name.ToLowerInvariant().Contains("gunship") ? "gunship" : "dart";
+
+        string ArtFor(CardDef def, Unit source)
         {
             if (def.IsJunk) return def.Id == "fire_on_deck" ? "status_fire" : "status_warning";
-            if (def.Type == CardType.Hangar) return "asc_dart_E";
-            if (source == null) return "asc_cruiser_E128";
-            return source.SpecId == "asc_cruiser" ? "asc_cruiser_E128" : source.SpecId + "_E";
+            if (def.Type == CardType.Hangar) return Battle.DartSpec.Id + "_E";
+            if (source == null) source = Battle.Flagship ?? Battle.Units.Find(u => u.Side == Side.Player && u.IsCapital);
+            string key = source != null ? source.SpecId : "asc_cruiser";
+            // The flagships have a larger drawing for card crops.
+            return Silence.Data.ArtLibrary.Instance.Sprite(key + "_E128") != null ? key + "_E128" : key + "_E";
         }
 
         void RefreshHandState()
@@ -476,7 +485,7 @@ namespace Silence.View
             var card = Ui.Panel(unitPanel, "Target", 0, y, FleetW, h);
             var t = card.transform;
             Ui.Heading(t, u.Name, 16, 16, 12, 200, 20, TextAlignmentOptions.Left, enemy ? Skin.Bad : Skin.Text);
-            Ui.Stamp(t, enemy ? (u.Kind == UnitKind.Torpedo ? "Torpedo" : u.IsCommander ? "Commander" : u.IsCapital ? "Enemy" : "Craft") : "Dart", 12, 190, 16, 94, 14,
+            Ui.Stamp(t, enemy ? (u.Kind == UnitKind.Torpedo ? "Torpedo" : u.IsCommander ? "Commander" : u.IsCapital ? "Enemy" : "Craft") : CraftWord, 12, 190, 16, 94, 14,
                 TextAlignmentOptions.Right, Skin.BrassDark);
             float frac = u.MaxHull > 0 ? u.Hull / (float)u.MaxHull : 0f;
             Ui.Stamp(t, "Hull", 12, 16, 41, 36, 14, TextAlignmentOptions.Left, Skin.Dim);
@@ -853,7 +862,7 @@ namespace Silence.View
             var ships = Battle.Units.Where(u => u.Side == Side.Player && u.IsCapital).Select(u =>
                 u.Alive ? $"{u.Name}  <color=#8cc47a>{u.Hull}/{u.MaxHull} hull</color>" : $"{u.Name}  <color=#d9573f>LOST</color>");
             int junk = Battle.Deck.AllPiles().SelectMany(p => p).Count(c => c.Def.IsJunk);
-            string stats = string.Join("     ", ships) + $"\nTurns {Battle.Turn}     Ordinals {Battle.Ordinals}     Junk cards {junk}";
+            string stats = string.Join("     ", ships) + $"\nTurns {Battle.Turn}     {Battle.CrewName} {Battle.Ordinals}     Junk cards {junk}";
             var s = Ui.Number(d, stats, 20, 40, 200, 680, 70, TextAlignmentOptions.Center, Skin.Dim);
             s.lineSpacing = 20f;
 

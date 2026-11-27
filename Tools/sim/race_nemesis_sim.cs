@@ -5,7 +5,8 @@ using Silence.Core.Battle;
 using Silence.Core.Run;
 
 int N = 200;
-var c = Silence.Data.ContentLoader.Load(true);
+string faction = System.IO.File.Exists("Temp/sim-faction.txt") ? System.IO.File.ReadAllText("Temp/sim-faction.txt").Trim() : "ascendancy"; // write "concord" there to sim the Concord
+var c = Silence.Data.ContentLoader.Load(faction, true);
 int win = 0, lost = 0, outp = 0, met = 0, killed = 0, escaped = 0, standoff = 0, atGate = 0, jumps = 0, minedRuns = 0, minedJumps = 0, relics = 0, concordAheadAtEnd = 0;
 int nemFights = 0, nemWins = 0, nemLoss = 0, nemTurns = 0, rank3 = 0, lostToNem = 0, dodged = 0;
 var byCommander = new System.Collections.Generic.Dictionary<string, int[]>();
@@ -59,6 +60,7 @@ for (int seed = 1; seed <= N; seed++)
     if (RunRules.ConcordAhead(r)) concordAheadAtEnd++;
 }
 var sb = new System.Text.StringBuilder();
+sb.AppendLine($"faction {faction}");
 sb.AppendLine($"runs {N}: won {win} lost {lost} outpaced {outp}; avg turns {turns / (float)N:0.0}");
 sb.AppendLine($"nemesis: met in {met} runs; fights {nemFights} (avg {nemTurns / (float)System.Math.Max(1, nemFights):0.0} turns): won {nemWins}, fleet lost {nemLoss}; commander killed {killed}, escaped {escaped}, standoff {standoff}; fell back alive {atGate}; reached rank III {rank3}");
 foreach (var kv in byCommander) sb.AppendLine($"  {kv.Key}: fights {kv.Value[0]} won {kv.Value[1]} lost {kv.Value[2]} escaped {kv.Value[3]} killed {kv.Value[4]}");

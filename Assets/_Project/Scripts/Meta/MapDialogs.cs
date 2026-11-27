@@ -32,15 +32,15 @@ namespace Silence.Meta
             if (boss)
             {
                 var well = Ui.Well(d, "Comms", 40, 116, 272, 272);
-                var portrait = Ui.Art(well.transform, "portrait_venn", 8, 8, 2f);
+                var fac = content.Faction;
+                var portrait = Ui.Art(well.transform, fac.BossPortrait, 8, 8, 2f);
                 if (!portrait.enabled) Ui.Body(well.transform, "NO SIGNAL", 20, 0, 120, 272, 30, TextAlignmentOptions.Center, Skin.Faint);
-                Ui.Stamp(d, "Marshal Oru Venn", 14, 40, 394, 272, 18, TextAlignmentOptions.Center, Skin.Hex("ffc46a"));
-                Ui.Stamp(d, "Concord - Long Promise", 11, 40, 414, 272, 16, TextAlignmentOptions.Center, Skin.Dim);
+                Ui.Stamp(d, fac.BossName, 14, 20, 394, 312, 18, TextAlignmentOptions.Center, Skin.Hex("ffc46a"));
+                Ui.Stamp(d, fac.BossShip, 11, 20, 414, 312, 16, TextAlignmentOptions.Center, Skin.Dim);
                 textX = 340;
                 textW = w - 380;
-                string hail = "\"Sixth Verdict. I know that hull. You took my eye at Kessane and logged it as efficiency.\"\n\n" +
-                              "\"The Long Promise holds this gate. Behind me are eleven worlds that will never hear your Prime's name. Come and be counted.\"";
-                if (run.VennEnraged) hail += "\n\n\"And I have read the convoy's last message. All of it.\"";
+                string hail = fac.BossHail;
+                if (run.VennEnraged) hail += "\n\n" + fac.BossHailEnraged;
                 Ui.Body(d, hail, 21, textX, y, textW, 200, TextAlignmentOptions.TopLeft, Skin.Hex("ffe0b0"));
                 y += run.VennEnraged ? 150 : 110;
             }
@@ -60,10 +60,11 @@ namespace Silence.Meta
             }
             if (boss)
             {
+                string rivalName = content.Faction.RivalName;
                 string race = RunRules.ConcordAhead(run)
-                    ? "<color=#d9573f>The Concord fleet reached the gate before you. Its guard is reinforced.</color>"
-                    : run.VennEnraged ? "<color=#d9573f>Venn has called in another ship.</color>"
-                    : "<color=#8cc47a>You are ahead of the Concord fleet. The gate has only its standing guard.</color>";
+                    ? $"<color=#d9573f>The {rivalName} fleet reached the gate before you. Its guard is reinforced.</color>"
+                    : run.VennEnraged ? "<color=#d9573f>The gate has called in another ship.</color>"
+                    : $"<color=#8cc47a>You are ahead of the {rivalName} fleet. The gate has only its standing guard.</color>";
                 Ui.Body(d, race, 18, textX, y, textW, 26);
                 y += 36;
             }
@@ -102,7 +103,7 @@ namespace Silence.Meta
             Ui.Number(d, $"+{offer.Scrap} scrap", 24, 700, 52, 200, 24, TextAlignmentOptions.Left, Skin.Brass);
             if (offer.Ordinals > 0)
             {
-                Ui.Art(d, "res_ordinals", 850, 40, 1f);
+                Ui.Art(d, CrewIcon, 850, 40, 1f);
                 Ui.Number(d, $"+{offer.Ordinals}", 24, 910, 52, 120, 24, TextAlignmentOptions.Left, Skin.Cyan);
             }
             if (!string.IsNullOrEmpty(offer.Relic))
@@ -169,11 +170,14 @@ namespace Silence.Meta
                 switch (o.Kind)
                 {
                     case OutcomeKind.Scrap: parts.Add(o.Amount < 0 ? $"Pay {-o.Amount} scrap" : $"{sign} scrap"); break;
-                    case OutcomeKind.Ordinals: parts.Add(o.Amount < 0 ? $"Expend {-o.Amount} Ordinals" : $"{sign} Ordinals"); break;
+                    case OutcomeKind.Ordinals: parts.Add(o.Amount < 0 ? $"Expend {-o.Amount} {content.Faction.CrewName}" : $"{sign} {content.Faction.CrewName}"); break;
+                    case OutcomeKind.Approval: parts.Add($"{sign} approval"); break;
+                    case OutcomeKind.GainOfficer: parts.Add("An officer comes aboard"); break;
+                    case OutcomeKind.HealOfficers: parts.Add("Wounded officers return to duty"); break;
                     case OutcomeKind.HullFlagship: parts.Add($"Flagship {sign} hull"); break;
                     case OutcomeKind.HullAll: parts.Add($"Every ship {sign} hull"); break;
                     case OutcomeKind.MaxHullFlagship: parts.Add($"Flagship {sign} max hull"); break;
-                    case OutcomeKind.Darts: parts.Add($"{sign} darts"); break;
+                    case OutcomeKind.Darts: parts.Add($"{sign} {content.Faction.CraftName}"); break;
                     case OutcomeKind.AddCard: parts.Add($"Gain {PaperCards.Get(o.Id).Name}"); break;
                     case OutcomeKind.AddJunk: parts.Add($"Adds {PaperCards.Get(o.Id).Name}"); break;
                     case OutcomeKind.RemoveJunk: parts.Add("Removes a junk card"); break;
@@ -251,10 +255,18 @@ namespace Silence.Meta
             int keep = run.Deck.Count(card => card.Ship >= 0);
             Service(d, x, ref y, "Strike a card", keep > cfg.MinDeckSize ? "Remove any one card for good. A thin deck draws its best cards more often." : $"The deck is at its floor of {cfg.MinDeckSize} cards.",
                 cfg.RemoveCardCost, keep > cfg.MinDeckSize, ShowStrikePicker);
-            Service(d, x, ref y, "Load a dart", $"Darts aboard {run.Darts}/{run.MaxDarts}. Takes no dock time.", cfg.DartCost,
+            var fct = content.Faction;
+            string craft = fct.CraftName.TrimEnd('s');
+            Service(d, x, ref y, $"Load a {craft}", $"{Cap(fct.CraftName)} aboard {run.Darts}/{run.MaxDarts}. Takes no dock time.", cfg.DartCost,
                 run.Darts < run.MaxDarts, () => Shop(() => RunRules.BuyDart(run, content)));
-            Service(d, x, ref y, $"Decant {cfg.OrdinalsPerPurchase} Ordinals", $"Ordinals {run.Ordinals}/{run.MaxOrdinals}.", cfg.OrdinalCost * cfg.OrdinalsPerPurchase,
+            Service(d, x, ref y, fct.HasCouncil ? $"Sign on {cfg.OrdinalsPerPurchase} crew" : $"Decant {cfg.OrdinalsPerPurchase} Ordinals", $"{fct.CrewName} {run.Ordinals}/{run.MaxOrdinals}.", cfg.OrdinalCost * cfg.OrdinalsPerPurchase,
                 run.Ordinals < run.MaxOrdinals, () => Shop(() => RunRules.BuyOrdinals(run, content)));
+            if (run.Officers.Count > 0)
+            {
+                int wounded = run.Officers.Count(o => o.Wounded);
+                Service(d, x, ref y, "Sickbay", wounded == 0 ? "No officer is wounded." : $"Returns one of {wounded} wounded officers to duty.", cfg.HealOfficerCost,
+                    wounded > 0, () => Shop(() => RunRules.HealOfficer(run, content)));
+            }
 
             Service(d, x, ref y, "Seed false beacons", shop.Sabotaged ? "Already seeded from this yard." : $"Both rival fleets lose {cfg.SabotageAmount / 10f:0.0} node. Takes no dock time.",
                 cfg.SabotageCost, !shop.Sabotaged, () => Shop(() => RunRules.Sabotage(run, content)));
@@ -287,7 +299,7 @@ namespace Silence.Meta
                 Ui.Bar(d, "Hull", fx, fy + 32, 430, 18, frac, frac > 0.34f ? Skin.Good : Skin.Bad);
                 fy += 66;
             }
-            Ui.Body(d, $"Ordinals {run.Ordinals}/{run.MaxOrdinals}     Darts {run.Darts}/{run.MaxDarts}\nDeck {run.Deck.Count} cards, {run.JunkCount()} junk", 17, fx, fy, 440, 50, TextAlignmentOptions.TopLeft, Skin.Dim);
+            Ui.Body(d, $"{content.Faction.CrewName} {run.Ordinals}/{run.MaxOrdinals}     {Cap(content.Faction.CraftName)} {run.Darts}/{run.MaxDarts}\nDeck {run.Deck.Count} cards, {run.JunkCount()} junk", 17, fx, fy, 440, 50, TextAlignmentOptions.TopLeft, Skin.Dim);
             fy += 58;
             for (int slot = 0; slot < run.Modules.Count; slot++)
             {
@@ -365,27 +377,22 @@ namespace Silence.Meta
             var color = won ? Skin.Brass : run.Result == RunResult.Outpaced ? Skin.Warn : Skin.Bad;
             Ui.Label(d, title, Skin.Logo, 64, color, 0, 44, 1100, 80, TextAlignmentOptions.Center);
 
+            var fx = content.Faction;
             string story;
             if (won)
             {
-                story = RunRules.ConcordAhead(run)
-                    ? "The Long Promise burns behind you, but the Concord's main fleet went through the gate while Venn held you here. You are through the Ion Reef, and you are second."
-                    : "The Long Promise burns behind you and the gate stands open. No other fleet has passed it. The Prime will be informed that the Sixth Verdict leads the race to the Silence.";
+                story = RunRules.ConcordAhead(run) ? fx.WinBehind : fx.WinAhead;
                 if (run.Nemesis.LastOutcome == NemesisOutcome.Killed && run.Nemesis.Id != "") story += $" {content.Nemesis(run.Nemesis.Id).Name} did not live to see it.";
-                if (RunRules.ChorusAhead(run)) story += " Something else came through first, though. The gate's sensors logged it as weather.";
+                if (RunRules.ChorusAhead(run)) story += " " + fx.WinThirdAhead;
             }
-            else if (run.Result == RunResult.Outpaced)
-                story = "Venn did not need to win. He needed to hold the gate until everyone else had gone through it, and he has. The Sixth Verdict is recalled to Lumen to explain the delay in person.";
-            else
-                story = RunRules.ConcordAhead(run)
-                    ? "The last signal from the Sixth Verdict is logged, numbered and filed. The Concord reaches the gate unopposed."
-                    : "The last signal from the Sixth Verdict is logged, numbered and filed. Another hull is already being fitted with her name.";
+            else if (run.Result == RunResult.Outpaced) story = fx.Outpaced;
+            else story = RunRules.ConcordAhead(run) ? fx.LostAhead : fx.LostBehind;
             Ui.Body(d, story, 22, 80, 156, 940, 130, TextAlignmentOptions.Top);
 
             var stats = new[]
             {
                 ("Nodes crossed", run.NodesVisited.ToString()), ("Battles won", run.BattlesWon.ToString()), ("Turns fought", run.TurnsFought.ToString()),
-                ("Scrap", run.Scrap.ToString()), ("Ordinals left", run.Ordinals.ToString()), ("Score", RunRules.Score(run).ToString()),
+                ("Scrap", run.Scrap.ToString()), (content.Faction.CrewName + " left", run.Ordinals.ToString()), ("Score", RunRules.Score(run).ToString()),
             };
             for (int i = 0; i < stats.Length; i++)
             {
@@ -397,7 +404,7 @@ namespace Silence.Meta
             var lines = run.Journal.Skip(System.Math.Max(0, run.Journal.Count - 4));
             Ui.Body(d, string.Join("\n", lines), 16, 110, 464, 880, 90, TextAlignmentOptions.TopLeft, Skin.Dim);
 
-            Ui.Btn(d, "New run", 250, 650, 280, 70, () => { long seed = Game.RandomSeed(); Game.AbandonRun(); Game.NewRun(seed); }, 16);
+            Ui.Btn(d, "New run", 250, 650, 280, 70, () => { long seed = Game.RandomSeed(); string faction = run.Faction; Game.AbandonRun(); Game.NewRun(seed, faction); }, 16);
             Ui.Btn(d, "Main menu", 570, 650, 280, 70, () => { Game.AbandonRun(); Game.ToMenu(); }, 16);
         }
     }
