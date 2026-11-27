@@ -451,6 +451,8 @@ The next step is the paper prototype (M0); nothing goes into Unity until combat 
 - Hazards: a third of the fights past the opening are in an ion storm (no shield regeneration), a nebula (all weapons reach 1 less) or a dense field (more rock), and pay 1.3 times the salvage. Not at the gate or in a nemesis fight.
 - Elites offer two relics and one is taken. A sector draws five of the nine written events (all nine made events crowd out fights, and the bot's win rate rose to 67 percent).
 - Story is told where the player already looks: a briefing before the first jump, an aftermath line with each fight's salvage, an epitaph for each commander, and events.
+- A commander who has met you before can be taunted: they do not break off and hit 1 harder. Commanders with a scar show a scarred portrait.
+- Music is four synthesized loops (menu, map, battle, hunt), cross-faded by screen; volume is in Settings.
 - Each faction's run is its own set of content files; rules that differ between factions are data in the `faction` block, not branches in code.
 
 ### Open questions

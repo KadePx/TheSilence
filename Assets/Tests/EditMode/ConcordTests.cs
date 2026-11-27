@@ -91,7 +91,7 @@ namespace Silence.Tests
                     foreach (var rank in n.Escorts)
                         foreach (var u in rank) Assert.IsNotNull(UnitLibrary.Get(u.Unit), n.Id);
                 }
-                CollectionAssert.AreEquivalent(new[] { "edict", "fire", "board", "silence" }, f.HailReplies.Select(h => h.Effect).ToList(), id);
+                CollectionAssert.AreEquivalent(new[] { "edict", "fire", "board", "taunt", "silence" }, f.HailReplies.Select(h => h.Effect).ToList(), id);
                 foreach (string officer in f.Faction.StarterOfficers) Assert.IsNotNull(f.Officer(officer));
                 if (f.Faction.HasCouncil)
                 {
@@ -492,6 +492,20 @@ namespace Silence.Tests
                     if (ev.Choices[i].Outcomes.Any(o => o.Kind == OutcomeKind.HealOfficers)) Assert.IsFalse(r.Officers[0].Wounded);
                 }
             }
+        }
+
+        [Test]
+        public void TheConcordSkirmishStartsWithTheRunsDeckAndCanBeFoughtToAnEnd()
+        {
+            var b = ConcordScenarios.LancePatrol(7);
+            var starter = c.Config.StarterModules.SelectMany(m => c.Module(m).Cards).Concat(c.Config.StarterCards.Select(x => x.Card)).OrderBy(x => x).ToList();
+            CollectionAssert.AreEqual(starter, ConcordScenarios.Starter.Select(x => x.card.Id).OrderBy(x => x).ToList(), "the skirmish deck is the deck a run starts with");
+            Assert.AreEqual(b.Units.Count, b.Units.Select(u => u.Pos).Distinct().Count());
+            foreach (var u in b.Units) Assert.IsFalse(b.Board.BlocksMovement(u.Pos), u.Name);
+            Assert.That(b.LiveUnits(Side.Enemy).Min(e => e.Pos.DistanceTo(b.Flagship.Pos)), Is.InRange(2, 5));
+            b.Start();
+            while (b.Outcome == BattleOutcome.Ongoing && b.Turn <= 60) SimpleBot.PlayTurn(b);
+            Assert.AreNotEqual(BattleOutcome.Ongoing, b.Outcome);
         }
 
         // ---------------------------------------------------------------- saves and whole runs

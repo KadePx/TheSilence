@@ -47,7 +47,9 @@ namespace Silence.Core.Run
                 case RunPhase.Hail:
                 {
                     // The plain player: says nothing, except at rank III where a grudge no longer matters and the extra command does.
-                    int reply = c.HailReplies.FindIndex(x => x.Effect == (r.Nemesis.Rank >= 3 ? "fire" : "silence"));
+                    // A healthy fleet meeting them again goads them into staying, to end it.
+                    bool goad = r.Nemesis.Meetings > 0 && r.Nemesis.Rank < 3 && r.Flagship.Hull * 10 >= r.Flagship.MaxHull * 8 && r.Escort.Alive;
+                    int reply = c.HailReplies.FindIndex(x => x.Effect == (r.Nemesis.Rank >= 3 ? "fire" : goad ? "taunt" : "silence"));
                     if (reply < 0 || RunRules.ChooseHail(r, c, reply) != null) RunRules.ChooseHail(r, c, c.HailReplies.Count - 1);
                     break;
                 }

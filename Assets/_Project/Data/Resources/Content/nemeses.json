@@ -25,6 +25,15 @@
    "approval": 0
   },
   {
+   "id": "taunt",
+   "effect": "taunt",
+   "label": "Show them the scar you gave them. On every channel.",
+   "tag": "Taunt",
+   "ordinals": 0,
+   "approval": 0,
+   "requiresHistory": true
+  },
+  {
    "id": "silence",
    "label": "Say nothing.",
    "tag": "Silence",
@@ -93,7 +102,8 @@
    "retortEdict": "Catalogued. I have been catalogued by better. Guns, then.",
    "retortFire": "No preamble. Good. I dislike being read to.",
    "retortBoard": "You cut my relay. I navigate by soundings, child. I do not need to hear my escorts to know where you are.",
-   "retortSilence": "Nothing to say? Then I will enter it as consent."
+   "retortSilence": "Nothing to say? Then I will enter it as consent.",
+   "retortTaunt": "You are broadcasting my hull damage to my own fleet. Very well. I will stay and correct the record."
   },
   {
    "id": "rask",
@@ -182,7 +192,8 @@
    "retortEdict": "Your Prime decrees. My crews vote. Let us see which one bleeds for it.",
    "retortFire": "There it is. Launch everything. Everything.",
    "retortBoard": "You have boarded my relay. Forty crews just heard their friends die on an open channel. Thank you for that.",
-   "retortSilence": "Silence. That is all your kind ever has for us."
+   "retortSilence": "Silence. That is all your kind ever has for us.",
+   "retortTaunt": "The crews have seen it. They are not voting on this one. Neither am I."
   },
   {
    "id": "koyl",
@@ -236,7 +247,8 @@
    "retortEdict": "Power down? I have not powered down a yard in thirty years and I will not start for a number.",
    "retortFire": "Shooting first. Sloppy. You will see what a proper weld does to a lance.",
    "retortBoard": "My relay. That will take an hour to fix. You do not have an hour.",
-   "retortSilence": "Not a word. Fine. I will let the plate talk."
+   "retortSilence": "Not a word. Fine. I will let the plate talk.",
+   "retortTaunt": "That is my weld you are laughing at. I am not leaving until you have seen it hold."
   }
  ],
  "relics": [

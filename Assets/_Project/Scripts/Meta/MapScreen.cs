@@ -33,6 +33,7 @@ namespace Silence.Meta
         {
             content = Game.Content;
             run = Game.Run ?? Game.EnsureRun();
+            Music.Play("music_map");
 
             var cam = Camera.main;
             if (cam != null) cam.backgroundColor = Skin.Ink;

@@ -335,4 +335,40 @@ namespace Silence.Core.Battle
             PatchCrews, CuttingBeam, LongScan, SpotterData, OutriderGuns, OutriderTorpedo,
         };
     }
+
+    /// <summary>A stand-alone fight for trying the Concord fleet without starting a run.</summary>
+    public static class ConcordScenarios
+    {
+        /// <summary>The Long Promise's deck as a run starts with it: (card, source) with source 0 = flagship, 1 = escort.</summary>
+        public static readonly (CardDef card, int source)[] Starter =
+        {
+            (ConcordCards.MassDriver, 0), (ConcordCards.MassDriver, 0), (ConcordCards.DeckGuns, 0), (ConcordCards.DeckGuns, 0),
+            (PaperCards.Burn, 0), (PaperCards.HardAbout, 0), (PaperCards.HardAbout, 0), (ConcordCards.PatchJob, 0),
+            (ConcordCards.CouncilVote, 0), (ConcordCards.RingShield, 0), (ConcordCards.LaunchWing, 0), (ConcordCards.CombatPatrol, 0),
+            (ConcordCards.PatchCrews, 0), (ConcordCards.OutriderGuns, 1), (PaperCards.ComeAbout, 1),
+        };
+
+        /// <summary>
+        /// Lance Patrol: the Long Promise and her Outrider against an Ascendancy lance-cruiser, a Blade and two darts,
+        /// with a rock between the flagships. Units: 1 flagship, 2 escort, 3 cruiser, 4 Blade, 5-6 darts.
+        /// </summary>
+        public static Battle LancePatrol(ulong seed)
+        {
+            var b = new Battle(seed)
+            {
+                Title = "Lance Patrol", CrewName = "Crew", Ordinals = 20, DartsInHangar = 4,
+                DartSpec = ConcordUnits.WingGunship, GunshipSpec = ConcordUnits.EnemyDart,
+            };
+            b.Board.Set(4, 3, Terrain.Asteroid);
+            b.Board.Set(5, 5, Terrain.Debris);
+            var flag = b.AddUnit(ConcordUnits.LongPromise, Side.Player, 2, 2, HexDirection.E, 1, flagship: true);
+            var escort = b.AddUnit(ConcordUnits.Outrider, Side.Player, 2, 4, HexDirection.E, 1);
+            b.AddUnit(ConcordUnits.EnemyCruiser, Side.Enemy, 6, 2, HexDirection.W, 2);
+            b.AddUnit(ConcordUnits.EnemyBlade, Side.Enemy, 6, 4, HexDirection.W, 2);
+            b.AddUnit(ConcordUnits.EnemyDart, Side.Enemy, 7, 1, HexDirection.W, 0);
+            b.AddUnit(ConcordUnits.EnemyDart, Side.Enemy, 7, 5, HexDirection.W, 0);
+            foreach (var (card, source) in Starter) b.AddCard(card, source == 1 ? escort.Id : flag.Id);
+            return b;
+        }
+    }
 }

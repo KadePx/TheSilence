@@ -34,7 +34,8 @@ namespace Silence.Meta
             logo.fontMaterial.SetFloat("_UnderlaySoftness", 0.25f);
             Ui.Stamp(root, "It was broadcast to everyone at once", 24, 0, 300, Ui.RefW, 28, TextAlignmentOptions.Center, Skin.Brass);
 
-            var panel = Ui.Plate(root, "Panel", 710, 400, 500, 590);
+            Music.Play("music_menu");
+            var panel = Ui.Plate(root, "Panel", 710, 386, 500, 660);
             float y = 34;
             var cont = Ui.Btn(panel.transform, "Continue run", 50, y, 400, 70, OnContinue, 34);
             cont.interactable = Game.HasSave;
@@ -56,6 +57,8 @@ namespace Silence.Meta
             Ui.Btn(panel.transform, "Tutorial", 50, y, 400, 60, () => { PlayerPrefs.SetInt(TutorialSeenKey, 1); BattleLauncher.Clear(); BattleLauncher.Tutorial = true; SceneManager.LoadScene(Game.BattleScene); }, 30);
             y += 70;
             Ui.Btn(panel.transform, "Skirmish", 50, y, 400, 60, () => { BattleLauncher.Clear(); SceneManager.LoadScene(Game.BattleScene); }, 30);
+            y += 70;
+            Ui.Btn(panel.transform, "Settings", 50, y, 400, 60, ShowSettings, 30);
             y += 70;
             Ui.Btn(panel.transform, "Quit", 50, y, 400, 60, Quit, 30);
             y += 72;
@@ -158,6 +161,37 @@ namespace Silence.Meta
                 Ui.Stamp(b.transform, $"{cfg.StartOrdinals} {f.CrewName}   /   {cfg.StartDarts} {f.CraftName}   /   {content.Rewards.Count} cards to find" + (f.HasCouncil ? "   /   Council" : ""), 12, 26, 600, 518, 14, TextAlignmentOptions.Left, Skin.Brass);
                 x += 590;
             }
+        }
+
+        /// <summary>Music and effects volume, in ten steps each. Applied at once and remembered.</summary>
+        void ShowSettings()
+        {
+            var shade = Ui.Fill(root, "SettingsShade", 0, 0, Ui.RefW, Ui.RefH, new Color(0f, 0f, 0f, 0.8f));
+            shade.raycastTarget = true;
+            const float w = 760, h = 380;
+            var d = Ui.Plate(shade.transform, "Settings", (Ui.RefW - w) / 2f, (Ui.RefH - h) / 2f, w, h).rectTransform;
+            Ui.Heading(d, "Settings", 32, 38, 34, 500, 36);
+            Ui.Btn(d, "Done", w - 190, 30, 150, 48, () => { PlayerPrefs.Save(); Destroy(shade.gameObject); }, 16);
+            var rows = Ui.Box(d, "Rows", 0, 0, w, h);
+            void Draw()
+            {
+                Ui.Clear(rows);
+                Row(rows, "Music", 120, Music.Volume, v => Music.Volume = v, Draw);
+                Row(rows, "Effects", 200, Sfx.Volume, v => { Sfx.Volume = v; Sfx.Play("sfx_click"); }, Draw);
+                Ui.Body(rows, "The music and effects are synthesized placeholders.", 16, 40, 300, w - 80, 16, TextAlignmentOptions.TopLeft, Skin.Dim);
+            }
+            Draw();
+        }
+
+        static void Row(Transform parent, string label, float y, float value, System.Action<float> set, System.Action redraw)
+        {
+            int step = Mathf.RoundToInt(value * 10f);
+            Ui.Heading(parent, label, 16, 40, y + 14, 160, 20);
+            Ui.Btn(parent, "-", 210, y, 56, 48, () => { set(Mathf.Max(0, step - 1) / 10f); redraw(); }, 16);
+            for (int i = 0; i < 10; i++)
+                Ui.Fill(parent, "Pip", 282 + i * 30, y + 12, 24, 24, i < step ? Skin.Brass : Skin.Faint);
+            Ui.Btn(parent, "+", 594, y, 56, 48, () => { set(Mathf.Min(10, step + 1) / 10f); redraw(); }, 16);
+            Ui.Number(parent, (step * 10).ToString(), 24, 664, y + 12, 70, 24, TextAlignmentOptions.Left, Skin.Text);
         }
 
         static void Quit()

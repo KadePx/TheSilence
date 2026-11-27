@@ -511,7 +511,7 @@ namespace Silence.Core.Run
                     unit.IsCommander = true;
                     unit.LanceWard = nem.Adaptation == "lance" ? 3 : 0;
                     unit.CraftWard = nem.Adaptation == "craft" ? 1 : 0;
-                    if (nemesisFight && nem.Rank < 3) unit.FleesAtHull = Math.Max(1, unit.MaxHull * cfg.NemesisFleePercent / 100);
+                    if (nemesisFight && nem.Rank < 3 && r.PendingHail != "taunt") unit.FleesAtHull = Math.Max(1, unit.MaxHull * cfg.NemesisFleePercent / 100);
                 }
                 else if (nemesisFight && r.PendingHail == "board") unit.StunnedThroughTurn = cfg.HailBoardTurns;
             }
@@ -529,6 +529,7 @@ namespace Silence.Core.Run
                     b.EnemyFocusFlagship = true;
                 }
                 else if (r.PendingHail == "fire") b.FirstTurnCommand++;
+                else if (r.PendingHail == "taunt") b.EnemyDamageBonus = cfg.HailTauntDamage;
             }
 
             foreach (var card in r.Deck)
@@ -564,7 +565,8 @@ namespace Silence.Core.Run
 
         /// <summary>Why a hail reply can't be given (it costs Ordinals the fleet does not have), or null.</summary>
         public static string CanReply(RunState r, HailReply reply)
-            => r.Ordinals < reply.Ordinals ? $"needs {reply.Ordinals} crew" : r.Approval < reply.Approval ? $"needs {reply.Approval} approval" : null;
+            => reply.RequiresHistory && r.Nemesis.Meetings == 0 ? "you have no history with them yet"
+                : r.Ordinals < reply.Ordinals ? $"needs {reply.Ordinals} crew" : r.Approval < reply.Approval ? $"needs {reply.Approval} approval" : null;
 
         /// <summary>Answer the commander's hail. The reply shapes the battle that follows at once.</summary>
         public static string ChooseHail(RunState r, RunContent c, int replyIndex)
@@ -594,6 +596,7 @@ namespace Silence.Core.Run
             {
                 case "edict": return $"Enraged: every enemy attack deals +{cfg.HailEdictDamage} and all of it is aimed at the flagship. Salvage x{cfg.HailEdictScrapPercent / 100}.{cfg.HailEdictScrapPercent % 100 / 10}";
                 case "fire": return "+1 command on turn 1. Their grudge goes to 3: if they get away they return at rank III";
+                case "taunt": return $"They will not break off this time, and their attacks deal +{cfg.HailTauntDamage}. Finish it here";
                 case "board": return $"{price}: their escorts get no orders for the first {cfg.HailBoardTurns} turns";
                 default: return "No effect";
             }

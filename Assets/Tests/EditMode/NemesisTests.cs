@@ -104,7 +104,7 @@ namespace Silence.Tests
         public void CommandersRepliesAndRelicsLoadAndResolve()
         {
             Assert.AreEqual(3, c.Nemeses.Count);
-            Assert.AreEqual(4, c.HailReplies.Count);
+            Assert.AreEqual(5, c.HailReplies.Count);
             foreach (var n in c.Nemeses)
             {
                 Assert.AreEqual(UnitKind.Capital, UnitLibrary.Get(n.Ship).Kind, n.Id);
@@ -360,6 +360,26 @@ namespace Silence.Tests
             Assert.AreEqual(2, r.Nemesis.Rank);
             Assert.AreEqual(concord + c.Config.WithdrawalDelay, r.ConcordProgress);
             Assert.AreEqual(RunPhase.Map, r.Phase);
+        }
+
+        [Test]
+        public void ATauntIsOnlyForOldAcquaintancesAndMakesThemStayAndHitHarder()
+        {
+            var r = AtHail();
+            Assert.IsNotNull(RunRules.ChooseHail(r, c, Reply("taunt")), "no history yet");
+            Assert.AreEqual(RunPhase.Hail, r.Phase);
+            r.Nemesis.Meetings = 1;
+            r.Nemesis.Rank = 2;
+            var b = Fight(r, "taunt");
+            var ship = b.Units.Find(u => u.IsCommander);
+            Assert.AreEqual(0, ship.FleesAtHull);
+            Assert.AreEqual(c.Config.HailTauntDamage, b.EnemyDamageBonus);
+            Assert.IsFalse(b.EnemyFocusFlagship);
+            Assert.AreEqual(c.Nemesis(r.Nemesis.Id).Retorts["taunt"], b.OpeningLine);
+            b.Start();
+            ship.Hull = 1;
+            b.EndTurn();
+            Assert.IsFalse(ship.Escaped, "goaded into staying");
         }
 
         [Test]

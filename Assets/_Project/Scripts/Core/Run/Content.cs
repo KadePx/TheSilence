@@ -149,6 +149,8 @@ namespace Silence.Core.Run
         public string Tag = "";
         /// <summary>Crew expended to give this reply, or Council approval spent.</summary>
         public int Ordinals, Approval;
+        /// <summary>Only on offer once you and the commander have met before.</summary>
+        public bool RequiresHistory;
     }
 
     /// <summary>A named rival commander: ship, escorts by rank, and what they say.</summary>
@@ -207,6 +209,8 @@ namespace Silence.Core.Run
         /// <summary>A commander below rank 3 breaks off at this percent of hull; each rank adds NemesisRankHull.</summary>
         public int NemesisFleePercent = 40, NemesisRankHull = 6;
         public int HailEdictDamage = 2, HailEdictScrapPercent = 150, HailBoardTurns = 2;
+        /// <summary>A taunted commander does not break off, and their fleet hits this much harder.</summary>
+        public int HailTauntDamage = 1;
         /// <summary>Shipyard service: false beacons set both rivals back.</summary>
         public int SabotageCost = 25, SabotageAmount = 8;
         /// <summary>Percent chance that a fight from the third layer on is in a hazard, and what its salvage is multiplied by.</summary>

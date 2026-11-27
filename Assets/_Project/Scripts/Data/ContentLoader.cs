@@ -196,12 +196,12 @@ namespace Silence.Data
 
         // ---------------------------------------------------------------- nemeses.json
 
-        [Serializable] class ReplyDto { public string id, label, tag, effect; public int ordinals, approval; }
+        [Serializable] class ReplyDto { public string id, label, tag, effect; public int ordinals, approval; public bool requiresHistory; }
 
         [Serializable]
         class NemesisDto
         {
-            public string id, name, title, ship, portrait, trait, tactic, hailFirst, hailEscaped, hailStandoff, hailFinal, trophy, epitaph, retortEdict, retortFire, retortBoard, retortSilence;
+            public string id, name, title, ship, portrait, trait, tactic, hailFirst, hailEscaped, hailStandoff, hailFinal, trophy, epitaph, retortEdict, retortFire, retortBoard, retortSilence, retortTaunt;
             public int scrap;
             public UnitDto[] rank1, rank2, rank3;
         }
@@ -220,7 +220,7 @@ namespace Silence.Data
         {
             var dto = JsonUtility.FromJson<NemesesDto>(json);
             foreach (var h in dto.hailReplies ?? new ReplyDto[0])
-                content.HailReplies.Add(new HailReply { Id = h.id, Effect = string.IsNullOrEmpty(h.effect) ? h.id : h.effect, Label = h.label, Tag = h.tag ?? "", Ordinals = h.ordinals, Approval = h.approval });
+                content.HailReplies.Add(new HailReply { Id = h.id, Effect = string.IsNullOrEmpty(h.effect) ? h.id : h.effect, Label = h.label, Tag = h.tag ?? "", Ordinals = h.ordinals, Approval = h.approval, RequiresHistory = h.requiresHistory });
             foreach (var n in dto.nemeses ?? new NemesisDto[0])
             {
                 var def = new NemesisDef
@@ -233,6 +233,7 @@ namespace Silence.Data
                 def.Retorts["fire"] = n.retortFire ?? "";
                 def.Retorts["board"] = n.retortBoard ?? "";
                 def.Retorts["silence"] = n.retortSilence ?? "";
+                def.Retorts["taunt"] = n.retortTaunt ?? "";
                 var ranks = new[] { n.rank1, n.rank2, n.rank3 };
                 for (int i = 0; i < 3; i++)
                     foreach (var u in ranks[i] ?? new UnitDto[0]) def.Escorts[i].Add(Unit(u));

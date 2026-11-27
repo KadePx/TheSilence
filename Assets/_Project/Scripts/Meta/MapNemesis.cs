@@ -62,7 +62,9 @@ namespace Silence.Meta
         {
             var n = run.Nemesis;
             var well = Ui.Well(d, "Comms", x, y, 272, 272);
-            var portrait = Ui.Art(well.transform, def.Portrait, 8, 8, 2f);
+            // Once they have a scar from you, they wear it.
+            string face = n.Scars.Count > 0 && ArtLibrary.Instance.Sprite(def.Portrait + "_scarred") != null ? def.Portrait + "_scarred" : def.Portrait;
+            var portrait = Ui.Art(well.transform, face, 8, 8, 2f);
             if (!portrait.enabled) Ui.Body(well.transform, "NO SIGNAL", 16, 0, 124, 272, 20, TextAlignmentOptions.Center, Skin.Faint);
             Ui.Heading(d, def.Name, 16, x - 20, y + 282, 312, 20, TextAlignmentOptions.Center, ConcordGold);
             Ui.Stamp(d, $"{def.Title} - {UnitLibrary.Get(def.Ship).Name}", 12, x - 20, y + 306, 312, 14, TextAlignmentOptions.Center, Skin.Dim);
@@ -80,7 +82,7 @@ namespace Silence.Meta
             int rows = units.Select(u => u.Unit).Distinct().Count();
             var dossier = Dossier(def);
             const float w = 1500;
-            float h = 590 + rows * 48 + content.HailReplies.Count * 84;
+            float h = 580 + rows * 48 + content.HailReplies.Count * 68;
             var d = OpenDialog(w, h, 0.8f);
             Ui.Stamp(d, "Nemesis - incoming hail", 12, 40, 26, 500, 14, TextAlignmentOptions.Left, Skin.Bad);
             Ui.Heading(d, def.Name, 32, 38, 48, w - 80, 36);
@@ -127,13 +129,13 @@ namespace Silence.Meta
                 var reply = content.HailReplies[i];
                 string blocked = RunRules.CanReply(run, reply);
                 int index = i;
-                var b = Ui.Btn(d, "", 40, y, w - 80, 76, () => Reply(index));
+                var b = Ui.Btn(d, "", 40, y, w - 80, 62, () => Reply(index));
                 b.interactable = blocked == null;
-                Ui.Number(b.transform, (i + 1).ToString(), 24, 22, 26, 40, 24, TextAlignmentOptions.Center, blocked == null ? Skin.Brass : Skin.Faint);
-                Ui.Label(b.transform, reply.Label, Skin.BodyBold, 16, blocked == null ? Skin.Text : Skin.Faint, 80, 16, w - 200, 20);
+                Ui.Number(b.transform, (i + 1).ToString(), 24, 22, 19, 40, 24, TextAlignmentOptions.Center, blocked == null ? Skin.Brass : Skin.Faint);
+                Ui.Label(b.transform, reply.Label, Skin.BodyBold, 16, blocked == null ? Skin.Text : Skin.Faint, 80, 10, w - 200, 20);
                 string tag = reply.Tag.ToUpperInvariant() + "   " + RunRules.HailEffect(content, reply) + (blocked != null ? $"   <color=#d9573f>({blocked})</color>" : "");
-                Ui.Stamp(b.transform, tag, 12, 82, 46, w - 200, 14, TextAlignmentOptions.Left, blocked == null ? Skin.Brass : Skin.Faint);
-                y += 84;
+                Ui.Stamp(b.transform, tag, 12, 82, 36, w - 200, 14, TextAlignmentOptions.Left, blocked == null ? Skin.Brass : Skin.Faint);
+                y += 68;
             }
         }
 

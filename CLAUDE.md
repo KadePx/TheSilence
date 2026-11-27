@@ -47,6 +47,7 @@ the sprint plan.
 - All tests in batch mode (editor closed): `Unity -batchmode -projectPath . -runTests -testPlatform EditMode -testResults results.xml`
 - Rotate a sprite to a hex facing: `python Tools/rotsprite.py in.png out.png 60 <canvas>` (canvas = 1.25x the sprite; -60 for SE)
 - Regenerate the placeholder sound effects: `python Tools/make_sfx.py`
+- Regenerate the placeholder music loops: `python -P Tools/make_music.py` (four seamless WAV loops; `Music.Play(name)`)
 - In Play Mode: F9 lets the bot play the current battle turn, F10 toggles the autopilot (whole runs).
 
 - Balance and mechanic-usage numbers: evaluate `Tools/sim/balance_sim.cs` in the editor (Unity pipeline `script_eval`

@@ -25,6 +25,15 @@
    "approval": 1
   },
   {
+   "id": "taunt",
+   "effect": "taunt",
+   "label": "Read their losses into the open record. Every name.",
+   "tag": "Taunt",
+   "ordinals": 0,
+   "approval": 0,
+   "requiresHistory": true
+  },
+  {
    "id": "silence",
    "effect": "silence",
    "label": "Close the channel.",
@@ -93,7 +102,8 @@
    "retortEdict": "You read me a charter. I have audited charters. They burn at the same temperature as everything else.",
    "retortFire": "Unprovoked fire on an officer of the Inquisition. Entered. Signed. Carried forward.",
    "retortBoard": "You jammed my relay by committee. How many of you did it take to agree?",
-   "retortSilence": "No statement. The record will show you had the opportunity."
+   "retortSilence": "No statement. The record will show you had the opportunity.",
+   "retortTaunt": "You have published my deficit. No auditor leaves a ledger in that state. I will remain."
   },
   {
    "id": "achter",
@@ -161,7 +171,8 @@
    "retortEdict": "Boarded under your charter. Come and board me. Bring all forty delegates.",
    "retortFire": "Finally. Somebody on that ship who does not need a second.",
    "retortBoard": "My Blades cannot hear me. They do not need to. They know what I would say.",
-   "retortSilence": "Quiet. I have had quieter crews. I had them shot too."
+   "retortSilence": "Quiet. I have had quieter crews. I had them shot too.",
+   "retortTaunt": "You show my ship her own wound. Good. Now she will not let me leave either."
   },
   {
    "id": "rell",
@@ -250,7 +261,8 @@
    "retortEdict": "Stand down? They would not know how. I never grew that into them.",
    "retortFire": "You fire on children. Mine are nine days old. I will make more.",
    "retortBoard": "You have cut me off from them. They will be so frightened. That is on you.",
-   "retortSilence": "You will not even speak to me. They always spoke to me, in the vats."
+   "retortSilence": "You will not even speak to me. They always spoke to me, in the vats.",
+   "retortTaunt": "You read them their names. They never had names. Now I have to stay and explain."
   }
  ],
  "relics": [

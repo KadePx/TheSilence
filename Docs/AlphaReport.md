@@ -619,3 +619,33 @@ generations. 669.6 of the 1,000 are spent.
 - The Concord and Ascendancy line ships are shared between player and enemy.
 - No music. The tutorial and skirmish are Ascendancy only.
 - Hazards do not reach the gate or a nemesis fight.
+
+## M4, part 2: sound, scars and a way to finish it
+
+- **Music.** Four seamless loops in D minor, synthesized by `Tools/make_music.py` (PixelLab music needs a higher tier):
+  a drone with four seconds of shaped nothing for the menu, slow pads and a bell figure for the map, a pulse for
+  fights, and a faster, sourer one for a commander or the gate. `Music.Play(name)` cross-fades when the screen changes.
+- **Settings**, from the main menu: music and effects volume in ten steps, remembered.
+- **Scars you can see.** Each of the six commanders has a second portrait (burn scar, dressing, soot) that replaces
+  the first once they carry a scar from you.
+- **A fifth reply, for old acquaintances only: Taunt.** They will not break off this time, and their attacks deal +1.
+  It is how you end a commander without needing one turn of burst, at a price. Each has their own answer to it.
+- **A Concord skirmish** (Lance Patrol), so the fleet can be tried without starting a run. It uses the deck a Concord
+  run starts with; a test holds the two together.
+
+### Numbers
+
+With the bot taunting returning commanders when its fleet is healthy, it kills 53 commanders in 200 Ascendancy runs
+(30 before) and wins 116.
+
+### How it was checked
+
+211 EditMode tests pass (2 new). On screen: the settings dialog with the menu loop playing, a return hail with the
+scarred portrait and five replies, a taunted fight (the hunt loop playing, no break-off, the commander's answer on
+the channel) and the skirmish menu (`ArtSource/Screenshots/m4_settings.png`, `m4_hail_scarred.png`,
+`m4_skirmish_menu.png`). **Nobody has listened to the music.** The loops were checked by number only: no clipping, no
+seam at the loop point, sensible levels. They may be dull or grating; the volume control is there for that.
+
+### Art
+
+Six scarred portraits: 20 generations. 689.6 of the 1,000 are spent.

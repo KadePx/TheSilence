@@ -363,7 +363,23 @@ namespace Silence.View
     public static class Sfx
     {
         static AudioSource source;
-        public static float Volume = 0.6f;
+        const string Key = "silence_sfx_volume";
+        static float volume = -1f;
+
+        /// <summary>0 to 1, remembered between sessions.</summary>
+        public static float Volume
+        {
+            get
+            {
+                if (volume < 0f) volume = PlayerPrefs.GetFloat(Key, 0.6f);
+                return volume;
+            }
+            set
+            {
+                volume = Mathf.Clamp01(value);
+                PlayerPrefs.SetFloat(Key, volume);
+            }
+        }
 
         public static void Play(string clip, float volume = 1f)
         {
@@ -377,6 +393,76 @@ namespace Silence.View
                 source.playOnAwake = false;
             }
             source.PlayOneShot(c, Volume * volume);
+        }
+    }
+
+    /// <summary>
+    /// One looping music track at a time, by library name, cross-faded when the screen changes. Asking for the
+    /// track that is already playing does nothing, so every screen can simply say what it wants.
+    /// </summary>
+    public sealed class Music : MonoBehaviour
+    {
+        const string Key = "silence_music_volume";
+        const float FadeSeconds = 1.5f;
+        static Music player;
+        static float volume = -1f;
+
+        AudioSource front, back;
+        string current = "";
+
+        /// <summary>0 to 1, remembered between sessions.</summary>
+        public static float Volume
+        {
+            get
+            {
+                if (volume < 0f) volume = PlayerPrefs.GetFloat(Key, 0.35f);
+                return volume;
+            }
+            set
+            {
+                volume = Mathf.Clamp01(value);
+                PlayerPrefs.SetFloat(Key, volume);
+            }
+        }
+
+        /// <summary>Name of the track now playing, or empty.</summary>
+        public static string Current => player != null ? player.current : "";
+
+        public static void Play(string clip)
+        {
+            if (player == null)
+            {
+                var go = new GameObject("Music");
+                DontDestroyOnLoad(go);
+                player = go.AddComponent<Music>();
+                player.front = go.AddComponent<AudioSource>();
+                player.back = go.AddComponent<AudioSource>();
+                foreach (var s in new[] { player.front, player.back })
+                {
+                    s.loop = true;
+                    s.playOnAwake = false;
+                    s.volume = 0f;
+                }
+            }
+            if (player.current == clip) return;
+            var c = ArtLibrary.Instance.Clip(clip);
+            if (c == null) return;
+            player.current = clip;
+            // The old track fades out on the back source while the new one fades in on the front.
+            var swap = player.front;
+            player.front = player.back;
+            player.back = swap;
+            player.front.clip = c;
+            player.front.volume = 0f;
+            player.front.Play();
+        }
+
+        void Update()
+        {
+            float step = Time.unscaledDeltaTime / FadeSeconds;
+            front.volume = Mathf.MoveTowards(front.volume, Volume, step);
+            back.volume = Mathf.MoveTowards(back.volume, 0f, step);
+            if (back.isPlaying && back.volume <= 0f) back.Stop();
         }
     }
 }

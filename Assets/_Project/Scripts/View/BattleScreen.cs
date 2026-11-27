@@ -102,6 +102,9 @@ namespace Silence.View
             if (board != null) Destroy(board.gameObject);
             Battle = battle;
             if (battle.Phase == BattlePhase.Setup) battle.Start();
+            // A commander or the gate gets the faster, sourer loop.
+            bool hunted = battle.Units.Any(u => u.IsCommander) || BattleLauncher.Subtitle == "Sector boss";
+            Music.Play(hunted ? "music_hunt" : "music_battle");
             logCursor = battle.Log.Count;
             logLines.Clear();
             foreach (var e in battle.Log)
@@ -674,10 +677,10 @@ namespace Silence.View
 
         void StartSkirmish(int scenario, bool carry)
         {
-            var b = scenario == 1
-                ? Scenarios.InterceptAtTheRing(skirmishSeed)
+            var b = scenario == 1 ? Scenarios.InterceptAtTheRing(skirmishSeed)
+                : scenario == 3 ? ConcordScenarios.LancePatrol(skirmishSeed + 2000)
                 : Scenarios.TheLongPromise(skirmishSeed + 1000, SkirmishRewards);
-            b.DartsInHangar = 6;
+            if (scenario != 3) b.DartsInHangar = 6;
             EndTutorial();
             tutorialBattle = false;
             if (carry && previousSkirmish != null) Scenarios.CarryOver(previousSkirmish, b);

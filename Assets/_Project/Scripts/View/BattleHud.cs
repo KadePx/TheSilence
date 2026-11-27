@@ -828,9 +828,9 @@ namespace Silence.View
         {
             mode = Mode.Intro;
             EndTutorial();
-            var d = OpenOverlay(880, 560, Battle == null ? 1f : 0.8f);
+            var d = OpenOverlay(880, 680, Battle == null ? 1f : 0.8f);
             Ui.Label(d, "The Silence", Skin.Logo, 64, Skin.Text, 0, 30, 880, 80, TextAlignmentOptions.Center);
-            Ui.Stamp(d, "Combat skirmish - paper prototype scenarios", 15, 0, 118, 880, 20, TextAlignmentOptions.Center, Skin.Brass);
+            Ui.Stamp(d, "Combat skirmish - single fights, no run", 15, 0, 118, 880, 20, TextAlignmentOptions.Center, Skin.Brass);
             Ui.Body(d,
                 "You command the Ascendancy lance-cruiser <b>Sixth Verdict</b> and her Blade escort against a Concord patrol.\n" +
                 "Enemies show what they will do before you act. Your ships drift straight ahead by their Speed every turn; cards turn them, " +
@@ -847,9 +847,13 @@ namespace Silence.View
                     : "The carrier and a frigate, with two reward cards added. Win scenario 1 first to carry your damage over.",
                 16, 454, 366, 370, 66, TextAlignmentOptions.TopLeft, Skin.Dim);
 
-            Ui.Btn(d, "Tutorial", 60, 470, 370, 54, StartTutorial, 16);
+            Ui.Btn(d, "3  Lance Patrol - the Concord", 60, 446, 370, 70, () => { skirmishSeed++; previousSkirmish = null; StartSkirmish(3, false); }, 16);
+            Ui.Body(d, "Fly the trimaran Long Promise and her Outrider against an Ascendancy lance-cruiser, a Blade and darts. A mass driver, gunship wings, and crews that mend.",
+                16, 454, 450, 370, 80, TextAlignmentOptions.TopLeft, Skin.Dim);
+
+            Ui.Btn(d, "Tutorial", 60, 590, 370, 54, StartTutorial, 16);
             if (Application.CanStreamedLevelBeLoaded("Menu"))
-                Ui.Btn(d, "Main menu", 600, 470, 220, 54, () => SceneManager.LoadScene("Menu"), 16);
+                Ui.Btn(d, "Main menu", 600, 590, 220, 54, () => SceneManager.LoadScene("Menu"), 16);
         }
 
         void ShowEndScreen()
