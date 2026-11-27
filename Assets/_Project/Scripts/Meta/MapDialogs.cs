@@ -17,15 +17,14 @@ namespace Silence.Meta
 
         void ShowBattlePrompt()
         {
-            var enc = content.Encounter(run.PendingEncounter);
+            var enc = RunRules.PendingEncounterDef(run, content);
             bool boss = enc.Tier == 3;
-            var roster = new List<EncounterUnit>(enc.Units);
-            if (boss && (RunRules.ConcordAhead(run) || run.VennEnraged)) roster.AddRange(enc.Reinforcements);
+            var roster = RunRules.Roster(run, content, enc);
             int rows = roster.Select(u => u.Unit).Distinct().Count();
             float w = boss ? 1180 : 980;
-            float h = 116 + (boss ? Mathf.Max((run.VennEnraged ? 150 : 110) + 36 + 64 + 22 + rows * 48, 340) : 64 + 22 + rows * 48) + 130;
+            float h = 116 + (boss ? Mathf.Max((run.VennEnraged ? 150 : 110) + 36 + 64 + 22 + rows * 48, 340) : 64 + 22 + rows * 48 + (enc.Tier == 5 ? 44 : 0)) + 130;
             var d = OpenDialog(w, h);
-            string tier = boss ? "Sector boss" : enc.Tier == 2 ? "Elite battle" : enc.Tier == 4 ? "Ambush" : "Battle";
+            string tier = boss ? "Sector boss" : enc.Tier == 5 ? "Nemesis" : enc.Tier == 2 ? "Elite battle" : enc.Tier == 4 ? "Ambush" : "Battle";
             Ui.Stamp(d, tier, 14, 40, 26, 400, 20, TextAlignmentOptions.Left, enc.Tier >= 2 ? Skin.Bad : Skin.Brass);
             Ui.Heading(d, enc.Name, 32, 38, 50, w - 80, 40);
 
@@ -49,9 +48,16 @@ namespace Silence.Meta
             Ui.Body(d, enc.Intro, 20, textX, y, textW, 70, TextAlignmentOptions.TopLeft, Skin.Text);
             y += 64;
 
-            var units = new List<EncounterUnit>(enc.Units);
-            bool reinforced = boss && (RunRules.ConcordAhead(run) || run.VennEnraged);
-            if (reinforced) units.AddRange(enc.Reinforcements);
+            var units = roster;
+            if (enc.Tier == 5)
+            {
+                var reply = content.HailReplies.Find(x => x.Id == run.PendingHail);
+                if (reply != null)
+                {
+                    Ui.Body(d, $"<color=#c9a24a>{reply.Tag}:</color> {RunRules.HailEffect(content, reply)}.", 16, textX, y, textW, 40);
+                    y += 44;
+                }
+            }
             if (boss)
             {
                 string race = RunRules.ConcordAhead(run)
@@ -64,25 +70,7 @@ namespace Silence.Meta
 
             Ui.Stamp(d, "Enemy fleet", 12, textX, y, 300, 16, TextAlignmentOptions.Left, Skin.Brass);
             y += 22;
-            foreach (var group in units.GroupBy(u => u.Unit))
-            {
-                var spec = UnitLibrary.Get(group.Key);
-                var row = Ui.Img(d, "Unit", Skin.Slot, textX, y, textW, 44, Color.white, true);
-                var icon = ArtLibrary.Instance.Sprite(spec.Id + "_E") ?? ArtLibrary.Instance.Sprite("con_outrider_E");
-                if (icon != null)
-                {
-                    float s = 40f / Mathf.Max(icon.rect.width, icon.rect.height);
-                    s = icon.rect.height <= 40 ? 1f : s;
-                    Ui.Img(row.transform, "Icon", icon, 8 + (40 - icon.rect.width * s) / 2f, 2 + (40 - icon.rect.height * s) / 2f, icon.rect.width * s, icon.rect.height * s);
-                }
-                string cycle = spec.Cycle.Length > 0
-                    ? string.Join(" > ", spec.Cycle.Select(StepName))
-                    : spec.Kind == UnitKind.Craft ? $"goes for the aft, {spec.AttackDamage} damage" : "";
-                Ui.Label(row.transform, $"{group.Count()} x {spec.Name.ToUpperInvariant()}", Skin.Heading, 16, Skin.Text, 60, 13, 300, 20);
-                Ui.Body(row.transform, $"Hull {spec.Hull}   " + cycle, 16, 330, 14, textW - 340, 16, TextAlignmentOptions.TopLeft, Skin.Dim)
-                    .textWrappingMode = TextWrappingModes.NoWrap;
-                y += 48;
-            }
+            FleetRows(d, units, textX, y, textW);
 
             Ui.Btn(d, "Engage", (w - 300) / 2f, h - 104, 300, 74, Engage, 32);
         }
@@ -109,13 +97,18 @@ namespace Silence.Meta
             var d = OpenDialog(1040, 660);
             Ui.Stamp(d, "After action", 14, 40, 26, 400, 20, TextAlignmentOptions.Left, Skin.Brass);
             Ui.Heading(d, "Salvage", 32, 38, 50, 560, 40);
-            Ui.Body(d, offer.Note, 18, 40, 108, 960, 26, TextAlignmentOptions.TopLeft, Skin.Dim);
+            Ui.Body(d, offer.Note, 16, 40, 104, 960, 16, TextAlignmentOptions.TopLeft, Skin.Dim);
             Ui.Art(d, "res_scrap", 640, 40, 1f);
             Ui.Number(d, $"+{offer.Scrap} scrap", 24, 700, 52, 200, 24, TextAlignmentOptions.Left, Skin.Brass);
             if (offer.Ordinals > 0)
             {
                 Ui.Art(d, "res_ordinals", 850, 40, 1f);
                 Ui.Number(d, $"+{offer.Ordinals}", 24, 910, 52, 120, 24, TextAlignmentOptions.Left, Skin.Cyan);
+            }
+            if (!string.IsNullOrEmpty(offer.Relic))
+            {
+                var relic = content.Relic(offer.Relic);
+                Ui.Body(d, $"<color=#ffc46a>{(relic.Trophy ? "Trophy" : "Relic")}: {relic.Name}.</color> {relic.Text}", 16, 40, 128, 960, 16);
             }
             Ui.Stamp(d, "Take one card for the command deck, or patch the fleet up", 12, 40, 150, 800, 14, TextAlignmentOptions.Left, Skin.BrassDark);
 
@@ -130,7 +123,7 @@ namespace Silence.Meta
                 card.Unhovered = v => v.SetSelected(false);
             }
             bool hurt = run.Ships.Any(s => s.Alive && s.Hull < s.MaxHull);
-            var repair = Ui.Btn(d, $"Field repairs instead: +{content.Config.FieldRepair} hull each", 130, 566, 500, 60, FieldRepair, 16);
+            var repair = Ui.Btn(d, $"Field repairs instead: +{RunRules.FieldRepairAmount(run, content)} hull each", 130, 566, 500, 60, FieldRepair, 16);
             repair.interactable = hurt;
             Ui.Btn(d, "Take nothing", 660, 566, 250, 60, () => PickReward(-1), 16);
         }
@@ -263,6 +256,9 @@ namespace Silence.Meta
             Service(d, x, ref y, $"Decant {cfg.OrdinalsPerPurchase} Ordinals", $"Ordinals {run.Ordinals}/{run.MaxOrdinals}.", cfg.OrdinalCost * cfg.OrdinalsPerPurchase,
                 run.Ordinals < run.MaxOrdinals, () => Shop(() => RunRules.BuyOrdinals(run, content)));
 
+            Service(d, x, ref y, "Seed false beacons", shop.Sabotaged ? "Already seeded from this yard." : $"Both rival fleets lose {cfg.SabotageAmount / 10f:0.0} node. Takes no dock time.",
+                cfg.SabotageCost, !shop.Sabotaged, () => Shop(() => RunRules.Sabotage(run, content)));
+
             // ---- cards
             float cx = 580;
             Ui.Stamp(d, "Cards for sale", 13, cx, 140, 300, 18, TextAlignmentOptions.Left, Skin.Brass);
@@ -375,6 +371,7 @@ namespace Silence.Meta
                 story = RunRules.ConcordAhead(run)
                     ? "The Long Promise burns behind you, but the Concord's main fleet went through the gate while Venn held you here. You are through the Ion Reef, and you are second."
                     : "The Long Promise burns behind you and the gate stands open. No other fleet has passed it. The Prime will be informed that the Sixth Verdict leads the race to the Silence.";
+                if (run.Nemesis.LastOutcome == NemesisOutcome.Killed && run.Nemesis.Id != "") story += $" {content.Nemesis(run.Nemesis.Id).Name} did not live to see it.";
                 if (RunRules.ChorusAhead(run)) story += " Something else came through first, though. The gate's sensors logged it as weather.";
             }
             else if (run.Result == RunResult.Outpaced)

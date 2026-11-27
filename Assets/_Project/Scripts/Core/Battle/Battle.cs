@@ -53,6 +53,17 @@ namespace Silence.Core.Battle
         public string Title = "";
         /// <summary>False keeps the draw pile in the order the cards were added (the tutorial's fixed opening hands).</summary>
         public bool ShuffleAtStart = true;
+        /// <summary>Extra command on turn 1 only (a hail reply, a relic).</summary>
+        public int FirstTurnCommand;
+        /// <summary>Added to every enemy attack (an enraged commander).</summary>
+        public int EnemyDamageBonus;
+        /// <summary>Every enemy goes for the flagship while it lives (an enraged commander).</summary>
+        public bool EnemyFocusFlagship;
+        /// <summary>Hull damage dealt to commander ships by source: "lance", "guns", "craft", "other".</summary>
+        public readonly Dictionary<string, int> CommanderDamage = new Dictionary<string, int>();
+        /// <summary>What is dealing damage right now, for <see cref="CommanderDamage"/>.</summary>
+        string damageSource;
+
         /// <summary>After this many turns the fleets disengage (Withdrawal). Placeholder until the spec decides; 0 = no limit.</summary>
         public int TurnLimit = 25;
 
@@ -234,11 +245,13 @@ namespace Silence.Core.Battle
             Emit(EventKind.CardPlayed, source?.Id ?? -1, target?.Id ?? -1, cost,
                 $"Play {def.Name}" + (target != null ? $" on {target.Name}" : "") + (expend ? " (Expend)" : ""));
 
+            damageSource = def.Tags.Contains("Lance") ? "lance" : def.Type == CardType.Weapon ? "guns" : "other";
             foreach (var e in def.Effects)
             {
                 e.Apply(this, ctx);
                 if (Outcome != BattleOutcome.Ongoing) break;
             }
+            damageSource = null;
             return null;
         }
 
@@ -271,11 +284,15 @@ namespace Silence.Core.Battle
 
             if (target != null)
             {
+                damageSource = "craft";
+                int dmg = Math.Max(0, c.AttackDamage - target.CraftWard);
                 for (int i = 0; i < c.CraftAttacks && target.Alive; i++)
                 {
-                    Emit(EventKind.Attack, c.Id, target.Id, c.AttackDamage, $"{c.Name} attacks {target.Name}");
-                    DealDamage(target, c.AttackDamage, c.Pos, new DamageFlags(), c);
+                    Emit(EventKind.Attack, c.Id, target.Id, dmg, $"{c.Name} attacks {target.Name}");
+                    if (dmg == 0) Emit(EventKind.Miss, c.Id, target.Id, 0, $"{target.Name}'s point defence turns {c.Name} away");
+                    DealDamage(target, dmg, c.Pos, new DamageFlags(), c);
                 }
+                damageSource = null;
             }
             return null;
         }
@@ -326,6 +343,8 @@ namespace Silence.Core.Battle
             SetPhase(BattlePhase.EnemyAction);
             ResolveIntents();
             if (Outcome != BattleOutcome.Ongoing) return null;
+            BreakOff();
+            if (Outcome != BattleOutcome.Ongoing) return null;
 
             SetPhase(BattlePhase.End);
             DoEndStep();
@@ -361,7 +380,7 @@ namespace Silence.Core.Battle
             PlanIntents();
 
             SetPhase(BattlePhase.Command);
-            Command = CommandPerTurn;
+            Command = CommandPerTurn + (Turn == 1 ? FirstTurnCommand : 0);
             Emit(EventKind.Command, -1, -1, Command, $"{Command} command");
             DrawCards(HandSize - Deck.Hand.Count);
         }
@@ -585,6 +604,12 @@ namespace Silence.Core.Battle
             }
 
             target.Hull = Math.Max(0, target.Hull - remaining);
+            if (target.IsCommander && remaining > 0)
+            {
+                string key = damageSource ?? "other";
+                CommanderDamage.TryGetValue(key, out int sofar);
+                CommanderDamage[key] = sofar + remaining;
+            }
             Emit(EventKind.Damage, target.Id, attacker?.Id ?? -1, remaining,
                 $"{target.Name}{where} takes {remaining} hull damage of {amount} (shields {absorbed}, armor {armored}), hull {target.Hull}");
 
@@ -635,6 +660,22 @@ namespace Silence.Core.Battle
             if (removed > 0) Emit(EventKind.CardsRemoved, u.Id, -1, removed, $"{removed} cards from {u.Name} leave the deck");
 
             CheckOutcome();
+        }
+
+        /// <summary>
+        /// A commander who has taken enough breaks off once the enemy has acted: the ship leaves the field alive
+        /// and will be back. The only way to stop it is to take it from above the threshold to nothing in one turn.
+        /// </summary>
+        void BreakOff()
+        {
+            foreach (var u in Units.Where(u => u.Alive && u.FleesAtHull > 0 && u.Hull <= u.FleesAtHull).ToList())
+            {
+                u.Alive = false;
+                u.Escaped = true;
+                Emit(EventKind.Escaped, u.Id, -1, u.Hull, $"{u.Name} breaks off with {u.Hull} hull left and jumps clear");
+                CheckOutcome();
+                if (Outcome != BattleOutcome.Ongoing) return;
+            }
         }
 
         void CheckOutcome()

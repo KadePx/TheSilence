@@ -388,3 +388,77 @@ tested by unit tests only.
 - 152 EditMode tests pass (15 new). The helm, the glossary, the strike picker and the tutorial's new step were each
   put on screen and driven from script; none was used with a physical mouse.
 
+
+## M3, part 1: the race and the nemesis
+
+The M3 exit test is "the race changes routing; a nemesis return feels personal". This part builds both for the
+Ascendancy. The Concord as a playable side (officers, Council) is the second part and is not in yet.
+
+### The race
+
+- **Jump lanes.** Two dotted cyan lanes per sector skip a layer. You gain two nodes on the rivals for one jump of
+  their time; every ship pays 4 hull and you never see the node you skipped.
+- **Mined lanes.** While the Concord leads by a full node, every ordinary jump costs each ship 2 hull. The info bar
+  says so, the open lanes turn red, and jump lanes are clear. Falling behind now bleeds the fleet, not only the ending.
+- **False beacons.** A shipyard service, once per visit: 25 scrap, both rivals lose 0.8 node, no dock time.
+
+### The nemesis
+
+- Each run draws one of three Concord commanders: Captain Ilse Marrow (a fore gun that reaches 5), Wing-Speaker
+  Tobiah Rask (gunship wings and Joint Fire) and Engineer-Prime Dessa Koyl (plate, a short cutting beam, repairs).
+  They wait on a battle node, marked on the map with a red crosshair.
+- **Hail.** Reaching them opens a hail: portrait, what they say (it changes with what happened last time and quotes
+  the scar you gave them), a dossier, their fleet, and four replies with their effect spelled out: Edict, Open fire,
+  Board the relay (4 Ordinals), Say nothing.
+- **Breaking off.** Below rank III the commander's ship leaves the field at 40 percent hull, after the enemy has
+  acted. Killing it means taking it from above that line to nothing in one turn. The ship's card says the number.
+- **Coming back.** A survivor moves to a node further on, a rank higher: +6 hull, the next rank's escorts, and a refit
+  against whatever did the most damage (lance baffles, flank plating, point defence or sealed decks), with a scar named
+  for it in the dossier. At rank III the ship fights to the end.
+- **Slipping past** costs 0.3 node and moves them ahead of you. With no lane left they fall back to the Concord main
+  fleet and the Concord gains 0.3 node.
+- **Killing them** takes their trophy relic, an extra reward card, and sets the Concord back 1.5 nodes.
+
+### Relics
+
+Ten passive relics: seven in a pool (every elite carries one) and one trophy per commander. They are listed under the
+fleet cards on the map; hovering one shows what it does.
+
+### Numbers (200 bot runs, `Tools/sim/race_nemesis_sim.cs`)
+
+| | Before M3 | After |
+| --- | --- | --- |
+| Runs won / fleet lost / outpaced | 107 / 46 / 47 | 123 / 39 / 38 |
+| Runs that met their commander | - | 169 |
+| Nemesis fights: won / fleet lost | - | 229 / 15 of 256 |
+| Commander killed / broke off / stand-off | - | 34 / 196 / 26 |
+| Runs that reached rank III | - | 60 |
+| Jump lanes taken | - | 44 |
+| Runs that saw mined lanes | - | 35 |
+
+The first version let a commander with no lane left join the gate boss. The bot then won 14 of 141 gate fights, so
+that rule was replaced with the fall-back. The bot almost never kills a commander because it does not plan burst;
+a person with an Expended lance volley can (Quiet Ledger breaks off at 8 hull of 20, and an Expended volley does 15
+through shields).
+
+### Art
+
+Three commander portraits and the nemesis map icon: 40 generations, logged in `ArtSource/pixellab-log.csv`.
+
+### How it was checked
+
+181 EditMode tests pass, 26 of them new (`NemesisTests.cs`). In Play Mode the map with the nemesis node and jump
+lanes, the hail, a nemesis battle answered with Open fire, the commander breaking off, the reward and the map with
+mined lanes and a relic were each put on screen and captured (`ArtSource/Screenshots/m3_*.png`). The states were
+driven from script, not with a mouse.
+
+### Still open
+
+- The bot wins 61 percent of runs. A rank I nemesis fight is easier than the battle node it replaces (229 of 256 won).
+  Commander hull or escorts may need to go up once a person has played them.
+- The commanders reuse the frigate, tender and trimaran sprites. Scars and refits are text in the dossier and on the
+  ship's card, not yet marks on the portrait or the hull.
+- Hail replies are the same four for every commander. The spec wants replies that depend on shared history.
+- Interception (a rival fleet you can fight to slow it) is covered only by the nemesis, and only for the Concord.
+  The Chorus marker still does nothing but change the epilogue.
+- No nemesis carries over between runs.

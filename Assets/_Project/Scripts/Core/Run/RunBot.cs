@@ -30,8 +30,15 @@ namespace Silence.Core.Run
             {
                 case RunPhase.Map:
                 {
-                    var next = RunRules.Choices(r).OrderByDescending(n => RouteScore(r, n)).ThenBy(n => n.Id).First();
+                    var next = RunRules.Choices(r).OrderByDescending(n => RouteScore(r, c, n)).ThenBy(n => n.Id).First();
                     RunRules.Travel(r, c, next.Id);
+                    break;
+                }
+                case RunPhase.Hail:
+                {
+                    // The plain player: says nothing, except at rank III where a grudge no longer matters and the extra command does.
+                    int reply = c.HailReplies.FindIndex(x => x.Id == (r.Nemesis.Rank >= 3 ? "fire" : "silence"));
+                    if (reply < 0 || RunRules.ChooseHail(r, c, reply) != null) RunRules.ChooseHail(r, c, c.HailReplies.Count - 1);
                     break;
                 }
                 case RunPhase.Battle:
@@ -85,18 +92,22 @@ namespace Silence.Core.Run
                     if (r.Escort.Alive) RunRules.Repair(r, c, RunRules.EscortIndex);
                     while (r.JunkCount() > 0 && RunRules.RemoveJunk(r, c) == null) { }
                     while (r.Darts < r.MaxDarts && r.Scrap >= c.Config.DartCost + 10 && RunRules.BuyDart(r, c) == null) { }
+                    if (RunRules.ConcordAhead(r) && r.Scrap >= c.Config.SabotageCost + 20) RunRules.Sabotage(r, c);
                     while (r.Ordinals <= r.MaxOrdinals - c.Config.OrdinalsPerPurchase && RunRules.BuyOrdinals(r, c) == null) { }
                     RunRules.LeaveShipyard(r, c);
                     break;
             }
         }
 
-        static int RouteScore(RunState r, MapNode n)
+        static int RouteScore(RunState r, RunContent c, MapNode n)
         {
             var flag = r.Flagship;
             bool hurt = flag.Hull * 10 < flag.MaxHull * 6 || !r.Escort.Alive || r.JunkCount() >= 2;
+            // A jump lane is worth its hull only when the race is being lost and the fleet can afford it.
+            if (RunRules.IsJump(r, n.Id)) return !hurt && RunRules.ConcordAhead(r) ? 70 : 0;
             switch (n.Kind)
             {
+                case NodeKind.Nemesis: return hurt ? 5 : 42;
                 case NodeKind.Shipyard: return hurt ? 100 : 20;
                 case NodeKind.Event: return 50;
                 case NodeKind.Battle: return hurt ? 30 : 45;

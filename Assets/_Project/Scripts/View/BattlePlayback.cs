@@ -183,6 +183,15 @@ namespace Silence.View
                     yield return Wait(v.Capital ? 0.45f : 0.12f);
                     break;
 
+                case EventKind.Escaped:
+                    if (v == null) break;
+                    Floater(v.Root.position + Vector3.up * 0.8f, "BREAKS OFF", Skin.Warn, 28);
+                    Sfx.Play("sfx_jump");
+                    yield return Wait(0.5f);
+                    board.Remove(v.Id);
+                    yield return Wait(0.2f);
+                    break;
+
                 case EventKind.Critical:
                     if (v != null) Floater(v.Root.position + Vector3.up * 0.8f, "CRITICAL", Skin.Warn, 28);
                     yield return Wait(0.15f);

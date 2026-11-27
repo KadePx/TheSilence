@@ -87,6 +87,55 @@ namespace Silence.Core.Run
         public int Price = 45;
     }
 
+    /// <summary>A passive rule change carried for the rest of the run. All effects are plain numbers.</summary>
+    public sealed class RelicDef
+    {
+        public string Id;
+        public string Name;
+        public string Text = "";
+        /// <summary>Taken from a named commander; never in the elite pool.</summary>
+        public bool Trophy;
+        public int FirstTurnCommand, MaxDarts, FlagshipHull, HeatCap, Shields;
+        /// <summary>Tenths of a node per jump added to both rivals' pace (negative slows them).</summary>
+        public int RivalRate;
+        /// <summary>Percent added to battle scrap.</summary>
+        public int ScrapPercent;
+        public int OrdinalsPerVictory, FieldRepair;
+        public bool FreeJumps;
+    }
+
+    /// <summary>One way to answer a commander's hail. The effect is code, keyed by <see cref="Id"/>.</summary>
+    public sealed class HailReply
+    {
+        /// <summary>"edict", "fire", "board" or "silence".</summary>
+        public string Id;
+        public string Label = "";
+        public string Tag = "";
+        public string Effect = "";
+        /// <summary>Ordinals expended to give this reply.</summary>
+        public int Ordinals;
+    }
+
+    /// <summary>A named rival commander: ship, escorts by rank, and what they say.</summary>
+    public sealed class NemesisDef
+    {
+        public string Id;
+        public string Name;
+        public string Title = "";
+        /// <summary>Unit id of the commander's own ship.</summary>
+        public string Ship;
+        public string Portrait = "";
+        public string Trait = "";
+        public string Tactic = "";
+        /// <summary>Escorts at rank 1, 2 and 3.</summary>
+        public List<EncounterUnit>[] Escorts = { new List<EncounterUnit>(), new List<EncounterUnit>(), new List<EncounterUnit>() };
+        /// <summary>Hail lines: first meeting, after escaping you, after a stand-off, and at rank 3.</summary>
+        public string HailFirst = "", HailEscaped = "", HailStandoff = "", HailFinal = "";
+        /// <summary>Relic id taken from the wreck.</summary>
+        public string Trophy = "";
+        public int Scrap;
+    }
+
     /// <summary>Numbers for the run loop. Everything here is a first guess, tuned by the balance sims.</summary>
     public sealed class RunConfig
     {
@@ -110,6 +159,17 @@ namespace Silence.Core.Run
         public int ConcordStart = 6, ChorusStart = 2;
         public int WithdrawalDelay = 10, LongBattleTurns = 10, LongBattleDelay = 4, ShipyardDelayPerPurchase = 2;
         public int FlagshipRebuildOrdinals = 8, FlagshipRebuildMaxHullLoss = 4;
+        /// <summary>Jump lanes per sector, and the hull each ship pays to take one.</summary>
+        public int JumpLanes = 2, JumpHullCost = 4;
+        /// <summary>When the Concord leads by this much (tenths of a node), ordinary lanes are mined: each ship loses MineDamage hull per jump.</summary>
+        public int MineLead = 10, MineDamage = 2;
+        /// <summary>Killing the commander sets the Concord back this far; slipping past them costs NemesisDodgeDelay.</summary>
+        public int NemesisSlow = 15, NemesisDodgeDelay = 3;
+        /// <summary>A commander below rank 3 breaks off at this percent of hull; each rank adds NemesisRankHull.</summary>
+        public int NemesisFleePercent = 40, NemesisRankHull = 6;
+        public int HailEdictDamage = 2, HailEdictScrapPercent = 150, HailBoardTurns = 2;
+        /// <summary>Shipyard service: false beacons set both rivals back.</summary>
+        public int SabotageCost = 25, SabotageAmount = 8;
         public List<string> StarterModules = new List<string>();
         public List<DeckCard> StarterCards = new List<DeckCard>();
         public List<string> Slots = new List<string>();
@@ -123,9 +183,14 @@ namespace Silence.Core.Run
         public List<EventDef> Events = new List<EventDef>();
         public List<ModuleDef> Modules = new List<ModuleDef>();
         public List<RewardCard> Rewards = new List<RewardCard>();
+        public List<RelicDef> Relics = new List<RelicDef>();
+        public List<NemesisDef> Nemeses = new List<NemesisDef>();
+        public List<HailReply> HailReplies = new List<HailReply>();
 
         public EncounterDef Encounter(string id) => Encounters.Find(e => e.Id == id) ?? throw new ArgumentException($"unknown encounter '{id}'");
         public EventDef Event(string id) => Events.Find(e => e.Id == id) ?? throw new ArgumentException($"unknown event '{id}'");
+        public RelicDef Relic(string id) => Relics.Find(x => x.Id == id) ?? throw new ArgumentException($"unknown relic '{id}'");
+        public NemesisDef Nemesis(string id) => Nemeses.Find(x => x.Id == id) ?? throw new ArgumentException($"unknown nemesis '{id}'");
         public ModuleDef Module(string id) => Modules.Find(m => m.Id == id) ?? throw new ArgumentException($"unknown module '{id}'");
     }
 }

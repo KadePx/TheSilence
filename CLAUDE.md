@@ -22,7 +22,7 @@ the sprint plan.
 - Dependencies flow Core <- Data <- View <- Meta <- Editor. Meta uses View's UI kit (`Ui`, `Skin`,
   `CardView`) and hands battles to the Battle scene through `BattleLauncher`. Tests reference Core and Data only.
 - Content: cards and unit templates are code in Core (`PaperCards`, `PaperUnits`; their effects and AI are
-  code). Encounters, events, modules, the reward pool and run tuning are JSON in
+  code). Encounters, events, modules, the reward pool, nemesis commanders, hail replies, relics and run tuning are JSON in
   `Assets/_Project/Data/Resources/Content/`, loaded by `Silence.Data.ContentLoader`.
 - Screens build their UI in code at runtime (no scene wiring). Scenes hold only a camera and a light; a
   `RuntimeInitializeOnLoadMethod` adds the right screen object by scene name.
@@ -49,6 +49,8 @@ the sprint plan.
 - Balance and mechanic-usage numbers: evaluate `Tools/sim/balance_sim.cs` in the editor (Unity pipeline `script_eval`
   with `file`). 150 bot runs; reports win rates per encounter, battle length, dodges, heat, and how often each card is
   played when drawn. Writes `Temp/sim.txt`. The bot is weak, so read trends, not absolutes.
+- Race and nemesis numbers: `Tools/sim/race_nemesis_sim.cs` the same way (200 bot runs; nemesis fights by commander,
+  jump lanes taken, mined lanes, where runs are lost). Writes `Temp/m3sim.txt`.
 
 ## Art
 

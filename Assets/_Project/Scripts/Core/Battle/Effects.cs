@@ -1,3 +1,4 @@
+using System;
 using System.Linq;
 using Silence.Core.Hex;
 
@@ -48,7 +49,7 @@ namespace Silence.Core.Battle
                 dmg += ExpendBonus;
                 flags.IgnoreShields = ExpendIgnoresShields;
             }
-            if (IsLance) dmg += s.LanceBonus;
+            if (IsLance) dmg = Math.Max(0, dmg + s.LanceBonus - t.LanceWard);
             if (b.WaymindPrimed)
             {
                 flags.IgnoreArmor = true;

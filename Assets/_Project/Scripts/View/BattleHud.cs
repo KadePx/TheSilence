@@ -467,11 +467,16 @@ namespace Silence.View
         {
             bool enemy = u.Side == Side.Enemy;
             var intent = enemy ? Battle.Intents.FirstOrDefault(i => i.UnitId == u.Id) : null;
-            float h = u.IsCapital ? 190 : 118;
+            // A commander's card also says when the ship will run and what it was refitted against.
+            var notes = new List<string>();
+            if (u.FleesAtHull > 0) notes.Add($"Breaks off at {u.FleesAtHull} hull, after the enemy acts.");
+            if (u.LanceWard > 0) notes.Add($"Lance baffles: lance hits deal {u.LanceWard} less.");
+            if (u.CraftWard > 0) notes.Add($"Point defence: darts deal {u.CraftWard} less.");
+            float h = (u.IsCapital ? 190 : 118) + notes.Count * 34;
             var card = Ui.Panel(unitPanel, "Target", 0, y, FleetW, h);
             var t = card.transform;
             Ui.Heading(t, u.Name, 16, 16, 12, 200, 20, TextAlignmentOptions.Left, enemy ? Skin.Bad : Skin.Text);
-            Ui.Stamp(t, enemy ? (u.Kind == UnitKind.Torpedo ? "Torpedo" : u.IsCapital ? "Enemy" : "Craft") : "Dart", 12, 190, 16, 94, 14,
+            Ui.Stamp(t, enemy ? (u.Kind == UnitKind.Torpedo ? "Torpedo" : u.IsCommander ? "Commander" : u.IsCapital ? "Enemy" : "Craft") : "Dart", 12, 190, 16, 94, 14,
                 TextAlignmentOptions.Right, Skin.BrassDark);
             float frac = u.MaxHull > 0 ? u.Hull / (float)u.MaxHull : 0f;
             Ui.Stamp(t, "Hull", 12, 16, 41, 36, 14, TextAlignmentOptions.Left, Skin.Dim);
@@ -496,7 +501,9 @@ namespace Silence.View
                 }
             }
             else if (u.Kind == UnitKind.Torpedo) text = $"Hits for {u.AttackDamage}. One hit destroys it.";
+            else if (u.IsCapital) text = u.StunnedThroughTurn >= Battle.Turn ? "Relay cut: no orders this turn." : "No orders this turn.";
             else text = u.CraftActed ? "Acted this turn." : $"Moves {u.Move + u.CraftBonusMove}, then attacks for {u.AttackDamage}.";
+            foreach (string note in notes) text += "\n<color=#f0a040>" + note + "</color>";
             var body = Ui.Label(t, char.ToUpperInvariant(text[0]) + text.Substring(1), Skin.Stencil, 12, Skin.Text, 16, ty, FleetW - 32, h - ty - 10);
             body.lineSpacing = 30f;
         }
@@ -721,6 +728,7 @@ namespace Silence.View
                 case EventKind.IntentCancelled: color = "8cc47a"; break;
                 case EventKind.Victory:
                 case EventKind.Defeat:
+                case EventKind.Escaped:
                 case EventKind.Withdrawal: color = "c9a24a"; break;
                 case EventKind.Attack:
                 case EventKind.Spawned:
@@ -838,6 +846,8 @@ namespace Silence.View
             string line = Battle.Outcome == BattleOutcome.Victory ? "Every enemy capital ship is destroyed."
                 : Battle.Outcome == BattleOutcome.Defeat ? "Your last capital ship is gone. The fleet is lost."
                 : $"After {Battle.Turn} turns neither fleet can finish the other. Both disengage.";
+            var ran = Battle.Units.Find(u => u.Escaped);
+            if (ran != null && Battle.Outcome != BattleOutcome.Defeat) line = $"{ran.Name} broke off with {ran.Hull} hull and jumped clear. " + (Battle.Outcome == BattleOutcome.Victory ? "The rest of the fleet is destroyed." : "Both fleets disengage.");
             Ui.Body(d, line, 22, 40, 150, 680, 34, TextAlignmentOptions.Center);
 
             var ships = Battle.Units.Where(u => u.Side == Side.Player && u.IsCapital).Select(u =>

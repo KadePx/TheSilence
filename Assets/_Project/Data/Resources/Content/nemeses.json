@@ -1,0 +1,284 @@
+{
+ "hailReplies": [
+  {
+   "id": "edict",
+   "label": "By decree of the Prime: power down and be catalogued.",
+   "tag": "Edict",
+   "ordinals": 0
+  },
+  {
+   "id": "fire",
+   "label": "Open fire.",
+   "tag": "First strike",
+   "ordinals": 0
+  },
+  {
+   "id": "board",
+   "label": "Board their relay and cut the channel.",
+   "tag": "Boarding",
+   "ordinals": 4
+  },
+  {
+   "id": "silence",
+   "label": "Say nothing.",
+   "tag": "Silence",
+   "ordinals": 0
+  }
+ ],
+ "nemeses": [
+  {
+   "id": "marrow",
+   "name": "Captain Ilse Marrow",
+   "title": "The Surveyor",
+   "ship": "quiet_ledger",
+   "portrait": "portrait_marrow",
+   "trait": "Marksman: her fore gun reaches 5 hexes.",
+   "tactic": "Quiet Ledger keeps her bow on you and fires the Survey Driver down it. Get out of her fore arc before it fires.",
+   "hailFirst": "Sixth Verdict. I charted this reef before your Prime had a number for it. Every rock here is in my ledger. So are you, now.",
+   "hailEscaped": "You cost me {scar}. I have had it logged, costed and paid for. Shall we go again?",
+   "hailStandoff": "You ran the clock out on me. I do not mind. I am a patient woman, and yours is a slow ship.",
+   "hailFinal": "No more soundings. Quiet Ledger does not leave this time, and neither do you.",
+   "trophy": "marrows_ledger",
+   "scrap": 34,
+   "rank1": [
+    {
+     "unit": "skiff",
+     "col": 7,
+     "row": 1,
+     "speed": 2,
+     "facing": "W"
+    }
+   ],
+   "rank2": [
+    {
+     "unit": "skiff",
+     "col": 7,
+     "row": 1,
+     "speed": 2,
+     "facing": "W"
+    },
+    {
+     "unit": "skiff",
+     "col": 7,
+     "row": 5,
+     "speed": 2,
+     "facing": "W"
+    }
+   ],
+   "rank3": [
+    {
+     "unit": "skiff",
+     "col": 7,
+     "row": 1,
+     "speed": 2,
+     "facing": "W"
+    },
+    {
+     "unit": "frigate",
+     "col": 7,
+     "row": 5,
+     "speed": 2,
+     "facing": "W"
+    }
+   ]
+  },
+  {
+   "id": "rask",
+   "name": "Wing-Speaker Tobiah Rask",
+   "title": "The Open Hand",
+   "ship": "open_hand",
+   "portrait": "portrait_rask",
+   "trait": "Wing leader: launches two gunships at a time and calls Joint Fire.",
+   "tactic": "Open Hand hangs back and fights through its gunships. Kill the wing as it launches, or go through it for the tender.",
+   "hailFirst": "Wing-Speaker Rask, for forty crews who voted to be here. Nobody voted for you. Nobody ever has, have they?",
+   "hailEscaped": "We held a count after last time: {scar}, and nine names. The vote to find you again was unanimous.",
+   "hailStandoff": "You would not finish it and neither could we. The crews want it settled. So do I.",
+   "hailFinal": "The wing has voted. No recall order this time. Whatever is left of us lands on you.",
+   "trophy": "rasks_beacon",
+   "scrap": 34,
+   "rank1": [
+    {
+     "unit": "skiff",
+     "col": 7,
+     "row": 1,
+     "speed": 2,
+     "facing": "W"
+    },
+    {
+     "unit": "gunship",
+     "col": 7,
+     "row": 5,
+     "speed": 0,
+     "facing": "W"
+    }
+   ],
+   "rank2": [
+    {
+     "unit": "skiff",
+     "col": 7,
+     "row": 1,
+     "speed": 2,
+     "facing": "W"
+    },
+    {
+     "unit": "gunship",
+     "col": 7,
+     "row": 5,
+     "speed": 0,
+     "facing": "W"
+    },
+    {
+     "unit": "gunship",
+     "col": 8,
+     "row": 5,
+     "speed": 0,
+     "facing": "W"
+    }
+   ],
+   "rank3": [
+    {
+     "unit": "frigate",
+     "col": 7,
+     "row": 1,
+     "speed": 2,
+     "facing": "W"
+    },
+    {
+     "unit": "gunship",
+     "col": 7,
+     "row": 5,
+     "speed": 0,
+     "facing": "W"
+    },
+    {
+     "unit": "gunship",
+     "col": 8,
+     "row": 5,
+     "speed": 0,
+     "facing": "W"
+    },
+    {
+     "unit": "gunship",
+     "col": 8,
+     "row": 1,
+     "speed": 0,
+     "facing": "W"
+    }
+   ]
+  },
+  {
+   "id": "koyl",
+   "name": "Engineer-Prime Dessa Koyl",
+   "title": "The Mender",
+   "ship": "menders_oath",
+   "portrait": "portrait_koyl",
+   "trait": "Yard ship: thick fore plate, and she mends her escorts.",
+   "tactic": "Mender's Oath repairs whatever you leave alive and cuts anything that comes within 2 hexes. Kill the escort outright or do not start on it.",
+   "hailFirst": "Koyl, Mender's Oath. I have built better ships than yours out of worse wrecks. Hold still and I will show you how it is done.",
+   "hailEscaped": "You left me {scar}. I fixed it in a day. I keep the slag on my desk.",
+   "hailStandoff": "A draw. I do not build things to draw.",
+   "hailFinal": "I have welded the escape pods shut. Mine, not yours. Come on.",
+   "trophy": "koyls_plate",
+   "scrap": 34,
+   "rank1": [
+    {
+     "unit": "skiff",
+     "col": 7,
+     "row": 1,
+     "speed": 2,
+     "facing": "W"
+    }
+   ],
+   "rank2": [
+    {
+     "unit": "frigate",
+     "col": 7,
+     "row": 1,
+     "speed": 2,
+     "facing": "W"
+    }
+   ],
+   "rank3": [
+    {
+     "unit": "frigate",
+     "col": 7,
+     "row": 1,
+     "speed": 2,
+     "facing": "W"
+    },
+    {
+     "unit": "skiff",
+     "col": 7,
+     "row": 5,
+     "speed": 2,
+     "facing": "W"
+    }
+   ]
+  }
+ ],
+ "relics": [
+  {
+   "id": "marrows_ledger",
+   "name": "Marrow's Ledger",
+   "text": "+1 command on the first turn of every battle.",
+   "trophy": true,
+   "firstTurnCommand": 1
+  },
+  {
+   "id": "rasks_beacon",
+   "name": "Rask's Recall Beacon",
+   "text": "The hangar holds 2 more darts.",
+   "trophy": true,
+   "maxDarts": 2
+  },
+  {
+   "id": "koyls_plate",
+   "name": "Koyl's Yard Plate",
+   "text": "Flagship +6 maximum hull.",
+   "trophy": true,
+   "flagshipHull": 6
+  },
+  {
+   "id": "reef_charts",
+   "name": "Reef Charts",
+   "text": "Both rival fleets move a little slower on every jump.",
+   "rivalRate": -1
+  },
+  {
+   "id": "tithe_ledger",
+   "name": "Tithe Ledger",
+   "text": "+25 percent scrap from every battle.",
+   "scrapPercent": 25
+  },
+  {
+   "id": "vat_seal",
+   "name": "Vat Seal",
+   "text": "+2 Ordinals after every victory.",
+   "ordinalsPerVictory": 2
+  },
+  {
+   "id": "cold_core",
+   "name": "Cold Core",
+   "text": "Flagship heat cap +2.",
+   "heatCap": 2
+  },
+  {
+   "id": "aegis_lattice",
+   "name": "Aegis Lattice",
+   "text": "Flagship shields +1 on every arc.",
+   "shields": 1
+  },
+  {
+   "id": "quartermasters_writ",
+   "name": "Quartermaster's Writ",
+   "text": "Field repairs mend 3 more hull.",
+   "fieldRepair": 3
+  },
+  {
+   "id": "gate_codes",
+   "name": "Old Gate Codes",
+   "text": "Jump lanes cost no hull.",
+   "freeJumps": true
+  }
+ ]
+}

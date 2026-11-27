@@ -76,11 +76,16 @@ namespace Silence.Core.Battle
                 }
             }
 
+            if (EnemyDamageBonus != 0)
+                foreach (var i in Intents)
+                    if (i.Kind == IntentKind.Broadside || i.Kind == IntentKind.CraftAttack || i.Kind == IntentKind.LaunchTorpedo) i.Bonus += EnemyDamageBonus;
+
             foreach (var i in Intents) Emit(EventKind.IntentDeclared, i.UnitId, i.TargetId, i.Damage + i.Bonus, i.Describe(this));
         }
 
         Intent PlanFor(Unit u)
         {
+            if (u.StunnedThroughTurn >= Turn) return null;
             var nearest = NearestPlayerCapital(u.Pos);
             switch (u.Ai)
             {
@@ -142,7 +147,7 @@ namespace Silence.Core.Battle
 
         /// <summary>The player capital ship an enemy at this hex goes for: the nearest, but the flagship wins when it is at most one hex further.</summary>
         public Unit NearestPlayerCapital(HexCoord from)
-            => LiveUnits(Side.Player).Where(p => p.IsCapital)
+            => EnemyFocusFlagship && Flagship != null ? Flagship : LiveUnits(Side.Player).Where(p => p.IsCapital)
                 .OrderBy(p => p.Pos.DistanceTo(from) - (p.IsFlagship ? 1 : 0)).ThenBy(p => p.IsFlagship ? 0 : 1).ThenBy(p => p.Id).FirstOrDefault();
 
         /// <summary>Boarding Action and similar: the unit skips its intent this turn.</summary>

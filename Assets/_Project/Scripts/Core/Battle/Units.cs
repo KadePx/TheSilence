@@ -104,6 +104,20 @@ namespace Silence.Core.Battle
         public bool IsFlagship;
         public bool Alive = true;
 
+        // ---- nemesis commanders ----
+        /// <summary>A named rival commander's ship: damage to it is tallied by source so it can adapt.</summary>
+        public bool IsCommander;
+        /// <summary>At or below this hull after the enemy has acted, the ship breaks off and leaves the field. 0 = fights to the end.</summary>
+        public int FleesAtHull;
+        /// <summary>Left the battle alive (see <see cref="FleesAtHull"/>).</summary>
+        public bool Escaped;
+        /// <summary>Damage taken off every lance hit (a commander adapted to lances).</summary>
+        public int LanceWard;
+        /// <summary>Damage taken off every small-craft attack (a commander adapted to darts).</summary>
+        public int CraftWard;
+        /// <summary>The unit plans no intent on turns up to and including this one (its relay was boarded).</summary>
+        public int StunnedThroughTurn;
+
         public HexCoord Pos;
         public HexDirection Facing;
 

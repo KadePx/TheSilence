@@ -1,4 +1,4 @@
-﻿using Silence.Core.Hex;
+using Silence.Core.Hex;
 
 namespace Silence.Core.Battle
 {
@@ -10,6 +10,7 @@ namespace Silence.Core.Battle
         Attack, Miss, Damage, Critical, Destroyed,
         ShieldsRaised, ShieldsRegen, Heat, ReactorStrain, Repaired, Buff, Ordinals,
         Victory, Defeat, Withdrawal,
+        Escaped,
     }
 
     /// <summary>

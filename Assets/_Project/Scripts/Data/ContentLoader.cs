@@ -23,6 +23,7 @@ namespace Silence.Data
             ReadRun(Text("Content/run"), content);
             ReadEncounters(Text("Content/encounters"), content);
             ReadEvents(Text("Content/events"), content);
+            ReadNemeses(Text("Content/nemeses"), content);
             cached = content;
             return content;
         }
@@ -50,6 +51,8 @@ namespace Silence.Data
             public int rewardCards, ordinalsPerVictory, fieldRepair, playerStartCol, enemyAdvance, concordRate, chorusRate, rivalSpread, concordStart, chorusStart;
             public int withdrawalDelay, longBattleTurns, longBattleDelay, shipyardDelayPerPurchase;
             public int flagshipRebuildOrdinals, flagshipRebuildMaxHullLoss;
+            public int jumpLanes, jumpHullCost, mineLead, mineDamage, nemesisSlow, nemesisDodgeDelay, nemesisFleePercent, nemesisRankHull;
+            public int hailEdictDamage, hailEdictScrapPercent, hailBoardTurns, sabotageCost, sabotageAmount;
             public string[] slots;
             public string[] starterModules;
             public CardDto[] starterCards;
@@ -83,6 +86,10 @@ namespace Silence.Data
                 WithdrawalDelay = c.withdrawalDelay, LongBattleTurns = c.longBattleTurns, LongBattleDelay = c.longBattleDelay,
                 ShipyardDelayPerPurchase = c.shipyardDelayPerPurchase,
                 FlagshipRebuildOrdinals = c.flagshipRebuildOrdinals, FlagshipRebuildMaxHullLoss = c.flagshipRebuildMaxHullLoss,
+                JumpLanes = c.jumpLanes, JumpHullCost = c.jumpHullCost, MineLead = c.mineLead, MineDamage = c.mineDamage,
+                NemesisSlow = c.nemesisSlow, NemesisDodgeDelay = c.nemesisDodgeDelay, NemesisFleePercent = c.nemesisFleePercent, NemesisRankHull = c.nemesisRankHull,
+                HailEdictDamage = c.hailEdictDamage, HailEdictScrapPercent = c.hailEdictScrapPercent, HailBoardTurns = c.hailBoardTurns,
+                SabotageCost = c.sabotageCost, SabotageAmount = c.sabotageAmount,
                 Slots = new List<string>(c.slots), StarterModules = new List<string>(c.starterModules),
             };
             foreach (var s in c.starterCards) content.Config.StarterCards.Add(new DeckCard(s.card, s.ship));
@@ -133,6 +140,55 @@ namespace Silence.Data
                 foreach (var t in e.terrain ?? new TerrainDto[0]) def.Terrain.Add((t.col, t.row, t.asteroid));
                 content.Encounters.Add(def);
             }
+        }
+
+        // ---------------------------------------------------------------- nemeses.json
+
+        [Serializable] class ReplyDto { public string id, label, tag; public int ordinals; }
+
+        [Serializable]
+        class NemesisDto
+        {
+            public string id, name, title, ship, portrait, trait, tactic, hailFirst, hailEscaped, hailStandoff, hailFinal, trophy;
+            public int scrap;
+            public UnitDto[] rank1, rank2, rank3;
+        }
+
+        [Serializable]
+        class RelicDto
+        {
+            public string id, name, text;
+            public bool trophy, freeJumps;
+            public int firstTurnCommand, maxDarts, flagshipHull, heatCap, shields, rivalRate, scrapPercent, ordinalsPerVictory, fieldRepair;
+        }
+
+        [Serializable] class NemesesDto { public ReplyDto[] hailReplies; public NemesisDto[] nemeses; public RelicDto[] relics; }
+
+        static void ReadNemeses(string json, RunContent content)
+        {
+            var dto = JsonUtility.FromJson<NemesesDto>(json);
+            foreach (var h in dto.hailReplies ?? new ReplyDto[0])
+                content.HailReplies.Add(new HailReply { Id = h.id, Label = h.label, Tag = h.tag ?? "", Ordinals = h.ordinals });
+            foreach (var n in dto.nemeses ?? new NemesisDto[0])
+            {
+                var def = new NemesisDef
+                {
+                    Id = n.id, Name = n.name, Title = n.title ?? "", Ship = n.ship, Portrait = n.portrait ?? "", Trait = n.trait ?? "", Tactic = n.tactic ?? "",
+                    HailFirst = n.hailFirst ?? "", HailEscaped = n.hailEscaped ?? "", HailStandoff = n.hailStandoff ?? "", HailFinal = n.hailFinal ?? "",
+                    Trophy = n.trophy ?? "", Scrap = n.scrap,
+                };
+                var ranks = new[] { n.rank1, n.rank2, n.rank3 };
+                for (int i = 0; i < 3; i++)
+                    foreach (var u in ranks[i] ?? new UnitDto[0]) def.Escorts[i].Add(Unit(u));
+                content.Nemeses.Add(def);
+            }
+            foreach (var x in dto.relics ?? new RelicDto[0])
+                content.Relics.Add(new RelicDef
+                {
+                    Id = x.id, Name = x.name, Text = x.text ?? "", Trophy = x.trophy, FreeJumps = x.freeJumps,
+                    FirstTurnCommand = x.firstTurnCommand, MaxDarts = x.maxDarts, FlagshipHull = x.flagshipHull, HeatCap = x.heatCap, Shields = x.shields,
+                    RivalRate = x.rivalRate, ScrapPercent = x.scrapPercent, OrdinalsPerVictory = x.ordinalsPerVictory, FieldRepair = x.fieldRepair,
+                });
         }
 
         // ---------------------------------------------------------------- events.json

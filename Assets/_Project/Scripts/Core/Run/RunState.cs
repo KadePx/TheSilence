@@ -3,11 +3,13 @@ using System.Collections.Generic;
 
 namespace Silence.Core.Run
 {
-    public enum RunPhase { Map = 0, Battle = 1, Reward = 2, Event = 3, EventResult = 4, Shipyard = 5, Over = 6 }
+    public enum RunPhase { Map = 0, Battle = 1, Reward = 2, Event = 3, EventResult = 4, Shipyard = 5, Over = 6, Hail = 7 }
 
     public enum RunResult { Ongoing = 0, Victory = 1, Defeat = 2, Outpaced = 3 }
 
-    public enum NodeKind { Battle = 0, Elite = 1, Event = 2, Shipyard = 3, Boss = 4 }
+    public enum NodeKind { Battle = 0, Elite = 1, Event = 2, Shipyard = 3, Boss = 4, Nemesis = 5 }
+
+    public enum NemesisOutcome { None = 0, Escaped = 1, Standoff = 2, Killed = 3, Dodged = 4 }
 
     /// <summary>A capital ship between battles. Index 0 in <see cref="RunState.Ships"/> is the flagship, 1 the escort.</summary>
     [Serializable]
@@ -47,6 +49,8 @@ namespace Silence.Core.Run
         /// <summary>Event id for event nodes.</summary>
         public string Event = "";
         public List<int> Next = new List<int>();
+        /// <summary>Jump lanes: nodes two layers on that can be reached from here at a cost in hull.</summary>
+        public List<int> Jumps = new List<int>();
         public bool Visited;
     }
 
@@ -59,6 +63,36 @@ namespace Silence.Core.Run
         public int Ordinals;
         public List<DeckCard> Cards = new List<DeckCard>();
         public string Note = "";
+        /// <summary>A relic that came with the victory (already in <see cref="RunState.Relics"/>), or empty.</summary>
+        public string Relic = "";
+    }
+
+    /// <summary>
+    /// The rival commander hunting this run. Each meeting they survive leaves a mark: a rank, a grudge,
+    /// a scar from whatever hurt them most and a refit against it.
+    /// </summary>
+    [Serializable]
+    public sealed class NemesisState
+    {
+        public string Id = "";
+        public bool Alive;
+        /// <summary>1 to 3. At rank 3 the commander no longer breaks off.</summary>
+        public int Rank = 1;
+        /// <summary>0 to 3. Rises with every meeting; at 3 the next return is at rank 3.</summary>
+        public int Grudge;
+        public int Meetings;
+        /// <summary>Map node where the commander waits, or -1.</summary>
+        public int Node = -1;
+        /// <summary>What that node was before the commander took it, to put back when they move on.</summary>
+        public NodeKind NodeWas = NodeKind.Battle;
+        /// <summary>No lane left to wait on in this sector: the commander has gone back to the Concord main fleet.</summary>
+        public bool FellBack;
+        /// <summary>What the ship was refitted against after the last meeting: "lance", "guns", "craft", "other" or empty.</summary>
+        public string Adaptation = "";
+        public List<string> Scars = new List<string>();
+        public NemesisOutcome LastOutcome;
+
+        public bool Hunting => Alive && !FellBack && !string.IsNullOrEmpty(Id);
     }
 
     /// <summary>What a shipyard has on offer this visit.</summary>
@@ -71,6 +105,8 @@ namespace Silence.Core.Run
         /// <summary>Module ids offered as a refit, at most one per slot.</summary>
         public List<string> Modules = new List<string>();
         public int Purchases;
+        /// <summary>False beacons have been seeded from this yard (once per visit).</summary>
+        public bool Sabotaged;
     }
 
     /// <summary>
@@ -111,6 +147,14 @@ namespace Silence.Core.Run
         public int ChorusProgress;
         /// <summary>Set by events: the sector boss brings an extra escort.</summary>
         public bool VennEnraged;
+
+        public NemesisState Nemesis = new NemesisState();
+        /// <summary>Relic ids held. Their effects are numbers in the relic definitions.</summary>
+        public List<string> Relics = new List<string>();
+        /// <summary>The reply given to the commander's hail, applied to the pending battle.</summary>
+        public string PendingHail = "";
+        /// <summary>What the last jump cost or ran into (mines, a rough lane), for the map to show once.</summary>
+        public string TravelNote = "";
 
         public RewardOffer Reward = new RewardOffer();
         public ShopState Shop = new ShopState();

@@ -125,9 +125,9 @@ namespace Silence.Meta
         {
             var run = Run;
             var content = Content;
-            var enc = content.Encounter(run.PendingEncounter);
+            var enc = RunRules.PendingEncounterDef(run, content);
             BattleLauncher.Create = () => RunRules.BuildBattle(run, content);
-            BattleLauncher.Subtitle = enc.Tier == 3 ? "Sector boss" : enc.Tier == 2 ? "Elite" : "";
+            BattleLauncher.Subtitle = enc.Tier == 3 ? "Sector boss" : enc.Tier == 5 ? "Nemesis" : enc.Tier == 2 ? "Elite" : "";
             BattleLauncher.Finished = battle =>
             {
                 RunRules.FinishBattle(run, content, battle);

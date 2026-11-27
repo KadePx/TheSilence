@@ -16,6 +16,8 @@ namespace Silence.Core.Run
     public static class RunRules
     {
         public const int FlagshipIndex = 0, EscortIndex = 1;
+        /// <summary>Id of the encounter built from the run's nemesis instead of read from data.</summary>
+        public const string NemesisEncounterId = "nemesis";
 
         // ================================================================ rng
 
@@ -56,6 +58,13 @@ namespace Silence.Core.Run
             r.Deck.AddRange(cfg.StarterCards);
 
             GenerateMap(r, c, rng);
+            AddJumpLanes(r, cfg, rng);
+            if (c.Nemeses.Count > 0)
+            {
+                r.Nemesis = new NemesisState { Id = rng.Pick(c.Nemeses).Id, Alive = true };
+                PlaceNemesis(r, c, rng, 2);
+                if (r.Nemesis.FellBack) r.ConcordProgress = cfg.ConcordStart; // a map with no lane for them: no head start for it
+            }
             Keep(r, rng);
             r.Journal.Add("The broadcast reached everyone at once. The Sixth Verdict makes for the Ion Reef gate.");
             return r;
@@ -174,6 +183,78 @@ namespace Silence.Core.Run
             }
         }
 
+        /// <summary>
+        /// A few risky jump lanes that skip a layer: two nodes of progress for one jump's worth of the rivals'
+        /// time, paid for in hull (and in the node you never visit).
+        /// </summary>
+        static void AddJumpLanes(RunState r, RunConfig cfg, Pcg32 rng)
+        {
+            var sources = r.Nodes.Where(n => n.Layer >= 1 && n.Layer <= r.BossLayer - 4).ToList();
+            rng.Shuffle(sources);
+            int made = 0;
+            var usedLayers = new HashSet<int>();
+            foreach (var from in sources)
+            {
+                if (made >= cfg.JumpLanes) break;
+                if (usedLayers.Contains(from.Layer)) continue;
+                var targets = r.Nodes.Where(n => n.Layer == from.Layer + 2 && Math.Abs(n.Lane - from.Lane) <= 15).ToList();
+                if (targets.Count == 0) continue;
+                from.Jumps.Add(rng.Pick(targets).Id);
+                usedLayers.Add(from.Layer);
+                made++;
+            }
+        }
+
+        /// <summary>Nodes that can still be reached from where the fleet is (everything, before the first jump).</summary>
+        static HashSet<int> Ahead(RunState r)
+        {
+            var seen = new HashSet<int>();
+            var open = new Queue<int>();
+            if (r.CurrentNode < 0)
+                foreach (var n in r.Nodes.Where(n => n.Layer == 0)) open.Enqueue(n.Id);
+            else open.Enqueue(r.CurrentNode);
+            while (open.Count > 0)
+            {
+                int id = open.Dequeue();
+                if (!seen.Add(id)) continue;
+                foreach (int next in r.Nodes[id].Next) open.Enqueue(next);
+                foreach (int next in r.Nodes[id].Jumps) open.Enqueue(next);
+            }
+            return seen;
+        }
+
+        /// <summary>
+        /// Put the hunting commander on a battle node at <paramref name="minLayer"/> or the nearest layer after it
+        /// that the fleet can still reach. With no lane left before the yard at the gate they fall back to the Concord
+        /// main fleet with what they have learned, and the Concord gains ground for it.
+        /// </summary>
+        static void PlaceNemesis(RunState r, RunContent c, Pcg32 rng, int minLayer)
+        {
+            var n = r.Nemesis;
+            var old = r.Node(n.Node);
+            if (old != null && !old.Visited && old.Kind == NodeKind.Nemesis) old.Kind = n.NodeWas;
+            n.Node = -1;
+            var ahead = Ahead(r);
+            // Battle nodes two layers on or later first; failing that the very next layer, then an elite's lane.
+            int first = Math.Max(1, minLayer), last = r.BossLayer - 2;
+            var layers = Enumerable.Range(first, Math.Max(0, last - first + 1)).ToList();
+            if (first - 1 >= 1 && first - 1 <= last && (r.Current == null || first - 1 > r.Current.Layer)) layers.Add(first - 1);
+            foreach (var kind in new[] { NodeKind.Battle, NodeKind.Elite })
+            foreach (int layer in layers)
+            {
+                var spots = r.Nodes.Where(x => x.Layer == layer && x.Kind == kind && !x.Visited && x.Id != r.CurrentNode && ahead.Contains(x.Id)).ToList();
+                if (spots.Count == 0) continue;
+                var spot = rng.Pick(spots);
+                n.NodeWas = spot.Kind;
+                spot.Kind = NodeKind.Nemesis;
+                n.Node = spot.Id;
+                return;
+            }
+            n.FellBack = true;
+            r.ConcordProgress += c.Config.NemesisDodgeDelay;
+            r.Journal.Add($"{c.Nemesis(n.Id).Name} has gone back to the Concord main fleet, and told it where you are.");
+        }
+
         static string PickEncounter(RunContent c, Pcg32 rng, int tier)
         {
             var pool = c.Encounters.Where(e => e.Tier == tier).ToList();
@@ -186,8 +267,45 @@ namespace Silence.Core.Run
         {
             if (r.Phase != RunPhase.Map) return new List<MapNode>();
             if (r.CurrentNode < 0) return r.Nodes.Where(n => n.Layer == 0).ToList();
-            return r.Current.Next.Select(r.Node).ToList();
+            return r.Current.Next.Concat(r.Current.Jumps.Where(j => !r.Current.Next.Contains(j))).Select(r.Node).ToList();
         }
+
+        /// <summary>True when going to this node from here means taking a jump lane.</summary>
+        public static bool IsJump(RunState r, int nodeId) => r.Current != null && r.Current.Jumps.Contains(nodeId) && !r.Current.Next.Contains(nodeId);
+
+        /// <summary>Hull each ship pays to take a jump lane.</summary>
+        public static int JumpCost(RunState r, RunContent c) => r.Relics.Any(id => c.Relic(id).FreeJumps) ? 0 : c.Config.JumpHullCost;
+
+        /// <summary>
+        /// The Concord is far enough ahead to have mined the lanes behind it: every ordinary jump costs each
+        /// ship hull until the fleet catches up. Jump lanes are not mined.
+        /// </summary>
+        public static bool LanesMined(RunState r, RunContent c)
+            => r.CurrentNode >= 0 && c.Config.MineDamage > 0 && r.ConcordProgress - r.PlayerProgress >= c.Config.MineLead;
+
+        static int RelicSum(RunState r, RunContent c, Func<RelicDef, int> value) => r.Relics.Sum(id => value(c.Relic(id)));
+
+        /// <summary>Add a relic and apply what it changes at once (hull, hangar space).</summary>
+        public static void GainRelic(RunState r, RunContent c, string id)
+        {
+            var relic = c.Relic(id);
+            r.Relics.Add(id);
+            if (relic.FlagshipHull != 0)
+            {
+                r.Flagship.MaxHull += relic.FlagshipHull;
+                r.Flagship.Hull = Math.Max(1, r.Flagship.Hull + relic.FlagshipHull);
+            }
+            if (relic.MaxDarts != 0)
+            {
+                r.MaxDarts += relic.MaxDarts;
+                r.Darts = Math.Max(0, r.Darts + relic.MaxDarts);
+            }
+            r.Journal.Add($"Relic: {relic.Name}.");
+        }
+
+        /// <summary>The fight that is pending: one from data, or the nemesis as they are now.</summary>
+        public static EncounterDef PendingEncounterDef(RunState r, RunContent c)
+            => r.PendingEncounter == NemesisEncounterId ? NemesisEncounter(r, c) : c.Encounter(r.PendingEncounter);
 
         public static string Travel(RunState r, RunContent c, int nodeId)
         {
@@ -197,12 +315,39 @@ namespace Silence.Core.Run
 
             var rng = Rng(r);
             var cfg = c.Config;
+            bool jump = IsJump(r, nodeId);
+            bool mined = !jump && LanesMined(r, c);
+            int layers = r.Current == null ? 1 : Math.Max(1, node.Layer - r.Current.Layer);
+            r.TravelNote = "";
+            if (jump)
+            {
+                int cost = JumpCost(r, c);
+                foreach (var s in r.Ships.Where(s => s.Alive)) ChangeHull(s, -cost);
+                r.TravelNote = cost > 0 ? $"The jump lane shook the fleet: every ship lost {cost} hull, and a node was skipped" : "The old codes held: the jump lane cost nothing";
+                r.Journal.Add("Took a jump lane.");
+            }
+            else if (mined)
+            {
+                foreach (var s in r.Ships.Where(s => s.Alive)) ChangeHull(s, -cfg.MineDamage);
+                r.TravelNote = $"Concord mines in the lane: every ship lost {cfg.MineDamage} hull";
+            }
             r.CurrentNode = node.Id;
             node.Visited = true;
             r.NodesVisited++;
-            r.PlayerProgress += 10;
-            r.ConcordProgress += cfg.ConcordRate + rng.NextInt(cfg.RivalSpread + 1);
-            r.ChorusProgress += cfg.ChorusRate + rng.NextInt(cfg.RivalSpread + 1);
+            r.PlayerProgress += 10 * layers;
+            int pace = RelicSum(r, c, x => x.RivalRate);
+            r.ConcordProgress += Math.Max(0, cfg.ConcordRate + pace + rng.NextInt(cfg.RivalSpread + 1));
+            r.ChorusProgress += Math.Max(0, cfg.ChorusRate + pace + rng.NextInt(cfg.RivalSpread + 1));
+
+            // Slipping past the commander: they move to a lane further on, and their scouts report your course.
+            var nem = r.Nemesis;
+            if (nem.Hunting && nem.Node >= 0 && nem.Node != node.Id && r.Nodes[nem.Node].Layer <= node.Layer)
+            {
+                nem.LastOutcome = NemesisOutcome.Dodged;
+                r.ConcordProgress += cfg.NemesisDodgeDelay;
+                PlaceNemesis(r, c, rng, node.Layer + 2);
+                r.Journal.Add($"{c.Nemesis(nem.Id).Name} was left behind, and has moved to cut you off.");
+            }
 
             switch (node.Kind)
             {
@@ -212,6 +357,10 @@ namespace Silence.Core.Run
                     r.PendingEncounter = node.Encounter;
                     r.PendingRewardPercent = 100;
                     r.Phase = RunPhase.Battle;
+                    break;
+                case NodeKind.Nemesis:
+                    r.PendingHail = "";
+                    r.Phase = RunPhase.Hail;
                     break;
                 case NodeKind.Event:
                     r.EventId = node.Event;
@@ -243,15 +392,17 @@ namespace Silence.Core.Run
         public static Battle.Battle BuildBattle(RunState r, RunContent c)
         {
             if (r.Phase != RunPhase.Battle) throw new InvalidOperationException("no battle is pending");
-            var enc = c.Encounter(r.PendingEncounter);
+            var enc = PendingEncounterDef(r, c);
             var cfg = c.Config;
             ulong seed = BattleSeed(r);
             var b = new Battle.Battle(seed) { Title = enc.Name, Ordinals = r.Ordinals, DartsInHangar = r.Darts };
             if (enc.TurnLimit > 0) b.TurnLimit = enc.TurnLimit;
+            b.FirstTurnCommand = RelicSum(r, c, x => x.FirstTurnCommand);
 
-            var units = new List<EncounterUnit>(enc.Units);
-            bool isBoss = enc.Tier == 3;
-            if (isBoss && (ConcordAhead(r) || r.VennEnraged)) units.AddRange(enc.Reinforcements);
+            var units = Roster(r, c, enc);
+            var nem = r.Nemesis;
+            bool nemesisFight = enc.Id == NemesisEncounterId;
+            string commanderShip = nemesisFight ? c.Nemesis(nem.Id).Ship : null;
 
             // The fleets start already closing, so the first turn is a fight and not an approach.
             int playerCol = Math.Max(0, Math.Min(b.Board.Width - 5, cfg.PlayerStartCol));
@@ -294,6 +445,8 @@ namespace Silence.Core.Run
                         spec.Shields += m.Shields;
                         spec.Armor[ArcIndex.Fore] += m.ArmorFore;
                     }
+                    spec.HeatCap += RelicSum(r, c, x => x.HeatCap);
+                    spec.Shields += RelicSum(r, c, x => x.Shields);
                     spec.MaxSpeed = Math.Max(1, spec.MaxSpeed);
                 }
                 var unit = b.AddUnit(spec, Side.Player, playerCol, i == FlagshipIndex ? 2 : 4, HexDirection.E, 1, i == FlagshipIndex);
@@ -302,7 +455,38 @@ namespace Silence.Core.Run
             }
 
             foreach (var u in units)
-                b.AddUnit(UnitLibrary.Get(u.Unit), Side.Enemy, EnemyCol(u), u.Row, u.Facing, u.Speed);
+            {
+                var spec = UnitLibrary.Get(u.Unit);
+                bool commander = u.Unit == commanderShip;
+                if (commander)
+                {
+                    spec.Hull += (nem.Rank - 1) * cfg.NemesisRankHull;
+                    if (nem.Adaptation == "guns")
+                    {
+                        spec.Armor[ArcIndex.Port] += 2;
+                        spec.Armor[ArcIndex.Starboard] += 2;
+                    }
+                    else if (nem.Adaptation == "other") spec.Hull += 6;
+                }
+                var unit = b.AddUnit(spec, Side.Enemy, EnemyCol(u), u.Row, u.Facing, u.Speed);
+                if (commander)
+                {
+                    unit.IsCommander = true;
+                    unit.LanceWard = nem.Adaptation == "lance" ? 3 : 0;
+                    unit.CraftWard = nem.Adaptation == "craft" ? 1 : 0;
+                    if (nemesisFight && nem.Rank < 3) unit.FleesAtHull = Math.Max(1, unit.MaxHull * cfg.NemesisFleePercent / 100);
+                }
+                else if (nemesisFight && r.PendingHail == "board") unit.StunnedThroughTurn = cfg.HailBoardTurns;
+            }
+            if (nemesisFight)
+            {
+                if (r.PendingHail == "edict")
+                {
+                    b.EnemyDamageBonus = cfg.HailEdictDamage;
+                    b.EnemyFocusFlagship = true;
+                }
+                else if (r.PendingHail == "fire") b.FirstTurnCommand++;
+            }
 
             foreach (var card in r.Deck)
             {
@@ -310,6 +494,131 @@ namespace Silence.Core.Run
                 else if (card.Ship < ids.Length && ids[card.Ship] >= 0) b.AddCard(PaperCards.Get(card.Card), ids[card.Ship]);
             }
             return b;
+        }
+
+        /// <summary>Every enemy in the pending fight as it stands now: the listed units and, at the gate, any reinforcements.</summary>
+        public static List<EncounterUnit> Roster(RunState r, RunContent c, EncounterDef enc)
+        {
+            var units = new List<EncounterUnit>(enc.Units);
+            if (enc.Tier == 3 && (ConcordAhead(r) || r.VennEnraged)) units.AddRange(enc.Reinforcements);
+            return units;
+        }
+
+        /// <summary>The nemesis fight as it would be now: the commander's ship and the escorts their rank brings.</summary>
+        public static EncounterDef NemesisEncounter(RunState r, RunContent c)
+        {
+            var def = c.Nemesis(r.Nemesis.Id);
+            int rank = Math.Max(1, Math.Min(3, r.Nemesis.Rank));
+            var enc = new EncounterDef
+            {
+                Id = NemesisEncounterId, Name = def.Name, Tier = 5, Intro = def.Tactic, Scrap = def.Scrap + 8 * (rank - 1),
+                TurnLimit = 25, ScatterAsteroids = 2, ScatterDebris = 1,
+            };
+            enc.Units.Add(new EncounterUnit { Unit = def.Ship, Col = 8, Row = 3, Facing = HexDirection.W, Speed = 1 });
+            enc.Units.AddRange(def.Escorts[rank - 1]);
+            return enc;
+        }
+
+        /// <summary>Why a hail reply can't be given (it costs Ordinals the fleet does not have), or null.</summary>
+        public static string CanReply(RunState r, HailReply reply) => r.Ordinals < reply.Ordinals ? $"needs {reply.Ordinals} Ordinals" : null;
+
+        /// <summary>Answer the commander's hail. The reply shapes the battle that follows at once.</summary>
+        public static string ChooseHail(RunState r, RunContent c, int replyIndex)
+        {
+            if (r.Phase != RunPhase.Hail) return "nobody is hailing";
+            if (replyIndex < 0 || replyIndex >= c.HailReplies.Count) return "no such reply";
+            var reply = c.HailReplies[replyIndex];
+            string blocked = CanReply(r, reply);
+            if (blocked != null) return blocked;
+            r.Ordinals -= reply.Ordinals;
+            r.PendingHail = reply.Id;
+            if (reply.Id == "fire") r.Nemesis.Grudge = 3;
+            r.PendingEncounter = NemesisEncounterId;
+            r.PendingRewardPercent = reply.Id == "edict" ? c.Config.HailEdictScrapPercent : 100;
+            r.Journal.Add($"{c.Nemesis(r.Nemesis.Id).Name} hailed. Reply: {reply.Tag}.");
+            r.Phase = RunPhase.Battle;
+            return null;
+        }
+
+        /// <summary>What a reply does, in numbers taken from the config so the text can't drift from the rules.</summary>
+        public static string HailEffect(RunContent c, HailReply reply)
+        {
+            var cfg = c.Config;
+            switch (reply.Id)
+            {
+                case "edict": return $"Enraged: every enemy attack deals +{cfg.HailEdictDamage} and all of it is aimed at the flagship. Salvage x{cfg.HailEdictScrapPercent / 100}.{cfg.HailEdictScrapPercent % 100 / 10}";
+                case "fire": return "+1 command on turn 1. Their grudge goes to 3: if they get away they return at rank III";
+                case "board": return $"Expend {reply.Ordinals} Ordinals: their escorts get no orders for the first {cfg.HailBoardTurns} turns";
+                default: return "No effect";
+            }
+        }
+
+        static readonly string[] DamageSources = { "lance", "guns", "craft", "other" };
+
+        /// <summary>The mark left by whatever hurt the commander most.</summary>
+        public static string ScarText(string source)
+        {
+            switch (source)
+            {
+                case "lance": return "a lance burn the length of the prow";
+                case "guns": return "one flank's batteries slagged by broadsides";
+                case "craft": return "a hangar deck gutted by darts";
+                case "other": return "three decks sealed after the boarding";
+                default: return "";
+            }
+        }
+
+        /// <summary>What the refit against that source does, for the dossier.</summary>
+        public static string AdaptationText(string source)
+        {
+            switch (source)
+            {
+                case "lance": return "Lance baffles: every lance hit deals 3 less";
+                case "guns": return "Flank plating: +2 armor port and starboard";
+                case "craft": return "Point defence: darts deal 1 less";
+                case "other": return "Sealed decks: +6 hull";
+                default: return "";
+            }
+        }
+
+        /// <summary>After a fight the commander was in: dead and looted, or away and changed by it.</summary>
+        static void ResolveNemesis(RunState r, RunContent c, Battle.Battle b, Pcg32 rng)
+        {
+            var n = r.Nemesis;
+            var def = c.Nemesis(n.Id);
+            var ship = b.Units.Find(u => u.IsCommander);
+            if (ship == null) return;
+            n.Meetings++;
+            if (!ship.Alive && !ship.Escaped)
+            {
+                n.Alive = false;
+                n.Node = -1;
+                n.LastOutcome = NemesisOutcome.Killed;
+                r.ConcordProgress = Math.Max(0, r.ConcordProgress - c.Config.NemesisSlow);
+                r.Journal.Add($"{def.Name} is dead. The Concord fleet has lost its eyes.");
+                if (!string.IsNullOrEmpty(def.Trophy) && !r.Relics.Contains(def.Trophy))
+                {
+                    GainRelic(r, c, def.Trophy);
+                    r.Reward.Relic = def.Trophy;
+                }
+                return;
+            }
+            n.LastOutcome = ship.Escaped ? NemesisOutcome.Escaped : NemesisOutcome.Standoff;
+            n.Grudge = Math.Min(3, n.Grudge + 1);
+            string worst = "";
+            int most = 0;
+            foreach (string source in DamageSources)
+                if (b.CommanderDamage.TryGetValue(source, out int dealt) && dealt > most) { most = dealt; worst = source; }
+            if (worst != "")
+            {
+                n.Adaptation = worst;
+                n.Scars.Add(ScarText(worst));
+            }
+            n.Rank = n.Grudge >= 3 ? 3 : Math.Min(3, n.Rank + 1);
+            PlaceNemesis(r, c, rng, r.Current.Layer + 2);
+            r.Journal.Add(ship.Escaped
+                ? $"{def.Name} broke off with {ship.Hull} hull left. They will be back, refitted."
+                : $"{def.Name} held you to a stand-off. They will be back.");
         }
 
         static void Scatter(Battle.Battle b, Pcg32 rng, HashSet<HexCoord> taken, int count, Terrain terrain)
@@ -330,8 +639,10 @@ namespace Silence.Core.Run
             if (r.Phase != RunPhase.Battle) throw new InvalidOperationException("no battle is pending");
             if (b.Outcome == BattleOutcome.Ongoing) throw new InvalidOperationException("the battle is not over");
             var cfg = c.Config;
-            var enc = c.Encounter(r.PendingEncounter);
+            var enc = PendingEncounterDef(r, c);
+            bool nemesisFight = enc.Id == NemesisEncounterId;
             var rng = Rng(r);
+            r.Reward = new RewardOffer();
             r.BattleNumber++;
             r.TurnsFought += b.Turn;
             r.Ordinals = Math.Max(0, b.Ordinals);
@@ -380,6 +691,7 @@ namespace Silence.Core.Run
                     r.ConcordProgress += cfg.WithdrawalDelay;
                     r.ChorusProgress += cfg.WithdrawalDelay;
                     r.Journal.Add($"{enc.Name}: both fleets disengaged after {b.Turn} turns. Time lost, nothing gained.");
+                    if (nemesisFight) ResolveNemesis(r, c, b, rng);
                     RecoverFlagship(r, cfg);
                     r.Phase = RunPhase.Map;
                 }
@@ -399,16 +711,28 @@ namespace Silence.Core.Run
                 return;
             }
 
-            int scrap = (enc.Scrap + rng.NextInt(9)) * r.PendingRewardPercent / 100;
-            int ordinals = Math.Min(cfg.OrdinalsPerVictory, r.MaxOrdinals - r.Ordinals);
+            int scrap = (enc.Scrap + rng.NextInt(9)) * (r.PendingRewardPercent + RelicSum(r, c, x => x.ScrapPercent)) / 100;
+            int ordinals = Math.Min(cfg.OrdinalsPerVictory + RelicSum(r, c, x => x.OrdinalsPerVictory), r.MaxOrdinals - r.Ordinals);
             r.Scrap += scrap;
             r.Ordinals += Math.Max(0, ordinals);
-            r.Reward = new RewardOffer
+            if (nemesisFight) ResolveNemesis(r, c, b, rng);
+            bool killed = nemesisFight && !r.Nemesis.Alive;
+            if (enc.Tier == 2)
             {
-                Active = true, Scrap = scrap, Ordinals = Math.Max(0, ordinals),
-                Cards = PickCards(r, c, rng, cfg.RewardCards + (enc.Tier == 2 ? 1 : 0)).Select(x => new DeckCard(x.Card, x.Ship)).ToList(),
-                Note = $"{enc.Name} won in {b.Turn} turns.",
-            };
+                // An elite carries something worth taking: one relic from the pool, never a commander's trophy.
+                var pool = c.Relics.Where(x => !x.Trophy && !r.Relics.Contains(x.Id)).ToList();
+                if (pool.Count > 0)
+                {
+                    string relic = rng.Pick(pool).Id;
+                    GainRelic(r, c, relic);
+                    r.Reward.Relic = relic;
+                }
+            }
+            r.Reward.Active = true;
+            r.Reward.Scrap = scrap;
+            r.Reward.Ordinals = Math.Max(0, ordinals);
+            r.Reward.Cards = PickCards(r, c, rng, cfg.RewardCards + (enc.Tier == 2 || killed ? 1 : 0)).Select(x => new DeckCard(x.Card, x.Ship)).ToList();
+            r.Reward.Note = nemesisFight && !killed ? $"{enc.Name} got away. Their escorts did not." : $"{enc.Name} won in {b.Turn} turns.";
             r.Journal.Add($"{enc.Name}: won in {b.Turn} turns.");
             r.Phase = RunPhase.Reward;
             Keep(r, rng);
@@ -475,12 +799,15 @@ namespace Silence.Core.Run
             return null;
         }
 
+        public static int FieldRepairAmount(RunState r, RunContent c) => c.Config.FieldRepair + RelicSum(r, c, x => x.FieldRepair);
+
         /// <summary>Instead of a card: spend the lull on field repairs to every surviving ship.</summary>
         public static string TakeFieldRepair(RunState r, RunContent c)
         {
             if (r.Phase != RunPhase.Reward || !r.Reward.Active) return "no reward is waiting";
+            int hull = FieldRepairAmount(r, c);
             foreach (var s in r.Ships)
-                if (s.Alive) s.Hull = Math.Min(s.MaxHull, s.Hull + c.Config.FieldRepair);
+                if (s.Alive) s.Hull = Math.Min(s.MaxHull, s.Hull + hull);
             r.Reward.Active = false;
             r.Phase = RunPhase.Map;
             return null;
@@ -760,6 +1087,21 @@ namespace Silence.Core.Run
             return null;
         }
 
+        /// <summary>Seed false beacons from the yard's relays: both rivals lose ground. Once per visit, no dock time.</summary>
+        public static string Sabotage(RunState r, RunContent c)
+        {
+            if (r.Phase != RunPhase.Shipyard || !r.Shop.Active) return "not at a shipyard";
+            if (r.Shop.Sabotaged) return "the beacons are already seeded";
+            string err = Pay(r, c.Config.SabotageCost);
+            if (err != null) return err;
+            r.Shop.Purchases--;
+            r.Shop.Sabotaged = true;
+            r.ConcordProgress = Math.Max(0, r.ConcordProgress - c.Config.SabotageAmount);
+            r.ChorusProgress = Math.Max(0, r.ChorusProgress - c.Config.SabotageAmount);
+            r.Journal.Add("False beacons seeded. The rivals are chasing echoes.");
+            return null;
+        }
+
         /// <summary>Leave the yard. Every service bought cost time: the rivals advance for each.</summary>
         public static string LeaveShipyard(RunState r, RunContent c)
         {
@@ -776,7 +1118,8 @@ namespace Silence.Core.Run
 
         public static int Score(RunState r)
         {
-            int score = r.BattlesWon * 50 + r.NodesVisited * 10 + r.Scrap;
+            int score = r.BattlesWon * 50 + r.NodesVisited * 10 + r.Scrap + r.Relics.Count * 25;
+            if (r.Nemesis.LastOutcome == NemesisOutcome.Killed) score += 100;
             if (r.Result == RunResult.Victory)
             {
                 score += 500 + r.Ships.Where(s => s.Alive).Sum(s => s.Hull) * 5 + r.Ordinals * 3;

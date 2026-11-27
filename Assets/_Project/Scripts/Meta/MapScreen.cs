@@ -95,6 +95,7 @@ namespace Silence.Meta
             overlay.gameObject.SetActive(false);
             switch (run.Phase)
             {
+                case RunPhase.Hail: ShowHail(); break;
                 case RunPhase.Battle: ShowBattlePrompt(); break;
                 case RunPhase.Reward: ShowReward(); break;
                 case RunPhase.Event: ShowEvent(); break;
@@ -108,9 +109,10 @@ namespace Silence.Meta
         {
             if (!string.IsNullOrEmpty(notice)) return $"<color=#f0a040>{notice}</color>";
             if (run.Phase != RunPhase.Map) return "";
-            return run.CurrentNode < 0
-                ? "Choose where to enter the Ion Reef. Brass rings mark the nodes you can reach."
-                : "Choose the next node. Every jump moves the rival fleets along the track above.";
+            if (run.CurrentNode < 0) return "Choose where to enter the Ion Reef. Brass rings mark the nodes you can reach.";
+            if (RunRules.LanesMined(run, content))
+                return $"<color=#d9573f>The Concord is ahead and has mined the lanes: every jump costs each ship {content.Config.MineDamage} hull until you catch up.</color> Jump lanes are clear.";
+            return "Choose the next node. Every jump moves the rival fleets along the track above.";
         }
 
         void SetInfo(string text)
@@ -173,6 +175,7 @@ namespace Silence.Meta
                 }
             }
 
+            y = RelicShelf(y);
             Ui.Btn(fleetRoot, $"Deck - {run.Deck.Count} cards", 0, y, FleetW, 40, ShowDeck, 16);
             y += 50;
 
@@ -210,7 +213,10 @@ namespace Silence.Meta
             Marker(t, x0, x1, yLine, run.ChorusProgress, length, "Chorus", Skin.Hex("5fffc8"), false, yLine + 36, 12);
             Marker(t, x0, x1, yLine, run.PlayerProgress, length, "You", Color.white, true, yLine - 40, 12);
 
-            Ui.Body(t, Lead("Concord", run.ConcordProgress) + "\n" + Lead("Chorus", run.ChorusProgress), 16, 18, 38, 290, 40, TextAlignmentOptions.TopLeft, Skin.Dim);
+            Ui.Body(t, Lead("Concord", run.ConcordProgress), 16, 18, 34, 290, 16, TextAlignmentOptions.TopLeft, Skin.Dim);
+            Ui.Body(t, Lead("Chorus", run.ChorusProgress), 16, 18, 54, 290, 16, TextAlignmentOptions.TopLeft, Skin.Dim);
+            if (run.Nemesis.Hunting)
+                Ui.Stamp(t, $"{content.Nemesis(run.Nemesis.Id).Name.Split(' ').Last()} hunts you - rank {Roman(run.Nemesis.Rank)}", 12, 18, 78, 230, 14, TextAlignmentOptions.Left, Skin.Bad);
         }
 
         string Lead(string name, int progress)
@@ -244,12 +250,16 @@ namespace Silence.Meta
 
         static string KindName(NodeKind k) => k == NodeKind.Shipyard ? "Shipyard" : k == NodeKind.Boss ? "Sector boss" : k.ToString();
 
+        /// <summary>The hunting commander only shows on the map where they actually wait.</summary>
+        bool NemesisHere(MapNode n) => n.Kind == NodeKind.Nemesis && run.Nemesis.Hunting && run.Nemesis.Node == n.Id;
+
         static string KindIcon(NodeKind k)
         {
             switch (k)
             {
                 case NodeKind.Battle: return "node_battle";
                 case NodeKind.Elite: return "node_elite";
+                case NodeKind.Nemesis: return "node_nemesis";
                 case NodeKind.Event: return "node_event";
                 case NodeKind.Shipyard: return "node_shipyard";
                 default: return "node_boss";
@@ -262,6 +272,8 @@ namespace Silence.Meta
             {
                 case NodeKind.Event: return "<color=#c9a24a>EVENT</color>  Something in the dark. A choice, not a fight - usually.";
                 case NodeKind.Shipyard: return "<color=#c9a24a>SHIPYARD</color>  Repair, clear junk, buy cards, refit a module. Every service costs time.";
+                case NodeKind.Nemesis:
+                    return NemesisHere(n) ? "<color=#d9573f>NEMESIS</color>  " + NemesisSummary() : "<color=#8a90a0>The commander who waited here has moved on.</color>";
                 default:
                 {
                     var enc = content.Encounter(n.Encounter);
@@ -277,6 +289,7 @@ namespace Silence.Meta
             Ui.Clear(mapRoot);
             pulsing.Clear();
             var choices = RunRules.Choices(run);
+            bool mined = RunRules.LanesMined(run, content);
             var visited = new HashSet<int>(run.Nodes.Where(n => n.Visited).Select(n => n.Id));
 
             foreach (var n in run.Nodes)
@@ -286,7 +299,19 @@ namespace Silence.Meta
                     var m = run.Node(id);
                     bool walked = visited.Contains(n.Id) && visited.Contains(m.Id);
                     bool open = n.Id == run.CurrentNode && choices.Contains(m);
-                    Line(mapRoot, NodePos(n), NodePos(m), walked ? Skin.Brass : open ? Skin.Alpha(Skin.Brass, 0.65f) : new Color(0.55f, 0.6f, 0.75f, 0.28f), walked || open ? 4f : 2f);
+                    Line(mapRoot, NodePos(n), NodePos(m), walked ? Skin.Brass : open ? Skin.Alpha(mined ? Skin.Bad : Skin.Brass, 0.65f) : new Color(0.55f, 0.6f, 0.75f, 0.28f), walked || open ? 4f : 2f);
+                }
+            }
+
+            // Jump lanes: a long dotted arc over the layer they skip.
+            foreach (var n in run.Nodes)
+            {
+                foreach (int id in n.Jumps)
+                {
+                    var m = run.Node(id);
+                    bool open = n.Id == run.CurrentNode && choices.Contains(m);
+                    bool walked = visited.Contains(n.Id) && visited.Contains(m.Id) && !n.Next.Contains(id);
+                    Dotted(mapRoot, NodePos(n), NodePos(m), open ? Skin.Cyan : walked ? Skin.Alpha(Skin.Cyan, 0.7f) : Skin.Alpha(Skin.Cyan, 0.35f), open ? 6f : 4f);
                 }
             }
 
@@ -305,20 +330,37 @@ namespace Silence.Meta
                     ring.rectTransform.anchoredPosition = new Vector2(Mathf.Round(p.x), -Mathf.Round(p.y));
                     if (can) pulsing.Add(ring);
                 }
-                var sprite = ArtLibrary.Instance.Sprite(KindIcon(n.Kind));
+                bool jumpTo = can && RunRules.IsJump(run, n.Id);
+                var sprite = ArtLibrary.Instance.Sprite(KindIcon(n.Kind == NodeKind.Nemesis && !NemesisHere(n) ? NodeKind.Battle : n.Kind)) ?? ArtLibrary.Instance.Sprite("node_elite");
                 var tint = here ? Color.white : n.Visited ? new Color(0.4f, 0.4f, 0.45f) : can ? Color.white : new Color(0.72f, 0.72f, 0.78f);
                 var img = Ui.Img(mapRoot, $"Node {n.Id}", sprite ?? Skin.Pip, p.x - size / 2f, p.y - size / 2f, size, size, tint);
                 img.raycastTarget = true;
                 var relay = img.gameObject.AddComponent<PointerRelay>();
                 var node = n;
-                relay.Enter = () => SetInfo(Describe(node) + (can ? "" : here ? "   <color=#8a90a0>(you are here)</color>" : node.Visited ? "   <color=#8a90a0>(visited)</color>" : ""));
+                string jumpNote = jumpTo ? $"   <color=#59d0e0>JUMP LANE: skips a node, every ship loses {RunRules.JumpCost(run, content)} hull, the rivals move once.</color>" : "";
+                relay.Enter = () => SetInfo(Describe(node) + jumpNote + (can ? "" : here ? "   <color=#8a90a0>(you are here)</color>" : node.Visited ? "   <color=#8a90a0>(visited)</color>" : ""));
                 relay.Exit = () => SetInfo(DefaultInfo());
                 relay.Click = _ => ClickNode(node.Id);
-                Ui.Stamp(mapRoot, KindName(n.Kind), 12, p.x - 80, p.y + size / 2f + 8, 160, 14, TextAlignmentOptions.Center, can ? Skin.BrassLight : Skin.Dim);
+                string label = NemesisHere(n) ? "Nemesis" : n.Kind == NodeKind.Nemesis ? "Battle" : KindName(n.Kind);
+                Ui.Stamp(mapRoot, jumpTo ? label + " - jump" : label, 12, p.x - 80, p.y + size / 2f + 8, 160, 14, TextAlignmentOptions.Center,
+                    jumpTo ? Skin.Cyan : NemesisHere(n) ? Skin.Bad : can ? Skin.BrassLight : Skin.Dim);
             }
 
             if (run.CurrentNode < 0)
                 Ui.Stamp(mapRoot, "Entry", 12, NodePos(run.Nodes[0]).x - 80, 186, 160, 14, TextAlignmentOptions.Center, Skin.Brass);
+        }
+
+        static void Dotted(Transform parent, Vector2 a, Vector2 b, Color color, float size)
+        {
+            // Bowed upward so the lane reads as leaving the map plane, and never hides an ordinary lane.
+            var mid = (a + b) / 2f + new Vector2(0f, -70f);
+            const int dots = 26;
+            for (int i = 1; i < dots; i++)
+            {
+                float t = i / (float)dots;
+                var p = (1 - t) * (1 - t) * a + 2 * (1 - t) * t * mid + t * t * b;
+                Ui.Fill(parent, "Jump", Mathf.Round(p.x - size / 2f), Mathf.Round(p.y - size / 2f), size, size, color);
+            }
         }
 
         static void Line(Transform parent, Vector2 a, Vector2 b, Color color, float thickness)
@@ -344,7 +386,13 @@ namespace Silence.Meta
                 return;
             }
             Sfx.Play("sfx_jump");
-            Commit(RunRules.Travel(run, content, id));
+            string error = RunRules.Travel(run, content, id);
+            Commit(error);
+            if (error == null && !string.IsNullOrEmpty(run.TravelNote))
+            {
+                notice = run.TravelNote + ".";
+                SetInfo(DefaultInfo());
+            }
         }
 
         public void Engage() => Game.StartBattle();

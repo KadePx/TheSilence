@@ -443,6 +443,10 @@ The next step is the paper prototype (M0); nothing goes into Unity until combat 
 - Heat is a resource to spend: the flagship's cap is 6 (8 with the Radiator Stack) and she vents 1 a turn. Redline trades heat for command; Thermal Purge turns heat into damage.
 - Enemy repair ships mend another ship in full and themselves for half.
 - Shipyards can strike any card from the deck (30 scrap, floor of 8 cards).
+- Race: two jump lanes per sector skip a node for 4 hull a ship; while the Concord leads by a node it mines the ordinary lanes (2 hull a ship per jump); shipyards can seed false beacons once a visit (25 scrap, both rivals lose 0.8 node).
+- Nemesis: one of three Concord commanders hunts each run from a battle node. Below rank III the ship breaks off at 40 percent hull once the enemy has acted, so killing it takes one turn of burst. A survivor comes back a rank higher (+6 hull, more escorts), refitted against whatever hurt it most, with a scar named for it. Slipping past costs 0.3 node. With no lane left the commander falls back to the main fleet (they do not join the gate boss: tried, and it made the gate unwinnable).
+- Hail replies are four fixed answers for the Ascendancy: Edict (enemy +2 damage, all aimed at the flagship, salvage x1.5), Open fire (+1 command on turn 1, grudge to 3), Board the relay (4 Ordinals, escorts idle for 2 turns), Say nothing.
+- Relics are passive numbers. Elites carry one from a pool of seven; each commander's wreck gives a trophy.
 
 ### Open questions
 

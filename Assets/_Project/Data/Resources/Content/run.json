@@ -67,7 +67,20 @@
   ],
   "fieldRepair": 5,
   "playerStartCol": 2,
-  "enemyAdvance": 2
+  "enemyAdvance": 2,
+  "jumpLanes": 2,
+  "jumpHullCost": 4,
+  "mineLead": 10,
+  "mineDamage": 2,
+  "nemesisSlow": 15,
+  "nemesisDodgeDelay": 3,
+  "nemesisFleePercent": 40,
+  "nemesisRankHull": 6,
+  "hailEdictDamage": 2,
+  "hailEdictScrapPercent": 150,
+  "hailBoardTurns": 2,
+  "sabotageCost": 25,
+  "sabotageAmount": 8
  },
  "modules": [
   {

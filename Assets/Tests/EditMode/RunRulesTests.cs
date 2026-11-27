@@ -184,7 +184,7 @@ namespace Silence.Tests
                 {
                     var options = RunRules.Choices(r);
                     int layer = r.CurrentNode < 0 ? -1 : r.Current.Layer;
-                    Assert.IsTrue(options.All(o => o.Layer == layer + 1), $"seed {seed}: only the next layer is offered");
+                    Assert.IsTrue(options.All(o => o.Layer == layer + (RunRules.IsJump(r, o.Id) ? 2 : 1)), $"seed {seed}: only the next layer is offered, or the one after it by jump lane");
                     foreach (var behind in r.Nodes.Where(n => n.Layer <= layer))
                         Assert.IsNotNull(RunRules.Travel(r, c, behind.Id), $"seed {seed}: node {behind.Id} is behind the fleet");
                     Assert.IsNull(RunRules.Travel(r, c, options[0].Id));
