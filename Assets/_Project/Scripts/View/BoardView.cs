@@ -19,6 +19,8 @@ namespace Silence.View
         public Transform Root;
         public Transform Body;
         public SpriteRenderer Sprite;
+        /// <summary>Four black copies of the sprite a pixel out: a dark edge, so a hull lying over its neighbour reads as in front of it.</summary>
+        public SpriteRenderer[] Edge;
         public SpriteRenderer Ring;
         public SpriteRenderer BarBack, BarFill;
         public SpriteRenderer[] ShieldBars;
@@ -184,6 +186,17 @@ namespace Silence.View
             v.Body = new GameObject("Body").transform;
             v.Body.SetParent(v.Root, false);
             v.Sprite = NewSprite(v.Body, "Sprite", null, v.Capital ? 0 : 5);
+            if (v.Capital)
+            {
+                v.Edge = new SpriteRenderer[4];
+                for (int i = 0; i < 4; i++)
+                {
+                    v.Edge[i] = NewSprite(v.Body, "Edge", null, 0);
+                    v.Edge[i].color = new Color(0.02f, 0.02f, 0.05f, 1f);
+                    float px = 1f / 32f;
+                    v.Edge[i].transform.localPosition = new Vector3(i == 0 ? px : i == 1 ? -px : 0f, i == 2 ? px : i == 3 ? -px : 0f, 0.0005f);
+                }
+            }
 
             v.Ring = NewSprite(v.Root, "Ring", Skin.HexOutline(HexPx, 3), -5);
             v.Ring.enabled = false;
@@ -253,6 +266,21 @@ namespace Silence.View
                 v.Body.localRotation = Quaternion.Euler(0f, 0f, WorldAngle(facing));
             }
             if (v.Capital && v.ShieldBars != null) LayoutShieldBars(v, null);
+            if (v.Edge != null) foreach (var e in v.Edge) e.sprite = v.Sprite.sprite;
+            Layer(v);
+        }
+
+        /// <summary>
+        /// Capital sprites are wider than a hex, so neighbours overlap. Put the smaller hull in front (it is the one
+        /// that would vanish), and between equals the one lower on screen, so the stack never flickers or flips.
+        /// All capital sprites share a sorting order; the camera sorts them by this depth.
+        /// </summary>
+        void Layer(UnitView v)
+        {
+            if (!v.Capital || v.Sprite.sprite == null) return;
+            var r = v.Sprite.sprite.rect;
+            float depth = r.width * r.height * 0.00001f + v.Root.position.y * 0.002f;
+            v.Body.localPosition = new Vector3(0f, 0f, depth);
         }
 
         public void UpdateBars(UnitView v, Unit u)
@@ -357,8 +385,9 @@ namespace Silence.View
                 var ghost = NewSprite(overlayRoot, "Ghost", v.Sprite.sprite, -20);
                 ghost.transform.position = World(dest);
                 ghost.transform.rotation = v.Body.rotation;
-                ghost.color = new Color(1f, 1f, 1f, 0.28f);
                 var c = u.Side == Side.Player ? Skin.Alpha(Skin.Cyan, 0.5f) : Skin.Alpha(Skin.Warn, 0.4f);
+                // In the side's colour, not the hull's own: a white ghost one hex ahead read as a second ship lying over the first.
+                ghost.color = new Color(c.r, c.g, c.b, 0.3f);
                 Dashes(World(u.Pos), World(dest), c, 0.09f, 0.16f, 0.22f, -21, false);
             }
 

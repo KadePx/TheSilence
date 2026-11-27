@@ -841,9 +841,24 @@ cycle: put every screen up on the play-test save, list what is wrong, fix, look 
 
 225 EditMode tests pass.
 
+### The three items left open by that pass, addressed
+
+- **Concord hands looked samey.** Half a starting deck comes off the bridge, so those cards all showed the middle of
+  the ship. Cards now look at the part of the ship they are about (`CardView.CardFocus`): Burn at the drives, Hard About
+  at a flank, Brace and Patch Job at the plating, and so on for both fleets' reward cards. Seen on the Concord deck:
+  no two different cards share a picture except Launch Wing and Combat Patrol, which both show the gunship.
+- **Large ships overlapping.** Capital sprites are about 126 px wide on a hex 111 px across, and nothing may be scaled
+  by a fraction, so neighbours still touch. What changed is how it reads: the smaller hull is always drawn in front
+  (then the one lower on screen), each hull has a one-pixel dark edge, and the drift ghost is drawn in the side's
+  colour instead of white. The ghost was the worst of it: one hex ahead of a moving ship, it looked like a second ship
+  lying over the first.
+- **Run-over screen.** It now shows the relics held (hover for what each did) and one line on the commander: dead,
+  still hunting, or gone back to the main fleet, with how often you met and how many scars are yours.
+
+225 EditMode tests pass (no rule changed). Seen in screenshots only.
+
 ### Still open
 
-- Several Concord cards share one art crop (the ring), so a Concord hand looks samey.
-- Large ships on adjacent hexes overlap each other on the board.
-- The run-over screen shows the last journal lines but not the relics held or what became of the commander.
+- Launch Wing and Combat Patrol share the gunship picture.
+- An enemy's order chip can sit on top of a neighbouring ship.
 - Balance still rests on bot runs; nothing here was checked with a physical mouse.

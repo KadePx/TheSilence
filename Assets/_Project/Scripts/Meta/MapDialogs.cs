@@ -426,12 +426,52 @@ bool hasRelic = !string.IsNullOrEmpty(offer.Relic);
                 Ui.Stamp(d, stats[i].Item1, 13, x, y, 280, 18);
                 Ui.Number(d, stats[i].Item2, 36, x, y + 22, 280, 40, TextAlignmentOptions.Left, i == stats.Length - 1 ? Skin.Brass : Skin.Text);
             }
-            Ui.Stamp(d, $"Seed {run.Seed}", 12, 110, 440, 400, 14);
-            var lines = run.Journal.Skip(System.Math.Max(0, run.Journal.Count - 4));
-            Ui.Body(d, string.Join("\n", lines), 16, 110, 464, 880, 90, TextAlignmentOptions.TopLeft, Skin.Dim);
+            Ui.Stamp(d, $"Seed {run.Seed}", 12, 880, 24, 180, 14, TextAlignmentOptions.Right, Skin.Faint);
+
+            float ry = 430;
+            string fate = CommanderFate();
+            if (fate != "")
+            {
+                Ui.Stamp(d, "The commander sent after you", 12, 110, ry, 400, 14);
+                Ui.Label(d, fate, Skin.Body, 16, run.Nemesis.Alive ? Skin.Bad : Skin.Good, 110, ry + 20, 880, 16, TextAlignmentOptions.TopLeft);
+                ry += 52;
+            }
+            if (run.Relics.Count > 0)
+            {
+                Ui.Stamp(d, "Relics held", 12, 110, ry, 400, 14);
+                for (int i = 0; i < run.Relics.Count && i < 16; i++)
+                {
+                    var relic = content.Relic(run.Relics[i]);
+                    var icon = Ui.Art(d, ArtOr(relic.Icon, "icon_relic"), 108 + i * 54, ry + 18, 1f);
+                    Tip.On(icon, relic.Name, () => relic.Text + (relic.Trophy ? "\n\nA trophy, taken from the commander who hunted you." : ""), Gloss.Relic);
+                }
+                ry += 74;
+            }
+            var told = run.Journal.Where(l => !l.StartsWith("Relic: ")).ToList();
+            int keep = ry > 540 ? 2 : ry > 480 ? 3 : 4;
+            var lines = told.Skip(System.Math.Max(0, told.Count - keep));
+            Ui.Label(d, string.Join("\n", lines), Skin.Stencil, 12, Skin.Dim, 110, ry + 4, 880, 640 - ry - 8, TextAlignmentOptions.TopLeft).lineSpacing = 30f;
 
             Ui.Btn(d, "New run", 250, 650, 280, 70, () => { long seed = Game.RandomSeed(); string faction = run.Faction; Game.AbandonRun(); Game.NewRun(seed, faction); }, 16);
             Ui.Btn(d, "Main menu", 570, 650, 280, 70, () => { Game.AbandonRun(); Game.ToMenu(); }, 16);
+        }
+    }
+
+    public sealed partial class MapScreen
+    {
+        /// <summary>One line on the commander who hunted this run: dead, still out there, or never met.</summary>
+        string CommanderFate()
+        {
+            var n = run.Nemesis;
+            if (string.IsNullOrEmpty(n.Id)) return "";
+            string name = content.Nemesis(n.Id).Name;
+            string met = n.Meetings == 0 ? "never met" : n.Meetings == 1 ? "met once" : $"met {n.Meetings} times";
+            if (!n.Alive) return $"{name} is dead: {met}, and the last was the last.";
+            if (n.Meetings == 0) return $"{name}: {met}. Still out there, at rank {Roman(n.Rank)}.";
+            string scars = n.Scars.Count == 0 ? "" : n.Scars.Count == 1 ? " One scar is yours." : $" {n.Scars.Count} scars are yours.";
+            return n.FellBack
+                ? $"{name} lives, at rank {Roman(n.Rank)}: {met}, then back to the main fleet.{scars}"
+                : $"{name} lives, at rank {Roman(n.Rank)}: {met}, and still hunting.{scars}";
         }
     }
 

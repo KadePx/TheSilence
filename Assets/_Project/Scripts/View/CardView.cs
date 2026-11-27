@@ -49,7 +49,7 @@ namespace Silence.View
             {
                 // A close crop of the part of the ship the card comes from (the spec's "crop of the source
                 // module"), at a whole-number zoom, so five cards from one ship do not all look the same.
-                var focus = junk || art.rect.width <= 32 ? new Vector2(0.5f, 0.5f) : ModuleFocus(def.Module);
+                var focus = junk || art.rect.width <= 32 ? new Vector2(0.5f, 0.5f) : CardFocus(def);
                 float scale = art.rect.width <= 32 ? 3f : junk ? 2f : art.rect.width <= 80 ? 4f : 3f;
                 float aw = art.rect.width * scale, ah = art.rect.height * scale;
                 float ax = Mathf.Clamp(Mathf.Round(91f - focus.x * aw), 182f - aw, 0f), ay = Mathf.Clamp(Mathf.Round(44f - focus.y * ah), 88f - ah, 0f);
@@ -96,6 +96,39 @@ namespace Silence.View
                 case CardType.Defense: return Skin.Good;
                 case CardType.Reactor: return Skin.Warn;
                 default: return Skin.Brass;
+            }
+        }
+
+        /// <summary>
+        /// Where a card looks on its ship. The module decides, but half a starting deck comes off the bridge, so those
+        /// cards (and pairs that share a module) each look at the part of the ship they are about: Burn at the drives,
+        /// Hard About at a flank, Brace at the plating. Otherwise a hand is five pictures of the same thing.
+        /// </summary>
+        static Vector2 CardFocus(CardDef def)
+        {
+            switch (def.Id)
+            {
+                case "burn": return new Vector2(0.10f, 0.5f);
+                case "hard_about": return new Vector2(0.30f, 0.20f);
+                case "brace": return new Vector2(0.34f, 0.82f);
+                case "patch_job": return new Vector2(0.68f, 0.76f);
+                case "ring_shield": return new Vector2(0.60f, 0.30f);
+                case "ring_barrage": return new Vector2(0.44f, 0.70f);
+                case "combat_patrol": return new Vector2(0.60f, 0.84f);
+                case "spotter_data": return new Vector2(0.66f, 0.28f);
+                case "precision_edict": return new Vector2(0.70f, 0.40f);
+                case "seal_the_decks": return new Vector2(0.36f, 0.72f);
+                case "cold_discipline": return new Vector2(0.24f, 0.30f);
+                case "redline": return new Vector2(0.10f, 0.34f);
+                case "thermal_purge": return new Vector2(0.24f, 0.72f);
+                case "screening_maneuver": return new Vector2(0.26f, 0.26f);
+                case "dart_sortie": return new Vector2(0.40f, 0.26f);
+                case "boarding_action": return new Vector2(0.44f, 0.76f);
+                case "scry_the_void": return new Vector2(0.74f, 0.30f);
+                case "short_lance": return new Vector2(0.92f, 0.5f);
+                case "raking_beam": return new Vector2(0.52f, 0.72f);
+                case "overcharge_lances": return new Vector2(0.66f, 0.5f);
+                default: return ModuleFocus(def.Module);
             }
         }
 
