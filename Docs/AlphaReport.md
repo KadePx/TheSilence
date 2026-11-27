@@ -537,8 +537,8 @@ generations, logged. 529.6 of the 1,000 are spent in all.
 
 - **Concord battles run long**: 70 turns a run against 49. The Mass Driver is the only big hit and it costs 2 of 3
   command. Long fights also hand the Ascendancy the race (mined lanes in 76 runs of 200).
-- **Card art on Concord cards is one crop of the Long Promise** for nearly every card. The crop table was built for
-  the Sixth Verdict.
+- Card art on Concord cards is cropped from the Long Promise by module (bow, drum, outriggers, aft), the same way the
+  Ascendancy's is; the bridge cards all share the drum (`ArtSource/Screenshots/m3_concord_deck.png`).
 - The Concord enemies of an Ascendancy run and the Concord player ships share sprites, as do the Ascendancy ones.
   The Outrider, the Blade and the gunship have no card-size drawing.
 - The tutorial and the skirmish menu are Ascendancy only.

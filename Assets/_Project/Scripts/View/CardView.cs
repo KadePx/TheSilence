@@ -102,6 +102,13 @@ namespace Silence.View
         static Vector2 ModuleFocus(string module)
         {
             string m = (module ?? "").ToLowerInvariant();
+            // The Concord trimaran: bow gun on the centre hull, the drum amidships, outriggers above and below, drones aft.
+            if (m.Contains("bow") || m.Contains("torpedo")) return new Vector2(0.84f, 0.5f);
+            if (m.Contains("outrigger") || m.Contains("missile")) return new Vector2(0.50f, 0.16f);
+            if (m.Contains("flight")) return new Vector2(0.40f, 0.84f);
+            if (m.Contains("projector") || m.Contains("ring")) return new Vector2(0.50f, 0.5f);
+            if (m.Contains("drone") || m.Contains("cutting")) return new Vector2(0.14f, 0.5f);
+            if (m.Contains("plating")) return new Vector2(0.30f, 0.80f);
             if (m.Contains("lance") || m.Contains("fore") || m.Contains("prow")) return new Vector2(0.80f, 0.5f);
             if (m.Contains("broadside") || m.Contains("battery")) return new Vector2(0.52f, 0.30f);
             if (m.Contains("point") || m.Contains("flak")) return new Vector2(0.45f, 0.68f);
