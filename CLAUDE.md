@@ -17,6 +17,9 @@ the sprint plan.
 - Core has two halves: `Core/Battle` (one fight) and `Core/Run` (the run loop: map, travel, rewards, events,
   shipyard, in `RunRules`; the saved state is `RunState`). The run rules live in Core, not Meta, so tests
   and balance sims can play whole runs headless (`RunBot`).
+- `Core/Open` is a prototype of battle without a grid (`OpenBattle`; screen `View/OpenScreen`, reached from the
+  menu's "Gridless battle"). Same rules as the rest of Core: whole numbers only, `Pcg32`, events for the view. It
+  shares nothing with `Core/Battle` but `CardType`; do not mix the two until the pivot is decided.
 - The view never mutates state. It sends an action to Core; Core applies it and emits events; the view
   animates those events. The same holds for the map: every click is a `RunRules` call.
 - Dependencies flow Core <- Data <- View <- Meta <- Editor. Meta uses View's UI kit (`Ui`, `Skin`,

@@ -27,10 +27,13 @@ namespace Silence.View
         public static string Subtitle = "";
         /// <summary>Set by the main menu: open the Battle scene straight into the tutorial.</summary>
         public static bool Tutorial;
+        /// <summary>Set by the main menu: the Battle scene shows the gridless prototype (<see cref="OpenScreen"/>) instead.</summary>
+        public static bool OpenPrototype;
 
         public static void Clear()
         {
             Tutorial = false;
+            OpenPrototype = false;
             Create = null;
             Finished = null;
             Quit = null;
@@ -726,6 +729,13 @@ namespace Silence.View
         static void Ensure(Scene scene)
         {
             if (scene.name != "Battle") return;
+            if (BattleLauncher.OpenPrototype)
+            {
+                BattleLauncher.OpenPrototype = false;
+                if (UnityEngine.Object.FindAnyObjectByType<OpenScreen>() == null) new GameObject("OpenScreen").AddComponent<OpenScreen>();
+                return;
+            }
+            if (UnityEngine.Object.FindAnyObjectByType<OpenScreen>() != null) return;
             if (UnityEngine.Object.FindAnyObjectByType<BattleScreen>() != null) return;
             new GameObject("BattleScreen").AddComponent<BattleScreen>();
         }

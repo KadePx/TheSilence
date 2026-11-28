@@ -64,6 +64,12 @@ namespace Silence.Meta
             y += 72;
             message = Ui.Body(panel.transform, Game.HasSave ? "A run is in progress." : "", 15, 50, y, 400, 40, TextAlignmentOptions.Top, Skin.Dim);
 
+            // An experiment, kept apart from the game proper: battle without a grid, seen at a tilt.
+            var lab = Ui.Plate(root, "Lab", 1250, 386, 420, 150);
+            Ui.Stamp(lab.transform, "Experiment", 12, 30, 24, 300, 14, TextAlignmentOptions.Left, Skin.BrassDark);
+            Ui.Btn(lab.transform, "Gridless battle", 30, 46, 360, 60, () => { BattleLauncher.Clear(); BattleLauncher.OpenPrototype = true; SceneManager.LoadScene(Game.BattleScene); }, 30);
+            Ui.Body(lab.transform, "One fight. No hexes.", 16, 30, 114, 360, 20, TextAlignmentOptions.TopLeft, Skin.Dim);
+
             Ui.Stamp(root, "Alpha build - milestone M3", 12, 20, Ui.RefH - 30, 600, 18, TextAlignmentOptions.Left, Skin.Faint);
             seed = Game.RandomSeed().ToString();
             ShowSeed();

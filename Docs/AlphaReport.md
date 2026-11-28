@@ -890,3 +890,30 @@ Checked in Play Mode afterwards (screenshot `ArtSource/Screenshots/m5_board_pass
 - The carrier in ordinary Concord fights was named Long Promise and drawn as Venn's flagship. It is now "Concord carrier" with its own hull (10 more generations, about 920 of 1,000 used). The rules are unchanged.
 - The skull on the Council Vote ballot box is painted out for a ring.
 - With four enemy ships staged in a clump, every chip found a clear place. A miss was played without errors but not captured mid-flight, so the wide shot itself is unseen.
+
+## Gridless prototype (branch `iso-prototype`)
+
+A playable test of the pivot: battle without a hex grid, seen at a tilt. One fight, reached from the main menu
+(**Gridless battle**, under "Experiment"). It sits beside the hex game and changes none of it.
+
+- Rules are in `Core/Open` (`OpenBattle`, `OpenAi`, `OpenContent`, `OpenMath`): whole-number positions in thousandths
+  of a span, 24 headings, round bases that never overlap, no floats and no dice. The same seed replays the same battle.
+- Momentum: a ship keeps its Speed and drifts that many spans straight ahead when its side's turn ends. Burn adds
+  Speed, Retro Burn sheds it, Hard About and Come About turn the bow (less at Speed 3).
+- Guns need arc, range and sight. Wrecks and rocks block sight; running into one costs 3 hull and stops the ship.
+- A hit lands on the arc of the target that faces the shooter: shields, then that arc's armor, then hull.
+- Round: you play cards, your ships drift, each enemy fires once from where it sits, then turns, sets speed and drifts.
+  So an enemy's arcs (hover it) are the honest danger zone for your end of turn.
+- Enemy steering scores each heading and speed it can reach by what it leaves: a clear shot, a clear line, the range it likes.
+- The screen is `View/OpenScreen` with `ShapeGraphic` for arcs, bases and drift lines. It uses the game's cards, HUD kit and backdrop.
+- Art: four hulls in eight facings, a wreck and two rocks (60 PixelLab generations, in `Art/Ships/IsoDemo`, raw in `ArtSource/IsoDemo`).
+- 15 new tests; 240 EditMode tests pass. Bot against the enemy over 40 seeds: 24 wins, 16 losses, about 17 turns, none stalled.
+- Checked in Play Mode by script: arcs with sight shadows, the turn fan, firing, a whole bot battle to the end screen, the menu button.
+  Screenshot: `ArtSource/Screenshots/iso_prototype_fire.png`. Not played by hand with a mouse.
+
+### What the prototype does not have
+
+- Eight drawn facings for 24 headings: the base's tick shows the true heading, the sprite the nearest facing.
+- No enemy orders shown ahead, no heat penalties beyond a cap, no crits, junk, craft, crew or hazards.
+- The view is three-quarter (PixelLab's "low top-down"), not true isometric, and overlay lines are not pixel-snapped.
+- Fights run about 17 turns with the bot, which is long.
