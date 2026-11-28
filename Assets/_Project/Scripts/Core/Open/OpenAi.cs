@@ -48,9 +48,10 @@ namespace Silence.Core.Open
         }
 
         /// <summary>
-        /// Pick a heading (within what the ship can turn) and a speed (one step from the current one) by where
-        /// that leaves it after the drift: a clear shot is worth most, then a clear line to the target, then being
-        /// at the range it likes. Sitting still without a shot costs, so a boxed-in ship works its way out.
+        /// Pick a heading and speed within the same helm limits the player has (one speed step, its agility, one
+        /// point less at top speed) by where that leaves it after the drift: a clear shot is worth most, then a
+        /// clear line to the target, then being at the range it likes. Sitting still without a shot costs, so a
+        /// boxed-in ship works its way out.
         /// </summary>
         public static void Manoeuvre(OpenBattle b, OpenShip ship)
         {
@@ -58,11 +59,12 @@ namespace Silence.Core.Open
             if (target == null) return;
             int ideal = ship.Broadsider ? 4000 : 3000;
             int bestHeading = ship.Heading, bestSpeed = 0, bestScore = int.MinValue;
-            for (int off = -ship.Turn; off <= ship.Turn; off += OpenMath.HeadingStep)
+            for (int speed = Math.Max(0, ship.Speed - 1); speed <= Math.Min(ship.MaxSpeed, ship.Speed + 1); speed++)
             {
-                int h = OpenMath.Norm(ship.Heading + off);
-                for (int speed = Math.Max(0, ship.Speed - 1); speed <= Math.Min(ship.MaxSpeed, ship.Speed + 1); speed++)
+                int limit = b.HelmTurn(ship, speed);
+                for (int off = -limit; off <= limit; off += OpenMath.HeadingStep)
                 {
+                    int h = OpenMath.Norm(ship.Heading + off);
                     var end = b.Trace(ship, h, speed * OpenMath.Span, out var stop);
                     if (stop != Stop.None) continue; // never plan a collision
                     int score = -Math.Abs(OpenMath.Dist(end, target.Pos) - ideal) / 10;
@@ -74,8 +76,9 @@ namespace Silence.Core.Open
                     else
                     {
                         if (b.Sight(end, target.Pos) == null) score += 200;
-                        // Stopped with nothing to shoot: bad, and less bad the more open space lies ahead, so the ship turns its way out.
-                        if (speed == 0) score += OpenMath.Dist(end, b.Trace(ship, h, 3 * OpenMath.Span, out _)) / 20 - 250;
+                        // Nothing to shoot: open space ahead is worth something, so a boxed-in ship turns its way out; stopping costs.
+                        score += OpenMath.Dist(end, b.Trace(ship, h, 3 * OpenMath.Span, out _)) / 10;
+                        if (speed == 0) score -= 250;
                     }
                     score -= Math.Abs(off) / OpenMath.HeadingStep; // the smaller turn on a tie
                     if (score <= bestScore) continue;
@@ -89,14 +92,55 @@ namespace Silence.Core.Open
         }
     }
 
-    /// <summary>A plain player for tests and the F9 key: shoots what it can, turns its guns toward the nearest enemy, closes when far.</summary>
+    /// <summary>
+    /// A plain player for tests and the F9 key. It sets each ship's helm to bring the most guns in hand to bear
+    /// (and to end the drift at a fighting range, clear of rocks), then fires what it can and ends the turn.
+    /// </summary>
     public static class OpenBot
     {
         public static void PlayTurn(OpenBattle b)
         {
+            foreach (var s in b.Ships)
+                if (s.Alive && s.Side == OpenSide.Player && b.Outcome == OpenOutcome.Ongoing) Steer(b, s);
             for (int guard = 0; guard < 40 && b.Outcome == OpenOutcome.Ongoing; guard++)
                 if (!PlayOne(b)) break;
             b.EndTurn();
+        }
+
+        /// <summary>The bot's helm choice for one ship (also what the screen could suggest).</summary>
+        public static void Steer(OpenBattle b, OpenShip s)
+        {
+            var near = OpenAi.Nearest(b, s);
+            if (near == null) return;
+            int bestHeading = s.Heading, bestSpeed = s.Speed;
+            long best = long.MinValue;
+            for (int speed = b.HelmMin(s); speed <= b.HelmMax(s); speed++)
+            {
+                int limit = b.HelmTurn(s, speed);
+                for (int off = -limit; off <= limit; off += OpenMath.HeadingStep)
+                {
+                    int h = OpenMath.Norm(s.StartHeading + off);
+                    int guns = Guns(b, s, h);
+                    long score = guns * 1000L;
+                    var end = b.Trace(s, h, speed * OpenMath.Span, out var stop);
+                    if (stop != Stop.None) score -= 2000;
+                    score -= Math.Abs(OpenMath.Dist(end, near.Pos) - 3500) / 10;
+                    if (b.Sight(end, near.Pos) == null) score += 150;
+                    else if (guns == 0)
+                    {
+                        // Nothing to shoot and nothing in sight: do not sit behind a rock, and prefer open space
+                        // ahead, so a ship nosed into a pocket backs out of it.
+                        if (speed == 0) score -= 400;
+                        score += OpenMath.Dist(end, b.Trace(s, h, 3 * OpenMath.Span, out _)) / 10;
+                    }
+                    score -= Math.Abs(off) / OpenMath.HeadingStep;
+                    if (score <= best) continue;
+                    best = score;
+                    bestHeading = h;
+                    bestSpeed = speed;
+                }
+            }
+            b.Helm(s.Id, bestHeading, bestSpeed);
         }
 
         static bool PlayOne(OpenBattle b)
@@ -118,44 +162,14 @@ namespace Silence.Core.Open
                 int dist = OpenMath.Dist(src.Pos, near.Pos);
                 switch (c.Kind)
                 {
-                    case OpenKind.Turn:
-                        int limit = b.TurnLimit(c, src);
-                        int diff = OpenMath.Diff(src.Heading, OpenMath.Bearing(src.Pos, near.Pos));
-                        int turn = Math.Max(-limit, Math.Min(limit, diff));
-                        // Better: the heading that lets the most weapon cards in hand bear on someone.
-                        int bestGuns = Guns(b, src, src.Heading);
-                        for (int off = -limit; off <= limit; off += OpenMath.HeadingStep)
-                        {
-                            int guns = Guns(b, src, OpenMath.Norm(src.Heading + off));
-                            if (guns <= bestGuns) continue;
-                            bestGuns = guns;
-                            turn = off;
-                        }
-                        if (bestGuns == 0 && src.NoRoomAhead(b))
-                        {
-                            // Nose against a wreck: turn to the most open heading.
-                            int bestRoom = 0;
-                            for (int off = -limit; off <= limit; off += OpenMath.HeadingStep)
-                            {
-                                int room = OpenMath.Dist(src.Pos, b.Trace(src, OpenMath.Norm(src.Heading + off), 3 * OpenMath.Span, out _));
-                                if (room <= bestRoom) continue;
-                                bestRoom = room;
-                                turn = off;
-                            }
-                        }
-                        if (turn == 0) continue;
-                        return b.Play(c.Id, OpenChoice.Facing(OpenMath.Norm(src.Heading + turn))) == null;
                     case OpenKind.Burn:
-                        if (dist < 5000 && b.Sight(src.Pos, near.Pos) == null) continue;
-                        return b.Play(c.Id, OpenChoice.None) == null;
-                    case OpenKind.Brake:
-                        if (dist > 3500 || src.Speed < 2) continue;
+                        if (dist < 6000 && b.Sight(src.Pos, near.Pos) == null) continue;
                         return b.Play(c.Id, OpenChoice.None) == null;
                     case OpenKind.Vent:
                         if (src.Heat < 2) continue;
                         return b.Play(c.Id, OpenChoice.None) == null;
                     case OpenKind.Shields:
-                        if (dist > 7000) continue;
+                        if (dist > 8000) continue;
                         return b.Play(c.Id, OpenChoice.None) == null;
                 }
             }

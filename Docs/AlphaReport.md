@@ -917,3 +917,24 @@ A playable test of the pivot: battle without a hex grid, seen at a tilt. One fig
 - No enemy orders shown ahead, no heat penalties beyond a cap, no crits, junk, craft, crew or hazards.
 - The view is three-quarter (PixelLab's "low top-down"), not true isometric, and overlay lines are not pixel-snapped.
 - Fights run about 17 turns with the bot, which is long.
+
+### Helm, bigger field and the art pilot (2026-11-28)
+
+After Kade played the prototype: turning by card was annoying and unforgiving, and the map should be bigger.
+
+- **Free helm.** Each turn a ship may turn up to its agility from where it began the turn (escort 135°, others 90°;
+  one point less at top speed) and change speed by one step. Free, as often as you like, and turning back is free. A
+  ship that began the turn stopped can pivot to any heading. Hard About and Come About widen the fan; Burn pushes past
+  the speed step. Controls: the green fan around the selected ship, A and D, W and S, the panel buttons; Tab or click
+  to switch ship.
+- **Eight headings**, one per drawn facing, so the sprite always shows the true heading.
+- **Bigger field**: 40×22 spans with 4 wrecks and 16 rock clusters scattered from the seed, lanes between them and the
+  starts kept clear. 1× shows the whole field; the wheel or Z zooms to 2×; drag or the arrow keys pan; Space centres.
+- **Art pilot** (65 generations): see `GridlessPivotPlan.md`. Long Promise (expanded from its sprite), Outrider and
+  Blade (text plus style image) are in the prototype.
+- 246 EditMode tests pass (7 new). Bot over 40 seeds: 40 wins, 0 losses, about 20 turns. The free helm made the enemy
+  too easy and the bigger field made fights longer; both need tuning.
+- Checked in Play Mode by script: the whole field at 1×, zoom to 2×, the helm fan. Not yet seen: a full fight on the
+  new field by hand.
+- Known layout faults: the last line of each ship panel ("TURN LEFT") runs into the panel's border, and the pan/zoom
+  hint under End turn wraps.

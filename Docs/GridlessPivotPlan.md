@@ -29,15 +29,22 @@ The notes below build on what playing it showed.
 
 Turning and speed are not cards. Each turn, before the drift, every one of your ships may:
 
-- turn up to its **agility** from where it began the turn (escort 90°, line ship 45°, cruiser 45°, boss 0–45°),
-  half that at its top speed. Turning back is free, so a mistake can be undone until the turn ends;
-- change speed by **one step** up or down.
+- turn up to its **agility** from where it began the turn (escort 135°, line ship and cruiser 90°, boss 45–90°),
+  one point (45°) less at its top speed. Turning back is free, so a mistake can be undone until the turn ends;
+- change speed by **one step** up or down;
+- a ship that began the turn stopped, and stays stopped, can pivot to any heading (so no ship is ever boxed in by
+  rocks).
 
 The current maneuver cards become boosts on top of the helm: Burn (+1 speed past the limit and move 1 span now),
 Hard About and Come About (turn further this turn), Screening Maneuver (move an escort beside the flagship),
 Sacrificial Ram (drive into contact). Enemy ships use the same limits.
 
-## Decisions still open
+## Decisions
+
+Kade accepted all five recommendations on 2026-11-28. In the prototype now: 8 headings, the free helm, a 40×22 span
+field with pan and zoom, and the pilot hulls. What the pilot showed is under "Art plan".
+
+### As first proposed
 
 1. **How many headings.** PixelLab draws 8 facings. With 24 rule headings (the prototype), the sprite is up to 22°
    off the true heading and the base's tick has to carry it. **Recommendation: 8 headings (45° steps)**, so the
@@ -81,7 +88,23 @@ image so the designs we have stay recognisable. Cost depends on the longest side
 to 84 px, 15 up to 112 px, 25 up to 168 px. Anything over 168 px (late bosses, The Silence) needs one image per
 facing instead.
 
-### Step A: pilot (about 90 generations)
+### Step A: pilot (done, 65 generations)
+
+Result (sheet: `ArtSource/IsoPilot/pilot_sheet.png`):
+
+| Method | Long Promise | Outrider | Blade |
+| --- | --- | --- | --- |
+| Expand today's east sprite to 8 facings (`import_object` + `expand_object_to_8_directions`, 25) | **Best**: keeps the quilted hull, drum and pod | — | — |
+| Text + today's sprite as style image, low top-down (`create_object_pro_flash`, 6–8) | Lost the quilted hull | **Good**, kept | **Good**, kept |
+| Same, high top-down | Became a different ship | Lost the catamaran | Usable, less like the original |
+
+- **Route:** expand the existing sprite for flagships and anything with a design detail worth keeping; text plus
+  style image in low top-down for the rest. High top-down is out.
+- **View angle:** PixelLab's low top-down ships are barely foreshortened (nose-up about 0.9 of side-on), so the field
+  is tilted only to 0.85. The depth comes from the ships' shading more than from perspective.
+- **Cost:** cheaper than planned. Text-plus-style hulls are 6–8 generations for all eight facings.
+
+The plan as written before the pilot:
 
 Three hulls from their current sprites: Long Promise (128 px), Outrider (80 px), Blade (64 px). Each in low and high
 top-down, to settle decision 2. Judge them on a contact sheet for:
@@ -93,7 +116,10 @@ top-down, to settle decision 2. Judge them on a contact sheet for:
 If the reference image does not hold the design, fall back to generating from the description plus a style image
 (the demo route), and keep a per-faction style object for consistency.
 
-### Step B: the units in the game today (about 400 generations, about 600 with rerolls)
+### Step B: the units in the game today (about 280 generations, about 420 with rerolls)
+
+Revised after the pilot: the six 128 px ships by expansion (25 each, 150), the other twenty by text plus style image
+(6–8 each, about 130). The table below is the pre-pilot estimate, kept for the unit list.
 
 | Size class | Units | Cost each | Subtotal |
 | --- | --- | --- | --- |
@@ -129,9 +155,9 @@ defences). At the same rates that is roughly 400 generations, plus single-facing
 | Step | Generations |
 | --- | --- |
 | A, pilot | ~90 |
-| B, today's units with rerolls | ~600 |
+| B, today's units with rerolls | ~420 (was ~600) |
 | C, the field | ~225 |
-| **Before the port can ship** | **~915** |
+| **Before the port can ship** | **~735** (was ~915) |
 | D, the 1.0 roster | ~400+ |
 
 The account has about 2,600 generations left this cycle (4,800 a cycle; resets 26 December), so Steps A to C fit in

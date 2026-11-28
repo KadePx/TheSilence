@@ -1,4 +1,5 @@
 using Silence.Core.Battle;
+using Silence.Core.Random;
 
 namespace Silence.Core.Open
 {
@@ -7,23 +8,23 @@ namespace Silence.Core.Open
     {
         public static OpenShip Flagship() => new OpenShip
         {
-            Name = "Long Promise", Art = "con_frigate", Side = OpenSide.Player, Flagship = true,
-            MaxSpeed = 3, Radius = 1200, Hull = 30, MaxHull = 30, Shields = 4, MaxShields = 4,
-            Armor = new[] { 2, 2, 1, 2 }, HeatCap = 5, Vent = 1,
+            Name = "Long Promise", Art = "con_longpromise", Side = OpenSide.Player, Flagship = true,
+            MaxSpeed = 3, Radius = 1600, Hull = 30, MaxHull = 30, Shields = 4, MaxShields = 4,
+            Armor = new[] { 2, 2, 1, 2 }, HeatCap = 5, Vent = 1, Agility = 90,
         };
 
         public static OpenShip Outrider() => new OpenShip
         {
-            Name = "Outrider", Art = "con_skiff", Side = OpenSide.Player,
-            MaxSpeed = 4, Radius = 600, Hull = 14, MaxHull = 14, Shields = 3, MaxShields = 3,
-            Armor = new[] { 1, 1, 0, 1 }, HeatCap = 3, Vent = 1,
+            Name = "Outrider", Art = "con_outrider", Side = OpenSide.Player,
+            MaxSpeed = 4, Radius = 900, Hull = 14, MaxHull = 14, Shields = 3, MaxShields = 3,
+            Armor = new[] { 1, 1, 0, 1 }, HeatCap = 3, Vent = 1, Agility = 135,
         };
 
         public static OpenShip Cruiser() => new OpenShip
         {
             Name = "Verdict cruiser", Art = "asc_cruiser", Side = OpenSide.Enemy,
             MaxSpeed = 2, Radius = 1100, Hull = 22, MaxHull = 22, Shields = 4, MaxShields = 4,
-            Armor = new[] { 3, 2, 0, 2 }, Turn = 30, Broadsider = true,
+            Armor = new[] { 3, 2, 0, 2 }, Agility = 90, Broadsider = true,
             Weapons =
             {
                 new OpenWeapon { Name = "Broadside", Sides = true, Range = 5000, Damage = 5 },
@@ -33,34 +34,34 @@ namespace Silence.Core.Open
 
         public static OpenShip Escort(string name) => new OpenShip
         {
-            Name = name, Art = "asc_escort", Side = OpenSide.Enemy,
+            Name = name, Art = "asc_blade", Side = OpenSide.Enemy,
             MaxSpeed = 3, Radius = 600, Hull = 9, MaxHull = 9, Shields = 2, MaxShields = 2,
-            Armor = new[] { 1, 1, 0, 1 }, Turn = 45,
+            Armor = new[] { 1, 1, 0, 1 }, Agility = 135,
             Weapons = { new OpenWeapon { Name = "Fore guns", Fore = true, Range = 4000, Damage = 3 } },
         };
 
         public static OpenCard Burn() => new OpenCard
         {
             Art = "burn", Name = "Burn", Kind = OpenKind.Burn, Type = CardType.Maneuver, Cost = 0, Heat = 1, Amount = 1,
-            Text = "Speed +1 and move 1 span straight ahead now. +1 Heat.",
+            Text = "Speed +1 past the helm's limit, and move 1 span straight ahead now. +1 Heat.",
         };
 
         public static OpenCard Retro() => new OpenCard
         {
             Art = "screening_maneuver", Name = "Retro Burn", Kind = OpenKind.Brake, Type = CardType.Maneuver, Cost = 0, Amount = 2,
-            Text = "Speed -2. The ship drifts less at the end of the turn.",
+            Text = "Speed -2 past the helm's limit.",
         };
 
         public static OpenCard HardAbout() => new OpenCard
         {
-            Art = "hard_about", Name = "Hard About", Kind = OpenKind.Turn, Type = CardType.Maneuver, Cost = 1, Amount = 60,
-            Text = "Turn up to 60 deg. Only 30 deg at Speed 3 or more.",
+            Art = "hard_about", Name = "Hard About", Kind = OpenKind.Turn, Type = CardType.Maneuver, Cost = 1, Amount = 90,
+            Text = "The helm can turn this ship 90 deg further this turn.",
         };
 
         public static OpenCard ComeAbout() => new OpenCard
         {
-            Art = "come_about", Name = "Come About", Kind = OpenKind.Turn, Type = CardType.Maneuver, Cost = 0, Amount = 90,
-            Text = "Turn up to 90 deg. Only 30 deg at Speed 3 or more.",
+            Art = "come_about", Name = "Come About", Kind = OpenKind.Turn, Type = CardType.Maneuver, Cost = 0, Amount = 45,
+            Text = "The helm can turn this ship 45 deg further this turn.",
         };
 
         public static OpenCard DeckGuns() => new OpenCard
@@ -96,27 +97,55 @@ namespace Silence.Core.Open
             Text = "Remove 3 Heat.",
         };
 
-        /// <summary>The prototype fight, not yet started.</summary>
+        /// <summary>The prototype fight, not yet started. The debris is scattered from the seed.</summary>
         public static OpenBattle BreakersYard(ulong seed)
         {
             var b = new OpenBattle(seed);
-            var flag = b.Add(Flagship(), -6500, 600, 0, 1);
-            var outrider = b.Add(Outrider(), -6900, 3400, 0, 2);
-            b.Add(Cruiser(), 5600, -600, 180, 1);
-            b.Add(Escort("Blade escort"), 6600, -3600, 180, 2);
-            b.Add(Escort("Blade escort"), 6300, 3700, 195, 2);
+            var flag = b.Add(Flagship(), -11000, 500, 0, 1);
+            var outrider = b.Add(Outrider(), -11500, 4500, 0, 2);
+            b.Add(Cruiser(), 10500, -500, 180, 1);
+            b.Add(Escort("Blade escort"), 11500, -4500, 180, 2);
+            b.Add(Escort("Blade escort"), 11000, 5000, 180, 2);
+            Scatter(b, seed);
 
-            b.Rocks.Add(new OpenRock { Name = "Wreck", Art = "iso_wreck", Pos = new Vec(-200, -1300), Radius = 1100 });
-            b.Rocks.Add(new OpenRock { Name = "Rocks", Art = "iso_rock_a", Pos = new Vec(-1700, 3500), Radius = 800 });
-            b.Rocks.Add(new OpenRock { Name = "Rocks", Art = "iso_rock_b", Pos = new Vec(2700, 2500), Radius = 800 });
-            b.Rocks.Add(new OpenRock { Name = "Rocks", Art = "iso_rock_a", Pos = new Vec(-3400, -4000), Radius = 700 });
-            b.Rocks.Add(new OpenRock { Name = "Rocks", Art = "iso_rock_b", Pos = new Vec(3300, -4300), Radius = 700 });
-
-            foreach (var c in new[] { Burn(), Burn(), Retro(), HardAbout(), HardAbout(), DeckGuns(), DeckGuns(), MassDriver(), RingShield(), VentPlasma() })
+            foreach (var c in new[] { Burn(), HardAbout(), DeckGuns(), DeckGuns(), DeckGuns(), MassDriver(), MassDriver(), RingShield(), RingShield(), VentPlasma() })
                 b.AddCard(c, flag);
-            foreach (var c in new[] { Burn(), ComeAbout(), OutriderGuns(), OutriderGuns() })
+            foreach (var c in new[] { Burn(), ComeAbout(), OutriderGuns(), OutriderGuns(), OutriderGuns() })
                 b.AddCard(c, outrider);
             return b;
+        }
+
+        /// <summary>
+        /// Wrecks and rock across the field, from the seed on a stream of its own (so the deck shuffle is not
+        /// disturbed). Each keeps clear of the ships' starting places and leaves a lane between itself and the next.
+        /// </summary>
+        public static void Scatter(OpenBattle b, ulong seed, int wrecks = 4, int rocks = 16)
+        {
+            var rng = new Pcg32(seed, 77);
+            for (int i = 0; i < wrecks + rocks; i++)
+            {
+                bool wreck = i < wrecks;
+                string art = wreck ? "iso_wreck" : i % 2 == 0 ? "iso_rock_a" : "iso_rock_b";
+                int radius = wreck ? 1100 : art == "iso_rock_a" ? 800 : 850;
+                for (int attempt = 0; attempt < 200; attempt++)
+                {
+                    var p = new Vec(rng.Range(-b.HalfWidth + 2500, b.HalfWidth - 2500), rng.Range(-b.HalfHeight + 2000, b.HalfHeight - 2000));
+                    if (!Clear(b, p, radius)) continue;
+                    b.Rocks.Add(new OpenRock { Name = wreck ? "Wreck" : "Rocks", Art = art, Pos = p, Radius = radius });
+                    break;
+                }
+            }
+        }
+
+        public const int StartClearance = 2500, Lane = 1600;
+
+        static bool Clear(OpenBattle b, Vec p, int radius)
+        {
+            foreach (var s in b.Ships)
+                if (OpenMath.Dist(p, s.Pos) < s.Radius + radius + StartClearance) return false;
+            foreach (var r in b.Rocks)
+                if (OpenMath.Dist(p, r.Pos) < r.Radius + radius + Lane) return false;
+            return true;
         }
     }
 }

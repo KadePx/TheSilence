@@ -48,8 +48,12 @@ namespace Silence.Core.Open
         /// <summary>Armor by the arc the shot comes in on: fore, starboard, aft, port.</summary>
         public int[] Armor = new int[4];
         public int Heat, HeatCap, Vent;
-        /// <summary>Most a ship can turn in one go, in degrees (enemy ships, per turn).</summary>
-        public int Turn;
+        /// <summary>How far the helm can turn the ship in one turn, in degrees (a multiple of 45). One point (45) less at top speed.</summary>
+        public int Agility;
+        /// <summary>Player ships: heading and speed when the turn began. The helm is measured from these, so turning back is free.</summary>
+        public int StartHeading, StartSpeed;
+        /// <summary>Extra turn this turn, from Hard About or Come About.</summary>
+        public int TurnBonus;
         /// <summary>Enemy ships only: what they shoot with, and whether they want the target on their beam.</summary>
         public List<OpenWeapon> Weapons = new List<OpenWeapon>();
         public bool Broadsider;
@@ -78,7 +82,7 @@ namespace Silence.Core.Open
         public int SourceId;
     }
 
-    public enum OpenEventKind { TurnStarted, Moved, Turned, Speed, Fired, Missed, Destroyed, Collision, Shields, Vented, Over }
+    public enum OpenEventKind { TurnStarted, Moved, Turned, Speed, Fired, Missed, Destroyed, Collision, Shields, Vented, Boost, Over }
 
     public struct OpenEvent
     {
@@ -91,26 +95,26 @@ namespace Silence.Core.Open
         public string Text;
     }
 
-    /// <summary>What the player picks when playing a card: a target ship, or a new heading.</summary>
+    /// <summary>What the player picks when playing a card: a target ship, or nothing.</summary>
     public struct OpenChoice
     {
         public int TargetId;
-        public int Heading;
         public static OpenChoice None => new OpenChoice { TargetId = -1 };
         public static OpenChoice At(int targetId) => new OpenChoice { TargetId = targetId };
-        public static OpenChoice Facing(int heading) => new OpenChoice { TargetId = -1, Heading = heading };
     }
 
     /// <summary>
-    /// Prototype of battle without a grid. Ships stand on round bases anywhere on the plane, face one of 24
+    /// Prototype of battle without a grid. Ships stand on round bases anywhere on the plane, face one of 8
     /// headings and keep their speed: at the end of its side's turn every ship drifts Speed spans straight
     /// ahead. Guns need the target in arc, in range and in sight; wrecks and rocks block sight.
-    /// Round: the player plays cards, then the player's ships drift; each enemy fires from where it sits (the
-    /// position the player saw all turn), then turns, changes speed and drifts.
+    /// Round: the player sets each ship's helm (free, within its limits) and plays cards, then the player's
+    /// ships drift; each enemy fires from where it sits (the position the player saw all turn), then turns,
+    /// changes speed and drifts.
     /// </summary>
     public sealed class OpenBattle
     {
-        public const int HalfWidth = 9000, HalfHeight = 6000;
+        /// <summary>Half the size of the field. Nothing may leave it.</summary>
+        public int HalfWidth = 20000, HalfHeight = 11000;
         public const int HandSize = 5;
         const int StepSize = 100;
 
@@ -210,8 +214,39 @@ namespace Silence.Core.Open
         /// <summary>Where the ship will be after it drifts at the end of its side's turn.</summary>
         public Vec DriftEnd(OpenShip ship, out Stop stop) => Trace(ship, ship.Heading, ship.Speed * OpenMath.Span, out stop);
 
-        /// <summary>How far a turn card lets its ship turn: less at speed.</summary>
-        public int TurnLimit(OpenCard card, OpenShip ship) => ship.Speed >= 3 ? Math.Min(card.Amount, 30) : card.Amount;
+        /// <summary>
+        /// How far from its starting heading the helm may turn a ship at a given speed: one point less at top
+        /// speed. A ship that began the turn stopped (and stays stopped) pivots in place to any heading.
+        /// </summary>
+        public int HelmTurn(OpenShip ship, int speed)
+            => ship.StartSpeed == 0 && speed == 0 ? 180
+            : Math.Max(0, ship.Agility - (speed >= ship.MaxSpeed ? OpenMath.HeadingStep : 0)) + ship.TurnBonus;
+
+        /// <summary>Slowest and fastest the helm may set this turn: one step either way from the starting speed.</summary>
+        public int HelmMin(OpenShip ship) => Math.Max(0, ship.StartSpeed - 1);
+        public int HelmMax(OpenShip ship) => Math.Min(ship.MaxSpeed, ship.StartSpeed + 1);
+
+        /// <summary>
+        /// Set a player ship's heading and speed for this turn. Free, any number of times before the turn ends,
+        /// within <see cref="HelmTurn"/> of the heading it began the turn on and one speed step of its starting speed.
+        /// Returns null on success, otherwise why not (nothing changes).
+        /// </summary>
+        public string Helm(int shipId, int heading, int speed)
+        {
+            var ship = Get(shipId);
+            if (Outcome != OpenOutcome.Ongoing) return "The battle is over.";
+            if (ship == null || !ship.Alive || ship.Side != OpenSide.Player) return "Not your ship.";
+            heading = OpenMath.Norm(heading);
+            if (heading % OpenMath.HeadingStep != 0) return "Ships face one of eight headings.";
+            if (speed < HelmMin(ship) || speed > HelmMax(ship))
+                return $"{ship.Name} can only go from Speed {HelmMin(ship)} to {HelmMax(ship)} this turn.";
+            int limit = HelmTurn(ship, speed);
+            if (Math.Abs(OpenMath.Diff(ship.StartHeading, heading)) > limit)
+                return limit == 0 ? $"{ship.Name} cannot turn at top speed." : $"{ship.Name} can turn {limit} deg this turn.";
+            SetHeading(ship, heading);
+            SetSpeed(ship, speed);
+            return null;
+        }
 
         /// <summary>Null when the card can be played, otherwise the reason in plain words.</summary>
         public string WhyNot(OpenCard card)
@@ -250,18 +285,20 @@ namespace Silence.Core.Open
                     Hit(src, card.Weapon, target);
                     break;
                 case OpenKind.Turn:
-                    int turn = OpenMath.Diff(src.Heading, choice.Heading);
-                    if (choice.Heading % OpenMath.HeadingStep != 0 || Math.Abs(turn) > TurnLimit(card, src)) return "Too sharp a turn.";
                     Pay(card, src);
-                    SetHeading(src, choice.Heading);
+                    src.TurnBonus += card.Amount;
+                    Log.Add(new OpenEvent { Kind = OpenEventKind.Boost, ShipId = src.Id, TargetId = -1, Amount = card.Amount, Text = $"+{card.Amount} DEG HELM" });
                     break;
                 case OpenKind.Burn:
+                    // Past the helm's step: the band of speeds this turn moves up with it.
                     Pay(card, src);
+                    src.StartSpeed = Math.Min(src.MaxSpeed, src.StartSpeed + 1);
                     SetSpeed(src, Math.Min(src.MaxSpeed, src.Speed + 1));
                     Move(src, card.Amount * OpenMath.Span);
                     break;
                 case OpenKind.Brake:
                     Pay(card, src);
+                    src.StartSpeed = Math.Max(0, src.StartSpeed - card.Amount);
                     SetSpeed(src, Math.Max(0, src.Speed - card.Amount));
                     break;
                 case OpenKind.Shields:
@@ -308,6 +345,8 @@ namespace Silence.Core.Open
             foreach (var s in Ships)
             {
                 if (!s.Alive || s.Side != OpenSide.Enemy) continue;
+                s.StartHeading = s.Heading;
+                s.StartSpeed = s.Speed;
                 OpenAi.Manoeuvre(this, s);
                 Move(s, s.Speed * OpenMath.Span);
             }
@@ -325,6 +364,9 @@ namespace Silence.Core.Open
                 if (s.Shields > s.MaxShields) s.Shields = s.MaxShields;
                 else if (s.Shields < s.MaxShields) s.Shields++;
                 s.Heat = Math.Max(0, s.Heat - s.Vent);
+                s.StartHeading = s.Heading;
+                s.StartSpeed = s.Speed;
+                s.TurnBonus = 0;
             }
             Log.Add(new OpenEvent { Kind = OpenEventKind.TurnStarted, Amount = Turn, ShipId = -1, TargetId = -1 });
             while (Hand.Count < HandSize)

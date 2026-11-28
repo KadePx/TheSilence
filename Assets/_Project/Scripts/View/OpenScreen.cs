@@ -20,8 +20,15 @@ namespace Silence.View
     /// </summary>
     public sealed class OpenScreen : MonoBehaviour
     {
-        // The plane on screen: thousandths of a span to layout pixels, flattened top to bottom.
-        const float U = 0.072f, Tilt = 0.6f, Cx = 960f, Cy = 404f;
+        // The plane on screen: thousandths of a span to layout pixels (U), flattened top to bottom (Tilt), and
+        // panned by a whole number of pixels (camF, rounded). Sprites are drawn at a whole-number scale, and U
+        // keeps step with it so a base and its ship stay the same size: 1x shows the whole field, 2x is close.
+        // Tilt matches the art: PixelLab's low top-down ships are barely foreshortened (nose-up about 0.9 of side-on).
+        const float Tilt = 0.85f, Cx = 960f, Cy = 394f;
+        float U = 0.036f;
+        int scale = 1;
+        Vector2 camF;
+        Vector2 Cam => new Vector2(Mathf.Round(camF.x), Mathf.Round(camF.y));
         static readonly string[] Facings = { "east", "south_east", "south", "south_west", "west", "north_west", "north", "north_east" };
         static readonly Color PlayerCol = Skin.Hex("8cc47a"), EnemyCol = Skin.Hex("d9573f"), Lit = Skin.Hex("f0a040"), Hazard = Skin.Hex("b48cf0");
 
@@ -33,7 +40,7 @@ namespace Silence.View
             public Image Img;
         }
 
-        enum Mode { Idle, Target, Heading, Busy, Over }
+        enum Mode { Idle, Target, Busy, Over }
 
         OpenBattle battle;
         ulong seed = 1;
@@ -41,7 +48,8 @@ namespace Silence.View
         int logCursor;
         OpenCard selected;
         int hoverShip = -1;
-        int previewHeading;
+        /// <summary>The ship the helm steers (one of yours), and the heading under the pointer in its fan, or -1.</summary>
+        int helm = -1, helmPreview = -1;
         Vector2 pointer;
 
         RectTransform root, spriteRoot, labelRoot, handRoot, panelRoot, overlayRoot;
@@ -71,10 +79,14 @@ namespace Silence.View
             over = ShapeGraphic.Create(root, "Over");
             labelRoot = Ui.Box(root, "Labels", 0, 0, Ui.RefW, Ui.RefH);
 
-            var catcher = Ui.Catcher(root, "Board", 0, 52, Ui.RefW, 718);
-            catcher.Move = e => OnPointer(e, false);
-            catcher.Click = e => OnPointer(e, true);
-            catcher.Exit = () => { if (hoverShip != -1) { hoverShip = -1; Redraw(); } };
+            var catcher = Ui.Img(root, "Board", Skin.Pixel, 0, 52, Ui.RefW, 684, new Color(0, 0, 0, 0));
+            catcher.raycastTarget = true;
+            var input = catcher.gameObject.AddComponent<BoardInput>();
+            input.Move = e => OnPointer(e, false);
+            input.Click = e => OnPointer(e, true);
+            input.Drag = e => { camF += new Vector2(-e.delta.x, e.delta.y) / Ui.PixelScale; ClampCam(); ViewChanged(); };
+            input.Scroll = e => { if ((e.scrollDelta.y > 0) == (scale == 1)) Zoom(Layout(e.position)); };
+            input.Exit = () => { if (hoverShip != -1 || helmPreview != -1) { hoverShip = -1; helmPreview = -1; Redraw(); } };
 
             var top = Ui.Plate(root, "Top", 0, 0, Ui.RefW, 52);
             turnLabel = Ui.Heading(top.transform, "Turn 1", 16, 28, 16, 300, 20, TextAlignmentOptions.Left, Skin.Brass);
@@ -99,6 +111,7 @@ namespace Silence.View
             handRoot = Ui.Box(root, "Hand", 0, 0, Ui.RefW, Ui.RefH);
             endTurn = Ui.Btn(bottom.transform, "End turn", 1664, 116, 224, 76, OnEndTurn, 32);
             Ui.Label(bottom.transform, "E or Enter. F9 lets the bot play a turn.", Skin.Stencil, 12, Skin.Faint, 1600, 204, 300, 14, TextAlignmentOptions.Center);
+            Ui.Label(bottom.transform, "DRAG OR ARROWS TO PAN   WHEEL OR Z TO ZOOM   SPACE CENTRES", Skin.Stencil, 12, Skin.Faint, 1540, 236, 360, 14, TextAlignmentOptions.Center);
             overlayRoot = Ui.Box(root, "Overlay", 0, 0, Ui.RefW, Ui.RefH);
 
             Music.Play("music_battle");
@@ -119,22 +132,20 @@ namespace Silence.View
             shown.Clear();
             rockImages.Clear();
             foreach (var r in battle.Rocks)
-            {
-                var s = ArtLibrary.Instance.Sprite(r.Art);
-                var img = Ui.Img(spriteRoot, r.Name, s, 0, 0, 10, 10);
-                if (s != null) PlaceSprite(img, s, new Vector2(r.Pos.X, r.Pos.Y), 2, 0.1f);
-                else img.enabled = false;
-                rockImages.Add(img);
-            }
+                rockImages.Add(Ui.Img(spriteRoot, r.Name, ArtLibrary.Instance.Sprite(r.Art), 0, 0, 10, 10));
             foreach (var ship in battle.Ships)
             {
                 var sh = new Shown { Img = Ui.Img(spriteRoot, ship.Name, null, 0, 0, 10, 10) };
                 shown.Add(sh);
             }
+            scale = 1;
+            U = 0.036f;
+            camF = Vector2.zero;
             SyncShown();
             DrawFloor();
             mode = Mode.Idle;
-            Flash("Breaker's Yard. Wrecks and rocks block fire. Hover a ship to see where its guns bear.", 9f);
+            PickHelm();
+            Flash("Steer with the green fan around your ship: click a heading, or A and D; W and S for speed. Hover an enemy to see its guns.", 12f);
             Refresh();
         }
 
@@ -155,20 +166,56 @@ namespace Silence.View
 
         // ---------------------------------------------------------------- plane and sprites
 
-        static Vector2 P(Vector2 plane) => new Vector2(Cx + plane.x * U, Cy + plane.y * U * Tilt);
-        static Vector2 P(Vec v) => P(new Vector2(v.X, v.Y));
+        Vector2 P(Vector2 plane) => new Vector2(Cx + plane.x * U - Cam.x, Cy + plane.y * U * Tilt - Cam.y);
+        Vector2 P(Vec v) => P(new Vector2(v.X, v.Y));
+        Vector2 ToPlane(Vector2 layout) => new Vector2((layout.x - Cx + Cam.x) / U, (layout.y - Cy + Cam.y) / (U * Tilt));
         static Vector2 Dir(float degrees) => new Vector2(Mathf.Cos(degrees * Mathf.Deg2Rad), Mathf.Sin(degrees * Mathf.Deg2Rad));
-        static Vector2 Polar(Vector2 centre, float degrees, float radius) => P(centre + Dir(degrees) * radius);
+        Vector2 Polar(Vector2 centre, float degrees, float radius) => P(centre + Dir(degrees) * radius);
 
-        /// <summary>The drawn facing nearest a heading, once the plane is flattened.</summary>
-        static string Facing(int heading)
+        /// <summary>Where a pointer is, in layout pixels from the top-left.</summary>
+        Vector2 Layout(Vector2 screen)
         {
-            var d = Dir(heading);
-            float screen = Mathf.Atan2(d.y * Tilt, d.x) * Mathf.Rad2Deg;
-            return Facings[((Mathf.RoundToInt(screen / 45f) % 8) + 8) % 8];
+            RectTransformUtility.ScreenPointToLocalPointInRectangle(spriteRoot, screen, null, out var local);
+            return new Vector2(local.x, -local.y);
         }
 
-        static void PlaceSprite(Image img, Sprite s, Vector2 plane, int scale, float lift)
+        /// <summary>The drawn facing for a heading: one of eight, the same eight the rules use.</summary>
+        static string Facing(int heading) => Facings[OpenMath.Norm(heading) / OpenMath.HeadingStep % 8];
+
+        void ClampCam()
+        {
+            float rx = Mathf.Max(0f, battle.HalfWidth * U - 800f), ry = Mathf.Max(0f, battle.HalfHeight * U * Tilt - 250f);
+            camF = new Vector2(Mathf.Clamp(camF.x, -rx, rx), Mathf.Clamp(camF.y, -ry, ry));
+        }
+
+        /// <summary>Between the whole field (1x) and close (2x), keeping the point under the pointer still.</summary>
+        void Zoom(Vector2 at)
+        {
+            var plane = ToPlane(at);
+            scale = scale == 1 ? 2 : 1;
+            U = 0.036f * scale;
+            camF = new Vector2(Cx + plane.x * U - at.x, Cy + plane.y * U * Tilt - at.y);
+            ClampCam();
+            ViewChanged();
+        }
+
+        void Centre(int shipId)
+        {
+            if (shipId < 0) return;
+            var p = shown[shipId].Pos;
+            camF = new Vector2(p.x * U, p.y * U * Tilt);
+            ClampCam();
+            ViewChanged();
+        }
+
+        void ViewChanged()
+        {
+            DrawFloor();
+            PlaceShips();
+            Redraw();
+        }
+
+        void PlaceSprite(Image img, Sprite s, Vector2 plane, int scale, float lift)
         {
             var at = P(plane);
             float w = s.rect.width * scale, h = s.rect.height * scale;
@@ -184,7 +231,13 @@ namespace Silence.View
                 var ship = battle.Ships[i];
                 var s = ArtLibrary.Instance.Sprite($"iso_{ship.Art}_{Facing(sh.Heading)}");
                 sh.Img.enabled = sh.Alive && s != null;
-                if (s != null) PlaceSprite(sh.Img, s, sh.Pos, 2, 0.06f);
+                if (s != null) PlaceSprite(sh.Img, s, sh.Pos, scale, 0.06f);
+            }
+            for (int i = 0; i < rockImages.Count; i++)
+            {
+                var img = rockImages[i];
+                if (img.sprite != null) PlaceSprite(img, img.sprite, new Vector2(battle.Rocks[i].Pos.X, battle.Rocks[i].Pos.Y), scale, 0.1f);
+                else img.enabled = false;
             }
             // Nearer the camera draws over what is behind it.
             var order = new List<(float y, Transform t)>();
@@ -208,9 +261,9 @@ namespace Silence.View
         {
             floor.Clear();
             var c = new Color(0.5f, 0.62f, 0.8f, 0.07f);
-            float w = OpenBattle.HalfWidth, h = OpenBattle.HalfHeight;
-            for (float x = -w; x <= w + 1; x += 1500f) floor.Line(P(new Vector2(x, -h)), P(new Vector2(x, h)), 1f, c);
-            for (float y = -h; y <= h + 1; y += 1500f) floor.Line(P(new Vector2(-w, y)), P(new Vector2(w, y)), 1f, c);
+            float w = battle.HalfWidth, h = battle.HalfHeight;
+            for (float x = -w; x <= w + 1; x += 2000f) floor.Line(P(new Vector2(x, -h)), P(new Vector2(x, h)), 1f, c);
+            for (float y = -h; y <= h + 1; y += 2000f) floor.Line(P(new Vector2(-w, y)), P(new Vector2(w, y)), 1f, c);
             var edge = new Color(0.5f, 0.62f, 0.8f, 0.3f);
             var k = new[] { new Vector2(-w, -h), new Vector2(w, -h), new Vector2(w, h), new Vector2(-w, h) };
             for (int i = 0; i < 4; i++) floor.Dashed(P(k[i]), P(k[(i + 1) % 4]), 2f, edge, 14f, 10f);
@@ -293,9 +346,9 @@ namespace Silence.View
                 if (!sh.Alive) continue;
                 var ship = battle.Ships[i];
                 var col = ship.Side == OpenSide.Player ? PlayerCol : EnemyCol;
-                bool turning = !busy && mode == Mode.Heading && selected != null && selected.SourceId == i;
-                int heading = turning ? previewHeading : sh.Heading;
+                int heading = sh.Heading;
                 Ring(under, sh.Pos, ship.Radius, i == hoverShip ? Color.white : col, 2f);
+                if (i == helm && !busy) Ring(under, sh.Pos, ship.Radius + 180f, new Color(col.r, col.g, col.b, 0.6f), 1f, 3);
                 under.Line(Polar(sh.Pos, heading, ship.Radius), Polar(sh.Pos, heading, ship.Radius + 420f), 3f, col);
 
                 if (!busy && ship.Speed > 0)
@@ -339,18 +392,37 @@ namespace Silence.View
                     }
                 }
             }
-            if (!busy && mode == Mode.Heading && selected != null)
+            if (!busy && mode == Mode.Idle && helm >= 0 && shown[helm].Alive) DrawHelm();
+        }
+
+        /// <summary>
+        /// The helm's fan: every heading the ship may still take this turn (measured from where it began the
+        /// turn, so it does not move as you steer), the heading under the pointer and the drift it would give.
+        /// </summary>
+        void DrawHelm()
+        {
+            var s = battle.Ships[helm];
+            var c = shown[helm].Pos;
+            int limit = Mathf.Min(180, battle.HelmTurn(s, s.Speed));
+            float reach = s.Radius + 2600f;
+            var fan = new Color(PlayerCol.r, PlayerCol.g, PlayerCol.b, 0.07f);
+            float from = s.StartHeading - limit - 22.5f, to = s.StartHeading + limit + 22.5f;
+            if (limit >= 180) { from = 0; to = 360; }
+            for (float a = from; a < to - 0.01f; a += 5f)
+                under.Quad(Polar(c, a, s.Radius), Polar(c, Mathf.Min(to, a + 5f), s.Radius), Polar(c, Mathf.Min(to, a + 5f), reach), Polar(c, a, reach), fan);
+            for (int a = s.StartHeading - limit; a <= s.StartHeading + limit; a += OpenMath.HeadingStep)
             {
-                var src = battle.Get(selected.SourceId);
-                int limit = battle.TurnLimit(selected, src);
-                var centre = shown[src.Id].Pos;
-                var fan = new Color(PlayerCol.r, PlayerCol.g, PlayerCol.b, 0.06f);
-                for (float a = src.Heading - limit; a < src.Heading + limit - 0.01f; a += 5f)
-                    under.Quad(Polar(centre, a, src.Radius), Polar(centre, a + 5f, src.Radius), Polar(centre, a + 5f, src.Radius + 1600f), Polar(centre, a, src.Radius + 1600f), fan);
-                for (int a = src.Heading - limit; a <= src.Heading + limit; a += OpenMath.HeadingStep)
-                    under.Line(Polar(centre, a, src.Radius + 1400f), Polar(centre, a, src.Radius + 1600f), 2f, PlayerCol);
-                under.Line(Polar(centre, previewHeading, src.Radius), Polar(centre, previewHeading, src.Radius + 1600f), 3f, Color.white);
+                if (limit >= 180 && a == s.StartHeading + limit) break;
+                bool now = OpenMath.Norm(a) == s.Heading;
+                under.Line(Polar(c, a, reach - 500f), Polar(c, a, reach), now ? 3f : 2f, now ? Color.white : PlayerCol);
             }
+            if (helmPreview < 0 || helmPreview == s.Heading) return;
+            under.Line(Polar(c, helmPreview, s.Radius), Polar(c, helmPreview, reach), 2f, Color.white);
+            if (s.Speed == 0) return;
+            var end = battle.Trace(s, helmPreview, s.Speed * OpenMath.Span, out var stop);
+            var endP = new Vector2(end.X, end.Y);
+            under.Dashed(Polar(c, helmPreview, s.Radius + 420f), P(endP), 2f, new Color(1f, 1f, 1f, 0.7f), 8f, 6f);
+            Ring(under, endP, s.Radius, stop == Stop.None ? new Color(1f, 1f, 1f, 0.7f) : Skin.Bad, 2f, 2);
         }
 
         string Predict(OpenShip from, OpenWeapon w, OpenShip target)
@@ -395,7 +467,11 @@ namespace Silence.View
             float y = 64;
             foreach (var s in battle.Ships.Where(x => x.Side == OpenSide.Player))
             {
-                var p = Ui.Plate(panelRoot, s.Name, 12, y, 300, 138).transform;
+                var plate = Ui.Plate(panelRoot, s.Name, 12, y, 300, 186);
+                var p = plate.transform;
+                int id = s.Id;
+                plate.gameObject.AddComponent<PointerRelay>().Click = _ => { if (shown[id].Alive && mode == Mode.Idle) { helm = id; Refresh(); } };
+                if (id == helm) Ui.Img(p, "Selected", Skin.Frame, -2, -2, 304, 190, PlayerCol, true);
                 var sh = shown[s.Id];
                 Ui.Heading(p, sh.Alive ? s.Name : s.Name + " - lost", 16, 16, 14, 200, 20, TextAlignmentOptions.Left, sh.Alive ? Skin.Text : Skin.Faint);
                 Ui.Label(p, s.Flagship ? "FLAGSHIP" : "ESCORT", Skin.Stencil, 12, Skin.BrassDark, 190, 18, 94, 14, TextAlignmentOptions.Right);
@@ -407,9 +483,19 @@ namespace Silence.View
                 Ui.Label(p, $"{s.Heat}/{s.HeatCap}", Skin.Mono, 12, Skin.Text, 228, 66, 60, 14);
                 Ui.Label(p, $"SHIELDS {sh.Shields}", Skin.Stencil, 12, Skin.Cyan, 16, 90, 130, 14);
                 Ui.Label(p, $"ARMOR F{s.Armor[0]} S{s.Armor[1]} A{s.Armor[2]} P{s.Armor[3]}", Skin.Stencil, 12, Skin.Dim, 130, 90, 160, 14, TextAlignmentOptions.Right);
-                Ui.Label(p, $"SPEED {s.Speed} OF {s.MaxSpeed}", Skin.Stencil, 12, Skin.Cyan, 16, 110, 140, 14);
-                Ui.Label(p, $"HEADING {sh.Heading:000}", Skin.Stencil, 12, Skin.Dim, 150, 110, 140, 14, TextAlignmentOptions.Right);
-                y += 146;
+                Ui.Label(p, $"SPEED {s.Speed}", Skin.Stencil, 12, Skin.Cyan, 16, 118, 90, 14);
+                Ui.Label(p, $"HELM {battle.HelmMin(s)}-{battle.HelmMax(s)} OF {s.MaxSpeed}", Skin.Stencil, 12, Skin.Faint, 16, 134, 140, 14);
+                int left = Mathf.Max(0, battle.HelmTurn(s, s.Speed) - Mathf.Abs(OpenMath.Diff(s.StartHeading, s.Heading)));
+                Ui.Label(p, $"HEADING {sh.Heading:000}", Skin.Stencil, 12, Skin.Dim, 16, 152, 140, 14);
+                Ui.Label(p, $"TURN LEFT {left}", Skin.Stencil, 12, Skin.Faint, 16, 166, 140, 14);
+                if (sh.Alive && mode != Mode.Busy && mode != Mode.Over)
+                {
+                    Ui.Btn(p, "-", 170, 112, 52, 36, () => { helm = id; Steer(s.Heading, s.Speed - 1); }, 16);
+                    Ui.Btn(p, "+", 230, 112, 52, 36, () => { helm = id; Steer(s.Heading, s.Speed + 1); }, 16);
+                    Ui.Btn(p, "<", 170, 146, 52, 34, () => { helm = id; Steer(s.Heading - OpenMath.HeadingStep, s.Speed); }, 16);
+                    Ui.Btn(p, ">", 230, 146, 52, 34, () => { helm = id; Steer(s.Heading + OpenMath.HeadingStep, s.Speed); }, 16);
+                }
+                y += 194;
             }
             var enemies = battle.Ships.Where(x => x.Side == OpenSide.Enemy).ToList();
             var e = Ui.Plate(panelRoot, "Enemies", 1608, 64, 300, 40 + enemies.Count * 40).transform;
@@ -435,7 +521,7 @@ namespace Silence.View
                 var c = battle.Hand[i];
                 var src = battle.Get(c.SourceId);
                 var def = new CardDef { Id = c.Art, Name = c.Name, Cost = c.Cost, Type = c.Type, Text = c.Text };
-                var view = CardView.Create(handRoot, def, src.Name, src.Flagship ? "con_trimaran_E128" : "con_outrider_E", c.Cost, c.Text, false);
+                var view = CardView.Create(handRoot, def, src.Name, $"iso_{src.Art}_east", c.Cost, c.Text, false);
                 view.Rect.anchoredPosition = new Vector2(960f - (n - 1) * 115f + i * 230f, -(c == selected ? 1060f : 1076f));
                 view.SetPlayable(mode != Mode.Busy && mode != Mode.Over && battle.WhyNot(c) == null, c.Cost);
                 view.SetSelected(c == selected);
@@ -456,13 +542,13 @@ namespace Silence.View
             if (hint == null) return;
             if (mode == Mode.Busy) hint.text = "";
             else if (mode == Mode.Target) hint.text = $"{selected.Name}: click an enemy in the lit arc. Wrecks and rocks block fire. Esc to put the card back.";
-            else if (mode == Mode.Heading) hint.text = $"{selected.Name}: point where the bow should go, then click. The ghost shows the drift on that heading. Esc to cancel.";
             else if (hoverShip >= 0 && battle.Ships[hoverShip].Side == OpenSide.Enemy)
             {
                 var e = battle.Ships[hoverShip];
                 hint.text = $"<color=#d9573f>{e.Name.ToUpperInvariant()}</color>  " + string.Join("  ", e.Weapons.Select(w => $"{w.Name}: {w.Damage} dmg, {w.ArcText}, range {w.Range / 1000}.")) + "  It fires first, then turns and drifts.";
             }
             else if (Time.unscaledTime < flashUntil) hint.text = flash;
+            else if (helm >= 0) hint.text = $"Steering {battle.Ships[helm].Name}: click a heading in the green fan, or A and D; W and S for speed. Tab or click a ship to switch.";
             else hint.text = "Pick a card. Ships drift along their heading when you end the turn.";
         }
 
@@ -476,6 +562,24 @@ namespace Silence.View
             if (mode == Mode.Busy || mode == Mode.Over) return;
             if (kb.eKey.wasPressedThisFrame || kb.enterKey.wasPressedThisFrame) OnEndTurn();
             if (kb.f9Key.wasPressedThisFrame) BotTurn();
+            if (kb.zKey.wasPressedThisFrame) Zoom(new Vector2(Cx, Cy));
+            if (kb.spaceKey.wasPressedThisFrame) Centre(helm);
+            var pan = new Vector2((kb.rightArrowKey.isPressed ? 1 : 0) - (kb.leftArrowKey.isPressed ? 1 : 0), (kb.downArrowKey.isPressed ? 1 : 0) - (kb.upArrowKey.isPressed ? 1 : 0));
+            if (pan != Vector2.zero)
+            {
+                camF += pan * 900f * Time.unscaledDeltaTime;
+                ClampCam();
+                ViewChanged();
+            }
+            if (mode == Mode.Idle && helm >= 0)
+            {
+                var h = battle.Ships[helm];
+                if (kb.aKey.wasPressedThisFrame) Steer(h.Heading - OpenMath.HeadingStep, h.Speed);
+                if (kb.dKey.wasPressedThisFrame) Steer(h.Heading + OpenMath.HeadingStep, h.Speed);
+                if (kb.wKey.wasPressedThisFrame) Steer(h.Heading, h.Speed + 1);
+                if (kb.sKey.wasPressedThisFrame) Steer(h.Heading, h.Speed - 1);
+                if (kb.tabKey.wasPressedThisFrame) NextHelm();
+            }
             for (int i = 0; i < 9; i++)
                 if (kb[Key.Digit1 + i].wasPressedThisFrame && i < battle.Hand.Count) OnCard(battle.Hand[i]);
             if (flashUntil > 0 && Time.unscaledTime >= flashUntil)
@@ -487,7 +591,7 @@ namespace Silence.View
 
         void Cancel()
         {
-            if (mode != Mode.Target && mode != Mode.Heading) return;
+            if (mode != Mode.Target) return;
             selected = null;
             mode = Mode.Idle;
             Refresh();
@@ -501,8 +605,7 @@ namespace Silence.View
                 Cancel();
                 return;
             }
-            RectTransformUtility.ScreenPointToLocalPointInRectangle(spriteRoot, e.position, null, out var local);
-            pointer = new Vector2((local.x - Cx) / U, (-local.y - Cy) / (U * Tilt));
+            pointer = ToPlane(Layout(e.position));
 
             int hit = -1;
             float best = float.MaxValue;
@@ -517,19 +620,21 @@ namespace Silence.View
             bool changed = hit != hoverShip;
             hoverShip = hit;
 
-            if (mode == Mode.Heading)
+            if (mode == Mode.Idle)
             {
-                var src = battle.Get(selected.SourceId);
-                int limit = battle.TurnLimit(selected, src);
-                var rel = pointer - shown[src.Id].Pos;
-                float want = Mathf.Atan2(rel.y, rel.x) * Mathf.Rad2Deg;
-                int turn = Mathf.RoundToInt(Mathf.DeltaAngle(src.Heading, want) / OpenMath.HeadingStep) * OpenMath.HeadingStep;
-                int heading = OpenMath.Norm(src.Heading + Mathf.Clamp(turn, -limit, limit));
-                if (heading != previewHeading) changed = true;
-                previewHeading = heading;
-                if (click)
+                if (click && hit >= 0 && battle.Ships[hit].Side == OpenSide.Player)
                 {
-                    Act(battle.Play(selected.Id, OpenChoice.Facing(heading)));
+                    helm = hit;
+                    helmPreview = -1;
+                    Refresh();
+                    return;
+                }
+                int preview = hit < 0 ? HelmHeadingAt(pointer) : -1;
+                if (preview != helmPreview) changed = true;
+                helmPreview = preview;
+                if (click && preview >= 0)
+                {
+                    Steer(preview, battle.Ships[helm].Speed);
                     return;
                 }
             }
@@ -543,6 +648,51 @@ namespace Silence.View
                 Redraw();
                 ShowHint();
             }
+        }
+
+        /// <summary>The heading the helm ship would take toward a point in its fan, or -1 when the point is outside it.</summary>
+        int HelmHeadingAt(Vector2 plane)
+        {
+            if (helm < 0 || !shown[helm].Alive) return -1;
+            var s = battle.Ships[helm];
+            var rel = plane - shown[helm].Pos;
+            if (rel.magnitude < s.Radius * 0.8f || rel.magnitude > s.Radius + 3200f) return -1;
+            int limit = battle.HelmTurn(s, s.Speed);
+            float want = Mathf.Atan2(rel.y, rel.x) * Mathf.Rad2Deg;
+            int turn = Mathf.RoundToInt(Mathf.DeltaAngle(s.StartHeading, want) / OpenMath.HeadingStep) * OpenMath.HeadingStep;
+            return OpenMath.Norm(s.StartHeading + Mathf.Clamp(turn, -limit, limit));
+        }
+
+        /// <summary>Set the helm ship's heading and speed. Free and immediate: no playback, the view just follows.</summary>
+        void Steer(int heading, int speed)
+        {
+            if (helm < 0 || mode != Mode.Idle) return;
+            string why = battle.Helm(helm, heading, speed);
+            if (why != null)
+            {
+                Flash($"<color=#f0a040>{why}</color>", 3f);
+                ShowHint();
+                return;
+            }
+            logCursor = battle.Log.Count;
+            SyncShown();
+            Refresh();
+        }
+
+        void PickHelm()
+        {
+            if (helm >= 0 && helm < shown.Count && battle.Ships[helm].Alive) return;
+            var flag = battle.Ships.FirstOrDefault(x => x.Alive && x.Side == OpenSide.Player && x.Flagship) ?? battle.Ships.FirstOrDefault(x => x.Alive && x.Side == OpenSide.Player);
+            helm = flag != null ? flag.Id : -1;
+        }
+
+        void NextHelm()
+        {
+            var mine = battle.Ships.Where(x => x.Alive && x.Side == OpenSide.Player).ToList();
+            if (mine.Count == 0) return;
+            int i = mine.FindIndex(x => x.Id == helm);
+            helm = mine[(i + 1) % mine.Count].Id;
+            Refresh();
         }
 
         void OnCard(OpenCard card)
@@ -560,11 +710,10 @@ namespace Silence.View
                 ShowHint();
                 return;
             }
-            if (card.Kind == OpenKind.Fire || card.Kind == OpenKind.Turn)
+            if (card.Kind == OpenKind.Fire)
             {
                 selected = card;
-                mode = card.Kind == OpenKind.Fire ? Mode.Target : Mode.Heading;
-                previewHeading = battle.Get(card.SourceId).Heading;
+                mode = Mode.Target;
                 Refresh();
                 return;
             }
@@ -671,6 +820,10 @@ namespace Silence.View
                         Floater(P(sh.Pos) + new Vector2(0, -60), $"+{e.Amount} SHIELDS", Skin.Cyan, 12);
                         yield return new WaitForSeconds(0.2f);
                         break;
+                    case OpenEventKind.Boost:
+                        Floater(P(sh.Pos) + new Vector2(0, -60), e.Text, PlayerCol, 12);
+                        yield return new WaitForSeconds(0.2f);
+                        break;
                     case OpenEventKind.Vented:
                         Floater(P(sh.Pos) + new Vector2(0, -60), $"-{e.Amount} HEAT", Skin.Warn, 12);
                         yield return new WaitForSeconds(0.2f);
@@ -697,6 +850,8 @@ namespace Silence.View
             }
             SyncShown();
             selected = null;
+            helmPreview = -1;
+            PickHelm();
             mode = battle.Outcome == OpenOutcome.Ongoing ? Mode.Idle : Mode.Over;
             Refresh();
             if (mode == Mode.Over) ShowEnd();
@@ -742,13 +897,29 @@ namespace Silence.View
             Ui.Heading(d, "Battle without a grid", 32, 40, 34, 700, 40);
             Ui.Btn(d, "Close", 810, 30, 150, 48, () => Destroy(shade.gameObject), 16);
             string text =
-                "Ships stand on round bases anywhere on the field and face one of 24 headings.\n\n" +
-                "Momentum. Every ship keeps its Speed. When you end the turn, each of your ships drifts that many spans straight ahead: the dashed line and ghost base show where. Burn adds Speed, Retro Burn sheds it, Hard About turns the bow.\n\n" +
+                "Ships stand on round bases anywhere on the field and face one of eight headings.\n\n" +
+                "The helm is free. Each turn, each of your ships may turn as far as its fan shows and change Speed by one, as often as you like until you end the turn: the fan is measured from where the turn began, so turning back costs nothing. At top speed a ship turns one point less. Click a heading in the fan, or use A and D, W and S; Tab or click a ship to switch.\n\n" +
+                "Momentum. Every ship keeps its Speed. When you end the turn, each of your ships drifts that many spans straight ahead: the dashed line and ghost base show where. Burn pushes past the helm's speed step, Hard About and Come About widen the fan.\n\n" +
                 "Guns need the target in arc, in range and in sight. Pick a weapon card and its arcs light up; where a wreck or rock stands in the way the arc goes dark behind it.\n\n" +
                 "Flanking. A hit lands on the side of the target that faces the shooter. Shields soak first, then the armor of that arc. Most ships have none aft.\n\n" +
                 "The enemy. After your drift each enemy fires once from where it sits, then turns, changes speed and drifts. Hover an enemy to see where its guns bear, and end your turn outside those arcs or behind a wreck.\n\n" +
                 "Running into a wreck costs 3 hull and stops the ship.";
-            Ui.Label(d, text, Skin.Body, 16, Skin.Text, 40, 100, 920, 480);
+            Ui.Label(d, text + "\n\nDrag or the arrow keys pan the field; the wheel or Z zooms; Space centres on the ship you are steering.", Skin.Body, 16, Skin.Text, 40, 100, 920, 500);
         }
+    }
+
+    /// <summary>Pointer events on the field: click, move, drag to pan and the wheel to zoom.</summary>
+    public sealed class BoardInput : MonoBehaviour, IPointerClickHandler, IPointerMoveHandler, IPointerExitHandler, IBeginDragHandler, IDragHandler, IEndDragHandler, IScrollHandler
+    {
+        public System.Action<PointerEventData> Click, Move, Drag, Scroll;
+        public System.Action Exit;
+
+        public void OnPointerClick(PointerEventData e) => Click?.Invoke(e);
+        public void OnPointerMove(PointerEventData e) => Move?.Invoke(e);
+        public void OnPointerExit(PointerEventData e) => Exit?.Invoke();
+        public void OnBeginDrag(PointerEventData e) { }
+        public void OnDrag(PointerEventData e) => Drag?.Invoke(e);
+        public void OnEndDrag(PointerEventData e) { }
+        public void OnScroll(PointerEventData e) => Scroll?.Invoke(e);
     }
 }

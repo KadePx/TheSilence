@@ -35,8 +35,8 @@ namespace Silence.Core.Open
     {
         /// <summary>One span, the unit ranges and speeds are quoted in.</summary>
         public const int Span = 1000;
-        /// <summary>Ships face one of 24 headings.</summary>
-        public const int HeadingStep = 15;
+        /// <summary>Ships face one of 8 headings, one for each drawn facing of their sprite.</summary>
+        public const int HeadingStep = 45;
 
         static readonly int[] Table = { 0, 259, 500, 707, 866, 966, 1000 };
 
@@ -46,7 +46,7 @@ namespace Silence.Core.Open
         public static int Sin(int degrees)
         {
             degrees = Norm(degrees);
-            int i = degrees % 90 / HeadingStep;
+            int i = degrees % 90 / 15; // the table is in 15 degree steps, whatever the heading step
             switch (degrees / 90)
             {
                 case 0: return Table[i];
@@ -87,7 +87,7 @@ namespace Silence.Core.Open
         public static Vec Step(Vec from, int heading, int distance)
             => new Vec(from.X + Cos(heading) * distance / 1000, from.Y + Sin(heading) * distance / 1000);
 
-        /// <summary>The heading (one of 24) that points most nearly from one point at another.</summary>
+        /// <summary>The heading (one of 8) that points most nearly from one point at another.</summary>
         public static int Bearing(Vec from, Vec to)
         {
             long dx = to.X - from.X, dy = to.Y - from.Y;

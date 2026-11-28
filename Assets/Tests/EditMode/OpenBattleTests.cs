@@ -10,7 +10,7 @@ namespace Silence.Tests
         static OpenShip Target(int hull = 20, int shields = 0) => new OpenShip
         {
             Name = "Target", Side = OpenSide.Enemy, Radius = 500, Hull = hull, MaxHull = hull, Shields = shields, MaxShields = shields,
-            Armor = new[] { 3, 1, 0, 1 }, MaxSpeed = 2, Turn = 30,
+            Armor = new[] { 3, 1, 0, 1 }, MaxSpeed = 2, Agility = 45,
         };
 
         static OpenBattle Duel(out OpenShip flag, out OpenShip target, int tx, int ty, int theading = 180)
@@ -51,6 +51,7 @@ namespace Silence.Tests
             Assert.AreEqual(OpenArc.Fore, OpenMath.ArcOf(at, 90, new Vec(0, 3000)));
             Assert.AreEqual(OpenArc.Starboard, OpenMath.ArcOf(at, 90, new Vec(-3000, 0)));
             Assert.AreEqual(OpenArc.Starboard, OpenMath.ArcOf(at, 0, new Vec(3000, 2000)), "34 degrees off the bow is outside the fore arc");
+            Assert.AreEqual(45, OpenMath.Bearing(at, new Vec(3000, 2500)), "bearings come in eight points");
         }
 
         [Test]
@@ -136,23 +137,104 @@ namespace Silence.Tests
             flag.Speed = 3;
             b.Start();
             b.EndTurn();
-            Assert.AreEqual(new Vec(1000, 0), flag.Pos, "stops where the bases touch: 3000 - 800 - 1200");
+            Assert.AreEqual(new Vec(600, 0), flag.Pos, "stops where the bases touch: 3000 - 800 - 1600");
             Assert.AreEqual(0, flag.Speed);
             Assert.AreEqual(27, flag.Hull);
             Assert.IsTrue(b.Log.Any(e => e.Kind == OpenEventKind.Collision));
         }
 
         [Test]
-        public void TurnsAreLimitedAndTighterAtSpeed()
+        public void TheHelmTurnsWithinAgilityAndTurningBackIsFree()
+        {
+            var b = Duel(out var flag, out _, 0, -5000);
+            b.Start(); // flagship: agility 90, Speed 0 of 3
+            Assert.IsNull(b.Helm(flag.Id, 90, 1));
+            Assert.AreEqual(90, flag.Heading);
+            StringAssert.Contains("can turn 90", b.Helm(flag.Id, 135, 1));
+            Assert.AreEqual(90, flag.Heading, "a refused helm changes nothing");
+            Assert.IsNull(b.Helm(flag.Id, 270, 1), "measured from where the turn began, so turning back is free");
+            Assert.AreEqual(4, b.Command, "the helm costs no command");
+        }
+
+        [Test]
+        public void AStoppedShipPivotsToAnyHeading()
+        {
+            var b = Duel(out var flag, out _, 0, -5000);
+            b.Start(); // Speed 0
+            Assert.IsNull(b.Helm(flag.Id, 180, 0), "stopped: any heading");
+            StringAssert.Contains("can turn 90", b.Helm(flag.Id, 180, 1), "getting under way: agility again");
+        }
+
+        [Test]
+        public void TheHelmChangesSpeedByOneStep()
+        {
+            var b = Duel(out var flag, out _, 0, -5000);
+            flag.Speed = 1;
+            b.Start();
+            Assert.IsNotNull(b.Helm(flag.Id, 0, 3));
+            Assert.IsNull(b.Helm(flag.Id, 0, 2));
+            Assert.IsNull(b.Helm(flag.Id, 0, 0));
+            Assert.AreEqual(0, flag.Speed);
+        }
+
+        [Test]
+        public void AtTopSpeedTheHelmTurnsOnePointLess()
+        {
+            var b = Duel(out var flag, out _, 0, -5000);
+            flag.Speed = 2;
+            b.Start();
+            Assert.IsNotNull(b.Helm(flag.Id, 90, 3), "agility 90 is 45 at top speed");
+            Assert.IsNull(b.Helm(flag.Id, 45, 3));
+            var hard = Give(b, OpenContent.HardAbout(), flag);
+            Assert.IsNull(b.Play(hard.Id, OpenChoice.None));
+            Assert.IsNull(b.Helm(flag.Id, 135, 3), "Hard About adds 90 for this turn");
+        }
+
+        [Test]
+        public void TheHelmResetsEachTurnAndIsOnlyForYourShips()
+        {
+            var b = Duel(out var flag, out var target, 0, -9000);
+            b.Start();
+            Assert.IsNull(b.Helm(flag.Id, 90, 1));
+            b.EndTurn();
+            Assert.IsNull(b.Helm(flag.Id, 180, 1), "next turn it is measured from 90");
+            Assert.IsNotNull(b.Helm(target.Id, 0, 0));
+        }
+
+        [Test]
+        public void BurnPushesPastTheHelmsSpeedStep()
         {
             var b = Duel(out var flag, out _, 0, -5000);
             b.Start();
-            var turn = Give(b, OpenContent.HardAbout(), flag);
-            Assert.AreEqual("Too sharp a turn.", b.Play(turn.Id, OpenChoice.Facing(75)));
-            flag.Speed = 3;
-            Assert.AreEqual("Too sharp a turn.", b.Play(turn.Id, OpenChoice.Facing(45)));
-            Assert.IsNull(b.Play(turn.Id, OpenChoice.Facing(330)));
-            Assert.AreEqual(330, flag.Heading);
+            Assert.IsNull(b.Helm(flag.Id, 0, 1));
+            var burn = Give(b, OpenContent.Burn(), flag);
+            Assert.IsNull(b.Play(burn.Id, OpenChoice.None));
+            Assert.AreEqual(2, flag.Speed);
+            Assert.IsNull(b.Helm(flag.Id, 0, 2), "the band moved up with it");
+        }
+
+        [Test]
+        public void TheFieldIsTheSameForASeedAndKeepsLanesOpen()
+        {
+            var a = OpenContent.BreakersYard(5);
+            var again = OpenContent.BreakersYard(5);
+            var other = OpenContent.BreakersYard(6);
+            CollectionAssert.AreEqual(a.Rocks.Select(r => r.Pos).ToList(), again.Rocks.Select(r => r.Pos).ToList());
+            CollectionAssert.AreNotEqual(a.Rocks.Select(r => r.Pos).ToList(), other.Rocks.Select(r => r.Pos).ToList());
+            for (ulong seed = 1; seed <= 20; seed++)
+            {
+                var b = OpenContent.BreakersYard(seed);
+                Assert.GreaterOrEqual(b.Rocks.Count, 16, $"seed {seed}");
+                foreach (var r in b.Rocks)
+                {
+                    Assert.LessOrEqual(System.Math.Abs(r.Pos.X) + r.Radius, b.HalfWidth);
+                    Assert.LessOrEqual(System.Math.Abs(r.Pos.Y) + r.Radius, b.HalfHeight);
+                    foreach (var s in b.Ships)
+                        Assert.GreaterOrEqual(OpenMath.Dist(r.Pos, s.Pos), r.Radius + s.Radius + OpenContent.StartClearance, $"seed {seed}: rock on a start");
+                    foreach (var o in b.Rocks)
+                        if (o != r) Assert.GreaterOrEqual(OpenMath.Dist(r.Pos, o.Pos), r.Radius + o.Radius + OpenContent.Lane, $"seed {seed}: no lane");
+                }
+            }
         }
 
         [Test]
@@ -175,10 +257,10 @@ namespace Silence.Tests
             flag.Shields = 0;
             b.EndTurn();
             Assert.AreEqual(29, flag.Hull, "3 dmg - 2 fore armor");
-            int fired = b.Log.FindIndex(e => e.Kind == OpenEventKind.Fired && e.ShipId == escort.Id);
-            int moved = b.Log.FindIndex(e => e.Kind == OpenEventKind.Moved && e.ShipId == escort.Id);
-            Assert.IsTrue(fired >= 0 && moved > fired, "it fires first, then drifts");
-            Assert.AreEqual(1000, OpenMath.Dist(new Vec(3500, 0), escort.Pos), 5, "one span at Speed 1");
+            var first = b.Log.First(e => e.ShipId == escort.Id && e.Kind != OpenEventKind.TurnStarted);
+            Assert.AreEqual(OpenEventKind.Fired, first.Kind, "it fires before it turns, changes speed or drifts");
+            Assert.AreEqual(new Vec(3500, 0), first.From, "from where it sat");
+            Assert.AreEqual(escort.Speed * 1000, OpenMath.Dist(new Vec(3500, 0), escort.Pos), 5, "then drifts its new Speed");
         }
 
         [Test]
