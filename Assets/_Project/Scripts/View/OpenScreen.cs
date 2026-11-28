@@ -20,12 +20,17 @@ namespace Silence.View
     /// </summary>
     public sealed class OpenScreen : MonoBehaviour
     {
-        // The plane on screen: thousandths of a span to layout pixels (U), flattened top to bottom (Tilt), and
+        // The plane on screen: thousandths of a span to layout pixels (U), in true isometric (KX, KY), and
         // panned by a whole number of pixels (camF, rounded). Sprites are drawn at a whole-number scale, and U
         // keeps step with it so a base and its ship stay the same size: 1x shows the whole field, 2x is close.
-        // A strong tilt: the field reads as a floor seen at an angle, which is the look Kade chose.
-        const float Tilt = 0.6f, Cx = 960f, Cy = 394f;
-        float U = 0.036f;
+        // True isometric: the plane turned 45 degrees and squashed 2:1, seen as a hologram over a tactical table
+        // (the look Kade chose). KX and KY are the screen steps of one unit along the plane's diagonal.
+        const float KX = 1.1f * 0.7071f, KY = 0.55f * 0.7071f, Cx = 960f, Cy = 394f;
+        const float BaseU = 0.03f;
+        float U = BaseU;
+        /// <summary>How high above its point on the table a ship's model floats, in layout pixels.</summary>
+        float Hover => 18f * scale;
+        static readonly Color Holo = new Color(0.36f, 0.86f, 1f);
         int scale = 1;
         Vector2 camF;
         Vector2 Cam => new Vector2(Mathf.Round(camF.x), Mathf.Round(camF.y));
@@ -72,12 +77,16 @@ namespace Silence.View
             var canvas = Ui.Canvas("OpenBattle");
             canvas.transform.SetParent(transform, false);
             root = Ui.Root(canvas);
-            Ui.Backdrop(root, "battle_bg_kessane", new Color(0.55f, 0.55f, 0.6f));
+            // The command room: dark, with space only faintly beyond the windows; the table's light does the rest.
+            Ui.Fill(root, "Room", 0, 0, Ui.RefW, Ui.RefH, new Color(0.02f, 0.03f, 0.05f));
+            Ui.Backdrop(root, "battle_bg_kessane", new Color(0.2f, 0.22f, 0.27f));
             floor = ShapeGraphic.Create(root, "Floor");
             under = ShapeGraphic.Create(root, "Under");
             spriteRoot = Ui.Box(root, "Sprites", 0, 0, Ui.RefW, Ui.RefH);
             over = ShapeGraphic.Create(root, "Over");
             labelRoot = Ui.Box(root, "Labels", 0, 0, Ui.RefW, Ui.RefH);
+            var scan = Ui.Img(root, "Scanlines", Scanlines(), 0, 52, Ui.RefW, 684);
+            scan.type = Image.Type.Tiled;
 
             var catcher = Ui.Img(root, "Board", Skin.Pixel, 0, 52, Ui.RefW, 684, new Color(0, 0, 0, 0));
             catcher.raycastTarget = true;
@@ -90,7 +99,7 @@ namespace Silence.View
 
             var top = Ui.Plate(root, "Top", 0, 0, Ui.RefW, 52);
             turnLabel = Ui.Heading(top.transform, "Turn 1", 16, 28, 16, 300, 20, TextAlignmentOptions.Left, Skin.Brass);
-            Ui.Heading(top.transform, "Gridless prototype - Breaker's Yard", 16, 0, 16, Ui.RefW, 20, TextAlignmentOptions.Center, Skin.Dim);
+            Ui.Heading(top.transform, "Tactical table - Breaker's Yard", 16, 0, 16, Ui.RefW, 20, TextAlignmentOptions.Center, Skin.Dim);
             Ui.Btn(top.transform, "Help", 1500, 6, 120, 40, ShowHelp, 16);
             Ui.Btn(top.transform, "Restart", 1630, 6, 140, 40, () => Begin(seed + 1), 16);
             Ui.Btn(top.transform, "Quit", 1780, 6, 120, 40, () => SceneManager.LoadScene("Menu"), 16);
@@ -132,15 +141,16 @@ namespace Silence.View
             Ui.Clear(overlayRoot);
             shown.Clear();
             rockImages.Clear();
+            // Terrain is part of the projection: one hue, see-through.
             foreach (var r in battle.Rocks)
-                rockImages.Add(Ui.Img(spriteRoot, r.Name, ArtLibrary.Instance.Sprite(r.Art), 0, 0, 10, 10));
+                rockImages.Add(Ui.Img(spriteRoot, r.Name, ArtLibrary.Instance.Sprite(r.Art), 0, 0, 10, 10, new Color(0.5f, 0.92f, 1f, 0.72f)));
             foreach (var ship in battle.Ships)
             {
                 var sh = new Shown { Img = Ui.Img(spriteRoot, ship.Name, null, 0, 0, 10, 10) };
                 shown.Add(sh);
             }
             scale = 1;
-            U = 0.036f;
+            U = BaseU;
             camF = Vector2.zero;
             SyncShown();
             DrawFloor();
@@ -167,9 +177,17 @@ namespace Silence.View
 
         // ---------------------------------------------------------------- plane and sprites
 
-        Vector2 P(Vector2 plane) => new Vector2(Cx + plane.x * U - Cam.x, Cy + plane.y * U * Tilt - Cam.y);
+        /// <summary>A point on the plane where it lies on screen, before the camera's pan.</summary>
+        Vector2 Iso(Vector2 plane) => new Vector2((plane.x - plane.y) * KX * U, (plane.x + plane.y) * KY * U);
+        Vector2 P(Vector2 plane) => new Vector2(Cx, Cy) + Iso(plane) - Cam;
         Vector2 P(Vec v) => P(new Vector2(v.X, v.Y));
-        Vector2 ToPlane(Vector2 layout) => new Vector2((layout.x - Cx + Cam.x) / U, (layout.y - Cy + Cam.y) / (U * Tilt));
+        /// <summary>Where a ship's model floats: above its point on the table.</summary>
+        Vector2 Model(Vector2 plane) => P(plane) - new Vector2(0f, Hover);
+        Vector2 ToPlane(Vector2 layout)
+        {
+            float a = (layout.x - Cx + Cam.x) / (U * KX), b = (layout.y - Cy + Cam.y) / (U * KY);
+            return new Vector2((a + b) / 2f, (b - a) / 2f);
+        }
         static Vector2 Dir(float degrees) => new Vector2(Mathf.Cos(degrees * Mathf.Deg2Rad), Mathf.Sin(degrees * Mathf.Deg2Rad));
         Vector2 Polar(Vector2 centre, float degrees, float radius) => P(centre + Dir(degrees) * radius);
 
@@ -180,12 +198,31 @@ namespace Silence.View
             return new Vector2(local.x, -local.y);
         }
 
-        /// <summary>The drawn facing for a heading: one of eight, the same eight the rules use.</summary>
-        static string Facing(int heading) => Facings[OpenMath.Norm(heading) / OpenMath.HeadingStep % 8];
+        /// <summary>The drawn facing nearest the way a heading points on screen (the plane is turned 45 degrees under the ships).</summary>
+        static string Facing(int heading)
+        {
+            var d = Dir(heading);
+            float screen = Mathf.Atan2((d.x + d.y) * KY, (d.x - d.y) * KX) * Mathf.Rad2Deg;
+            return Facings[((Mathf.RoundToInt(screen / 45f) % 8) + 8) % 8];
+        }
+
+        static Sprite scanlines;
+
+        /// <summary>A 1x3 tile, one dark row in three: the projection's scanlines.</summary>
+        static Sprite Scanlines()
+        {
+            if (scanlines != null) return scanlines;
+            var t = new Texture2D(1, 3, TextureFormat.RGBA32, false) { filterMode = FilterMode.Point, wrapMode = TextureWrapMode.Repeat };
+            t.SetPixels(new[] { new Color(0f, 0f, 0f, 0.16f), Color.clear, Color.clear });
+            t.Apply();
+            scanlines = Sprite.Create(t, new Rect(0, 0, 1, 3), new Vector2(0.5f, 0.5f), 32f, 0, SpriteMeshType.FullRect);
+            return scanlines;
+        }
 
         void ClampCam()
         {
-            float rx = Mathf.Max(0f, battle.HalfWidth * U - 800f), ry = Mathf.Max(0f, battle.HalfHeight * U * Tilt - 250f);
+            float span = battle.HalfWidth + battle.HalfHeight;
+            float rx = Mathf.Max(0f, span * KX * U - 700f), ry = Mathf.Max(0f, span * KY * U - 240f);
             camF = new Vector2(Mathf.Clamp(camF.x, -rx, rx), Mathf.Clamp(camF.y, -ry, ry));
         }
 
@@ -194,8 +231,8 @@ namespace Silence.View
         {
             var plane = ToPlane(at);
             scale = scale == 1 ? 2 : 1;
-            U = 0.036f * scale;
-            camF = new Vector2(Cx + plane.x * U - at.x, Cy + plane.y * U * Tilt - at.y);
+            U = BaseU * scale;
+            camF = new Vector2(Cx, Cy) + Iso(plane) - at;
             ClampCam();
             ViewChanged();
         }
@@ -204,7 +241,7 @@ namespace Silence.View
         {
             if (shipId < 0) return;
             var p = shown[shipId].Pos;
-            camF = new Vector2(p.x * U, p.y * U * Tilt);
+            camF = Iso(p);
             ClampCam();
             ViewChanged();
         }
@@ -232,7 +269,12 @@ namespace Silence.View
                 var ship = battle.Ships[i];
                 var s = ArtLibrary.Instance.Sprite($"iso_{ship.Art}_{Facing(sh.Heading)}");
                 sh.Img.enabled = sh.Alive && s != null;
-                if (s != null) PlaceSprite(sh.Img, s, sh.Pos, scale, 0.06f);
+                if (s == null) continue;
+                // The model floats above its point on the table, centred on its beam.
+                var at = Model(sh.Pos);
+                float w = s.rect.width * scale, h = s.rect.height * scale;
+                sh.Img.sprite = s;
+                Ui.Place(sh.Img.rectTransform, Mathf.Round(at.x - w / 2f), Mathf.Round(at.y - h / 2f), w, h);
             }
             for (int i = 0; i < rockImages.Count; i++)
             {
@@ -242,8 +284,8 @@ namespace Silence.View
             }
             // Nearer the camera draws over what is behind it.
             var order = new List<(float y, Transform t)>();
-            for (int i = 0; i < shown.Count; i++) order.Add((shown[i].Pos.y, shown[i].Img.transform));
-            for (int i = 0; i < rockImages.Count; i++) order.Add((battle.Rocks[i].Pos.Y, rockImages[i].transform));
+            for (int i = 0; i < shown.Count; i++) order.Add((shown[i].Pos.x + shown[i].Pos.y, shown[i].Img.transform));
+            for (int i = 0; i < rockImages.Count; i++) order.Add((battle.Rocks[i].Pos.X + battle.Rocks[i].Pos.Y, rockImages[i].transform));
             int index = 0;
             foreach (var o in order.OrderBy(o => o.y)) o.t.SetSiblingIndex(index++);
         }
@@ -258,16 +300,67 @@ namespace Silence.View
             }
         }
 
+        /// <summary>
+        /// The tactical table: a lit surface the size of the field, a lattice every 2 spans (stronger every 6), orbital
+        /// rings around the field's main landmark, a bright edge, and light rising off its near edges.
+        /// </summary>
         void DrawFloor()
         {
             floor.Clear();
-            var c = new Color(0.5f, 0.62f, 0.8f, 0.07f);
             float w = battle.HalfWidth, h = battle.HalfHeight;
-            for (float x = -w; x <= w + 1; x += 2000f) floor.Line(P(new Vector2(x, -h)), P(new Vector2(x, h)), 1f, c);
-            for (float y = -h; y <= h + 1; y += 2000f) floor.Line(P(new Vector2(-w, y)), P(new Vector2(w, y)), 1f, c);
-            var edge = new Color(0.5f, 0.62f, 0.8f, 0.3f);
-            var k = new[] { new Vector2(-w, -h), new Vector2(w, -h), new Vector2(w, h), new Vector2(-w, h) };
-            for (int i = 0; i < 4; i++) floor.Dashed(P(k[i]), P(k[(i + 1) % 4]), 2f, edge, 14f, 10f);
+            var top = P(new Vector2(-w, -h)); var right = P(new Vector2(w, -h)); var bottom = P(new Vector2(w, h)); var left = P(new Vector2(-w, h));
+            var centre = (top + bottom) / 2f;
+            // light pooling around the table, then the surface itself
+            for (int i = 3; i >= 1; i--)
+            {
+                float k = 1f + i * 0.06f;
+                floor.Quad(centre + (top - centre) * k, centre + (right - centre) * k, centre + (bottom - centre) * k, centre + (left - centre) * k, new Color(Holo.r, Holo.g, Holo.b, 0.025f));
+            }
+            floor.Quad(top, right, bottom, left, new Color(0.08f, 0.32f, 0.47f, 0.16f));
+            for (float x = -w; x <= w + 1; x += 2000f)
+                floor.Line(P(new Vector2(x, -h)), P(new Vector2(x, h)), 1f, new Color(Holo.r, Holo.g, Holo.b, Mathf.Abs(x) % 6000f < 1f ? 0.34f : 0.12f));
+            for (float y = -h; y <= h + 1; y += 2000f)
+                floor.Line(P(new Vector2(-w, y)), P(new Vector2(w, y)), 1f, new Color(Holo.r, Holo.g, Holo.b, Mathf.Abs(y) % 6000f < 1f ? 0.34f : 0.12f));
+
+            // orbital rings around the wreck nearest the middle (or the middle itself), only over the table
+            var o = Vector2.zero;
+            float best = float.MaxValue;
+            foreach (var r in battle.Rocks)
+            {
+                var p = new Vector2(r.Pos.X, r.Pos.Y);
+                if (r.Name == "Wreck" && p.sqrMagnitude < best) { best = p.sqrMagnitude; o = p; }
+            }
+            bool On(Vector2 p) => Mathf.Abs(p.x) <= w && Mathf.Abs(p.y) <= h;
+            for (int r = 3000; r <= 30000; r += 3000)
+            {
+                var col = new Color(Holo.r, Holo.g, Holo.b, r % 9000 == 0 ? 0.5f : 0.2f);
+                const int n = 160;
+                for (int i = 0; i < n; i++)
+                {
+                    var p0 = o + Dir(i * 360f / n) * r;
+                    var p1 = o + Dir((i + 1) * 360f / n) * r;
+                    if (On(p0) && On(p1)) floor.Line(P(p0), P(p1), 1f, col);
+                }
+            }
+            for (int a = 0; a < 360; a += 5)
+            {
+                var p0 = o + Dir(a) * 9000f;
+                if (On(p0)) floor.Line(P(p0), P(o + Dir(a) * (a % 15 == 0 ? 9800f : 9350f)), 1f, new Color(Holo.r, Holo.g, Holo.b, 0.6f));
+            }
+
+            // the edge, with a soft halo, and the projector's light rising off the near edges
+            var corners = new[] { top, right, bottom, left };
+            for (int i = 0; i < 4; i++)
+            {
+                floor.Line(corners[i], corners[(i + 1) % 4], 6f, new Color(Holo.r, Holo.g, Holo.b, 0.12f));
+                floor.Line(corners[i], corners[(i + 1) % 4], 2f, new Color(Holo.r, Holo.g, Holo.b, 0.9f));
+                floor.Rect(corners[i].x - 3, corners[i].y - 2, 6, 4, Color.white);
+            }
+            var rise = new Vector2(0f, -70f * scale);
+            var lit = new Color(Holo.r, Holo.g, Holo.b, 0.1f);
+            var gone = new Color(Holo.r, Holo.g, Holo.b, 0f);
+            floor.Quad(left, bottom, bottom + rise, left + rise, lit, lit, gone, gone);
+            floor.Quad(bottom, right, right + rise, bottom + rise, lit, lit, gone, gone);
         }
 
         // ---------------------------------------------------------------- overlay: bases, drift, arcs, sight
@@ -349,6 +442,10 @@ namespace Silence.View
                 var col = ship.Side == OpenSide.Player ? PlayerCol : EnemyCol;
                 int heading = sh.Heading;
                 Ring(under, sh.Pos, ship.Radius, i == hoverShip ? Color.white : col, 2f);
+                // the beam of light the model stands on
+                var foot = P(sh.Pos);
+                under.Quad(foot + new Vector2(-3f, 0f), foot + new Vector2(3f, 0f), foot + new Vector2(1f, -Hover), foot + new Vector2(-1f, -Hover),
+                    new Color(Holo.r, Holo.g, Holo.b, 0.45f), new Color(Holo.r, Holo.g, Holo.b, 0.45f), new Color(Holo.r, Holo.g, Holo.b, 0f), new Color(Holo.r, Holo.g, Holo.b, 0f));
                 if (i == helm && !busy) Ring(under, sh.Pos, ship.Radius + 180f, new Color(col.r, col.g, col.b, 0.6f), 1f, 3);
                 under.Line(Polar(sh.Pos, heading, ship.Radius), Polar(sh.Pos, heading, ship.Radius + 420f), 3f, col);
 
@@ -367,7 +464,7 @@ namespace Silence.View
                 }
 
                 // Hull over shields, under the base.
-                var b = P(sh.Pos + new Vector2(0, ship.Radius));
+                var b = P(sh.Pos) + new Vector2(0f, ship.Radius * U * KY * 1.414f);
                 float bw = Mathf.Round(ship.Radius * U * 0.8f);
                 over.Rect(b.x - bw - 1, b.y + 7, bw * 2 + 2, 6, Skin.Ink);
                 over.Rect(b.x - bw, b.y + 8, Mathf.Round(bw * 2 * Mathf.Clamp01(sh.Hull / (float)ship.MaxHull)), 4, col);
@@ -380,15 +477,15 @@ namespace Silence.View
                 foreach (var t in battle.Live(OpenSide.Enemy))
                 {
                     var shot = battle.Check(src, selected.Weapon, t);
-                    var at = P(shown[t.Id].Pos);
+                    var at = Model(shown[t.Id].Pos);
                     if (shot == Shot.Clear)
                     {
-                        over.Line(P(shown[src.Id].Pos), at, t.Id == hoverShip ? 3f : 2f, Lit);
+                        over.Line(Model(shown[src.Id].Pos), at, t.Id == hoverShip ? 3f : 2f, Lit);
                         Callout(at + new Vector2(0, -t.Radius * U - 34), $"{Predict(src, selected.Weapon, t)}  CLICK TO FIRE", Lit);
                     }
                     else
                     {
-                        if (shot == Shot.Blocked) over.Dashed(P(shown[src.Id].Pos), at, 1f, Skin.Dim, 6f, 8f);
+                        if (shot == Shot.Blocked) over.Dashed(Model(shown[src.Id].Pos), at, 1f, Skin.Dim, 6f, 8f);
                         Callout(at + new Vector2(0, -t.Radius * U - 34), shot == Shot.Blocked ? "NO LINE OF SIGHT" : shot == Shot.OutOfRange ? "OUT OF RANGE" : "OUT OF ARC", Skin.Dim);
                     }
                 }
@@ -803,13 +900,13 @@ namespace Silence.View
                         for (float t = 0; t < 0.22f; t += Time.deltaTime)
                         {
                             Redraw();
-                            over.Line(P(sh.Pos), P(target.Pos), 4f, col);
-                            over.Line(P(sh.Pos), P(target.Pos), 2f, Color.white);
+                            over.Line(Model(sh.Pos), Model(target.Pos), 4f, col);
+                            over.Line(Model(sh.Pos), Model(target.Pos), 2f, Color.white);
                             yield return null;
                         }
                         target.Hull -= e.Amount;
                         target.Shields = Mathf.Max(0, target.Shields - e.Absorbed);
-                        var at = P(target.Pos);
+                        var at = Model(target.Pos);
                         if (e.Amount > 0) Floater(at + new Vector2(0, -70), "-" + e.Amount, Skin.Bad, 24);
                         if (e.Absorbed > 0) Floater(at + new Vector2(0, 46), e.Amount > 0 ? $"SHIELDS TOOK {e.Absorbed}" : "SHIELDS HOLD", Skin.Cyan, 12);
                         else if (e.Amount == 0) Floater(at + new Vector2(0, 46), "ARMOR HOLDS", Skin.Dim, 12);

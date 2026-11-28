@@ -75,7 +75,7 @@ Settled from the mock-ups in `ArtSource/Screenshots/mock_large_battle*.png` (com
   - Open point: in true isometric the eight plane headings land on screen at 0°, ±26.6°, ±90°, ±153.4° and 180°, while
     PixelLab draws its diagonal facings at 45° on screen. Either headings snap to what the art shows, or the
     diagonals are drawn for the 2:1 angle (PixelLab's `create_image_pixflux` has an isometric option to test).
-- **Holo-table variant** (Kade's idea, 2026-11-28): the battle as a hologram projected over a tactical table in a dark
+- **Chosen: the holo table** (Kade, 2026-11-28, over the open-space isometric view): the battle as a hologram projected over a tactical table in a dark
   command room. The isometric plane is the table, cyan light with a lit edge and light rising off it; terrain renders
   as a cyan projection with scanlines; ships stay full-colour pixel models standing on beams of light. Mock-up:
   `ArtSource/Screenshots/mock_holo_table.png` (composer `ArtSource/MockBattle/compose_holo_table.py`).

@@ -950,3 +950,13 @@ After Kade played the prototype: turning by card was annoying and unforgiving, a
 - Ship panels and the pan/zoom hint no longer overflow.
 - Tests: all pass (the field test now checks lanes against the biggest base). Bot over 40 seeds: 40 wins, 0 losses,
   about 15 turns.
+
+### The holo table in the prototype (2026-11-28)
+
+Kade chose the holo-table look from the mock-ups (`ArtSource/Screenshots/mock_holo_table.png`). The playable prototype
+now draws it: true isometric projection, a lit table the size of the field with a lattice every 2 spans and orbital
+rings around the central wreck, light rising off its near edges, terrain tinted as projection, scanlines, and ships
+floating above their markers on beams of light; fire lines run between the floating models. The rules are unchanged.
+246 EditMode tests pass; checked in Play Mode by script (screenshot `ArtSource/Screenshots/iso_prototype_holo_table.png`),
+not yet played by hand. Still to do from the mock-up: dragged order paths, larger fleets, the minimap, and brighter
+hologram terrain.

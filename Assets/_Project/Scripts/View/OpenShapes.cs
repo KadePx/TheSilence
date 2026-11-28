@@ -33,6 +33,14 @@ namespace Silence.View
             Tri(a, c, d, col);
         }
 
+        /// <summary>A quad with a colour at each corner (a, b, c, d in order), for gradients such as light rising off an edge.</summary>
+        public void Quad(Vector2 a, Vector2 b, Vector2 c, Vector2 d, Color ca, Color cb, Color cc, Color cd)
+        {
+            Add(a, ca); Add(b, cb); Add(c, cc);
+            Add(a, ca); Add(c, cc); Add(d, cd);
+            SetVerticesDirty();
+        }
+
         public void Rect(float x, float y, float w, float h, Color col)
             => Quad(new Vector2(x, y), new Vector2(x + w, y), new Vector2(x + w, y + h), new Vector2(x, y + h), col);
 
