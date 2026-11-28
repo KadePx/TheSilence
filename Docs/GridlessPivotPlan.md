@@ -62,7 +62,23 @@ field with pan and zoom, and the pilot hulls. What the pilot showed is under "Ar
    mouse wheel or Z); pan by dragging or the arrow keys; Space centres on the selected ship. A small field map is
    only worth adding if the zoomed-out view is hard to read.
 
-## Code plan
+## Look and scale (Kade, 2026-11-28)
+
+Settled from the mock-ups in `ArtSource/Screenshots/mock_large_battle*.png` (composer:
+`ArtSource/MockBattle/compose_large_battle.py`):
+
+- **Scale:** a large-scale fleet battle. Fields several screens wide (the mock-up's is 60×36 spans), ships at 1×,
+  six or more ships a side, long moves (speeds 4–6), a minimap with the camera's window and reserves arriving.
+- **Angle:** a strong tilt (0.5–0.6) with ships drawn in a real three-quarter view (`create_8_direction_object`).
+- **The plane:** not free-floating and not a board. **Orbital rings and spokes centred on the field's landmark**
+  (rings every 4 spans, stronger every 12, bearing ticks on the 12-span ring), over a **wide square lattice** every
+  8 spans with crosses where its lines meet. Faint, so ships and orders carry the screen.
+- **Ships above the plane:** each ship floats a little above its point on the plane, tied to it by a short line and a
+  small marker in its side's colour, with a soft shadow on the plane.
+- **Orders:** a ship's course is a long curved path you drag, ending in a ghost of where it will be; the whole fleet
+  moves when the turn ends. The enemy's announced moves show as shorter red paths.
+
+
 
 The prototype's `Core/Open` becomes the battle core. One battle model at the end: `Core/Hex` and the hex board go.
 

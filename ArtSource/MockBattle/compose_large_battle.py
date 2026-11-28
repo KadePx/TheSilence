@@ -124,7 +124,19 @@ blend(l)
 # ---- the orbital plane: a reference grid the battle sits on, centred on the derelict (or a plain lattice)
 PLANE = (120, 170, 230)
 l = layer(); d = ImageDraw.Draw(l)
-if GRID == 'orbital':
+if GRID == 'both':
+    # a wide square lattice under the rings: one line every 12 spans, faint, for judging distance anywhere
+    for gx in range(-48, 61, 8):
+        d.line([pt(gx, -40), pt(gx, 40)], fill=PLANE + (62,), width=1)
+    for gy in range(-40, 41, 8):
+        d.line([pt(-50, gy), pt(60, gy)], fill=PLANE + (62,), width=1)
+    # small crosses where the lattice meets, so the intersections read as fixed points on the plane
+    for gx in range(-48, 61, 8):
+        for gy in range(-40, 41, 8):
+            cx0, cy0 = pt(gx, gy)
+            d.line([(cx0 - 5, cy0), (cx0 + 5, cy0)], fill=PLANE + (150,), width=1)
+            d.line([(cx0, cy0 - 3), (cx0, cy0 + 3)], fill=PLANE + (150,), width=1)
+if GRID in ('orbital', 'both'):
     ox, oy = 3.6, -2.8
     for r in range(4, 61, 4):
         major = r % 12 == 0
