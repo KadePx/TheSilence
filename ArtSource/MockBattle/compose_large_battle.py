@@ -7,6 +7,7 @@ P = 'C:/Users/Kade/TheSilence/'
 D = sys.argv[1] + '/'          # this folder: bg.png, station.png, lp/<dir>.png, bs/<dir>.png
 OUT = sys.argv[2]
 FR = int(sys.argv[3]) if len(sys.argv) > 3 else 6
+GRID = sys.argv[4] if len(sys.argv) > 4 else 'orbital'
 random.seed(7)
 
 W, H = 1920, 1080
@@ -120,6 +121,35 @@ for i in range(240):
     d.point((sx, sy), fill=(150, 170, 210, random.randint(20, 60)))
 blend(l)
 
+# ---- the orbital plane: a reference grid the battle sits on, centred on the derelict (or a plain lattice)
+PLANE = (120, 170, 230)
+l = layer(); d = ImageDraw.Draw(l)
+if GRID == 'orbital':
+    ox, oy = 3.6, -2.8
+    for r in range(4, 61, 4):
+        major = r % 12 == 0
+        n = 180
+        pts = [pt(ox + r * math.cos(2 * math.pi * i / n), oy + r * math.sin(2 * math.pi * i / n)) for i in range(n + 1)]
+        d.line(pts, fill=PLANE + ((95 if major else 48),), width=1)
+    for a in range(0, 360, 15):
+        major = a % 45 == 0
+        p0 = pt(ox + 4 * math.cos(math.radians(a)), oy + 4 * math.sin(math.radians(a)))
+        p1 = pt(ox + 60 * math.cos(math.radians(a)), oy + 60 * math.sin(math.radians(a)))
+        d.line([p0, p1], fill=PLANE + ((60 if major else 26),), width=1)
+    for r in (12, 24):
+        lx, ly = pt(ox + r * math.cos(math.radians(232)), oy + r * math.sin(math.radians(232)))
+        d.text((lx, ly - 7), f'{r} SPANS', font=F12, fill=PLANE + (150,), anchor='mm')
+    # bearing ticks around the innermost major ring
+    for a in range(0, 360, 5):
+        r0, r1 = 12, 12.4 if a % 15 else 12.9
+        d.line([pt(ox + r0 * math.cos(math.radians(a)), oy + r0 * math.sin(math.radians(a))), pt(ox + r1 * math.cos(math.radians(a)), oy + r1 * math.sin(math.radians(a)))], fill=PLANE + (110,), width=1)
+else:
+    for gx in range(-30, 40, 3):
+        d.line([pt(gx, -30), pt(gx, 30)], fill=PLANE + ((80 if gx % 12 == 0 else 34),), width=1)
+    for gy in range(-30, 31, 3):
+        d.line([pt(-30, gy), pt(40, gy)], fill=PLANE + ((80 if gy % 12 == 0 else 34),), width=1)
+blend(l)
+
 # ---- shadows under everything (sells the height of the ships above the floor)
 l = layer(); d = ImageDraw.Draw(l)
 for (_, _, x, y, _, r, _) in concord + asc:
@@ -191,9 +221,19 @@ for i, (x, y) in enumerate(belt):
     things.append((y, rock, x, y, 0.55))
 for (name, facing, x, y, side, r, _) in concord + asc:
     things.append((y, ship(name, facing), x, y, 0.62))
+ships_at = {(x, y): side for (_, _, x, y, side, _, _) in concord + asc}
+HOVER = 22   # ships ride above the plane; a marker and a line tie each one to its point on it
 for _, im, x, y, lift in sorted(things, key=lambda t: t[0]):
     sx, sy = pt(x, y)
-    img.alpha_composite(im, (int(sx - im.width / 2), int(sy - im.height * lift)))
+    side = ships_at.get((x, y))
+    if side:
+        col = GREEN if side == 'C' else RED
+        mk = ImageDraw.Draw(img)
+        mk.ellipse((sx - 9, sy - 4, sx + 9, sy + 4), outline=col + (220,), width=1)
+        mk.line([(sx, sy), (sx, sy - HOVER)], fill=col + (150,), width=1)
+        img.alpha_composite(im, (int(sx - im.width / 2), int(sy - HOVER - im.height * 0.5)))
+    else:
+        img.alpha_composite(im, (int(sx - im.width / 2), int(sy - im.height * lift)))
 
 # ---- engine wakes: short streaks behind moving ships
 l = layer(); d = ImageDraw.Draw(l)
