@@ -8,18 +8,30 @@ D = sys.argv[1] + '/'          # this folder: bg.png, station.png, lp/<dir>.png,
 OUT = sys.argv[2]
 FR = int(sys.argv[3]) if len(sys.argv) > 3 else 6
 GRID = sys.argv[4] if len(sys.argv) > 4 else 'orbital'
+MODE = sys.argv[5] if len(sys.argv) > 5 else 'oblique'   # oblique | iso | persp | close
 random.seed(7)
 
 W, H = 1920, 1080
 TILT = 0.5
 # Field coordinates are in "spans" on the floor plane; the camera looks at a window of it.
-U = 46.0                       # pixels per span on screen (long axis)
-CAMX, CAMY = 2.0, 1.0          # floor point at the centre of the view
+SCALE = 2 if MODE == 'close' else 1
+U = 46.0 * SCALE               # pixels per span on screen (long axis)
+CAMX, CAMY = (-3.0, 4.0) if MODE == 'close' else (2.0, 1.0)   # floor point at the centre of the view
 CX, CY = 960, 420
 
 
 def pt(x, y):
-    return (CX + (x - CAMX) * U, CY + (y - CAMY) * U * TILT)
+    dx, dy = x - CAMX, y - CAMY
+    if MODE == 'iso':
+        # the plane turned 45 degrees and squashed 2:1: classic isometric diamonds
+        X, Y = (dx - dy) * 0.7071, (dx + dy) * 0.7071
+        return (CX + X * U * 1.1, CY + Y * U * 0.55)
+    if MODE == 'persp':
+        # a camera tilted over the plane: the far side recedes toward a horizon above the screen
+        z = max(0.25, 1 + (-dy) * 0.035)
+        s = 1 / z
+        return (CX + dx * U * s, CY - 657 + 657 * s + dy * 0)
+    return (CX + dx * U, CY + dy * U * TILT)
 
 
 def font(size, name='Label'):
@@ -67,8 +79,11 @@ def bezier(p0, p1, p2, n=40):
 
 
 def ellipse(d, x, y, r, col, width=1, fill=None):
-    cx, cy = pt(x, y)
-    d.ellipse((cx - r * U, cy - r * U * TILT, cx + r * U, cy + r * U * TILT), outline=col, width=width, fill=fill)
+    pts = [pt(x + r * math.cos(2 * math.pi * i / 36), y + r * math.sin(2 * math.pi * i / 36)) for i in range(37)]
+    if fill is not None:
+        d.polygon(pts, fill=fill)
+    if col is not None:
+        d.line(pts, fill=col, width=width)
 
 
 def label(d, xy, text, col, f=F12, plate=True, anchor='mm'):
@@ -85,8 +100,10 @@ def load(path):
 
 def ship(name, facing):
     if name in ('lp', 'bs'):
-        return load(D + f'{name}/{facing}.png')
-    return load(P + f'Assets/_Project/Art/Ships/IsoDemo/iso_{name}_{facing}.png')
+        im = load(D + f'{name}/{facing}.png')
+    else:
+        im = load(P + f'Assets/_Project/Art/Ships/IsoDemo/iso_{name}_{facing}.png')
+    return im.resize((im.width * SCALE, im.height * SCALE), Image.NEAREST) if SCALE > 1 else im
 
 
 # ---- actors: (sprite set, facing, x, y, side, radius, label)
@@ -124,18 +141,19 @@ blend(l)
 # ---- the orbital plane: a reference grid the battle sits on, centred on the derelict (or a plain lattice)
 PLANE = (120, 170, 230)
 l = layer(); d = ImageDraw.Draw(l)
+STEP = 4 if MODE == 'iso' else 8
 if GRID == 'both':
-    # a wide square lattice under the rings: one line every 12 spans, faint, for judging distance anywhere
-    for gx in range(-48, 61, 8):
-        d.line([pt(gx, -40), pt(gx, 40)], fill=PLANE + (62,), width=1)
-    for gy in range(-40, 41, 8):
-        d.line([pt(-50, gy), pt(60, gy)], fill=PLANE + (62,), width=1)
-    # small crosses where the lattice meets, so the intersections read as fixed points on the plane
-    for gx in range(-48, 61, 8):
-        for gy in range(-40, 41, 8):
+    # a square lattice under the rings (diamonds in isometric): a line every STEP spans, stronger every 12
+    for g in range(-48, 61, STEP):
+        major = g % 12 == 0
+        col = PLANE + ((150 if major else 72) if MODE == 'iso' else 62,)
+        d.line([pt(g, -48), pt(g, 48)], fill=col, width=1)
+        d.line([pt(-56, g), pt(64, g)], fill=col, width=1)
+    # marks where the strong lines meet, so those read as fixed points on the plane
+    for gx in range(-48, 61, 12):
+        for gy in range(-48, 49, 12):
             cx0, cy0 = pt(gx, gy)
-            d.line([(cx0 - 5, cy0), (cx0 + 5, cy0)], fill=PLANE + (150,), width=1)
-            d.line([(cx0, cy0 - 3), (cx0, cy0 + 3)], fill=PLANE + (150,), width=1)
+            d.polygon([(cx0 - 6, cy0), (cx0, cy0 - 3), (cx0 + 6, cy0), (cx0, cy0 + 3)], outline=PLANE + (170,))
 if GRID in ('orbital', 'both'):
     ox, oy = 3.6, -2.8
     for r in range(4, 61, 4):
@@ -210,6 +228,25 @@ for (s, ctrl, end, text) in orders:
 # the enemy's announced moves, in red and shorter
 enemy_orders = [(asc[0], (10.0, -2.0), (7.6, 0.6)), (asc[1], (6.0, -9.0), (3.0, -7.6)), (asc[3], (4.0, -2.0), (2.0, 0.4)),
                 (asc[4], (7.0, 3.6), (4.6, 4.6)), (asc[2], (13.0, 1.6), (11.4, 2.8))]
+
+NAMES = ['east', 'south_east', 'south', 'south_west', 'west', 'north_west', 'north', 'north_east']
+def facing_of(v):
+    return NAMES[int(round(math.degrees(math.atan2(v[1], v[0])) / 45.0)) % 8]
+FACE = {}
+for (s_, ctrl, end) in [o[:3] for o in orders] + list(enemy_orders):
+    a0, c0 = pt(s_[2], s_[3]), pt(*ctrl)
+    FACE[(s_[2], s_[3])] = facing_of((c0[0] - a0[0], c0[1] - a0[1]))
+def centroid(fleet):
+    ps = [pt(x, y) for (_, _, x, y, _, _, _) in fleet]
+    return (sum(p[0] for p in ps) / len(ps), sum(p[1] for p in ps) / len(ps))
+for fleet, other in ((concord, asc), (asc, concord)):
+    c = centroid(other)
+    for (_, _, x, y, _, _, _) in fleet:
+        if (x, y) not in FACE:
+            p = pt(x, y)
+            FACE[(x, y)] = facing_of((c[0] - p[0], c[1] - p[1]))
+def face(x, y, f):
+    return FACE.get((x, y), f) if MODE == 'iso' else f
 for (s, ctrl, end) in enemy_orders:
     path = bezier(pt(s[2], s[3]), pt(*ctrl), pt(*end))
     dashed(d, path, RED + (170,), 2, 6, 7)
@@ -225,14 +262,18 @@ blend(l)
 # ---- the field's objects and ships, back to front
 things = []
 st = load(D + 'station.png')
+if SCALE > 1:
+    st = st.resize((st.width * SCALE, st.height * SCALE), Image.NEAREST)
 things.append((station[1], st, station[0], station[1], 0.62))
 for i, (x, y) in enumerate(belt):
     rock = load(P + f'Assets/_Project/Art/Ships/IsoDemo/iso_rock_{"a" if i % 2 else "b"}.png')
+    if SCALE > 1:
+        rock = rock.resize((rock.width * SCALE, rock.height * SCALE), Image.NEAREST)
     if i % 3 == 0:
         rock = rock.resize((rock.width // 2, rock.height // 2), Image.NEAREST)
     things.append((y, rock, x, y, 0.55))
 for (name, facing, x, y, side, r, _) in concord + asc:
-    things.append((y, ship(name, facing), x, y, 0.62))
+    things.append((y, ship(name, face(x, y, facing)), x, y, 0.62))
 ships_at = {(x, y): side for (_, _, x, y, side, _, _) in concord + asc}
 HOVER = 22   # ships ride above the plane; a marker and a line tie each one to its point on it
 for _, im, x, y, lift in sorted(things, key=lambda t: t[0]):
@@ -247,13 +288,17 @@ for _, im, x, y, lift in sorted(things, key=lambda t: t[0]):
     else:
         img.alpha_composite(im, (int(sx - im.width / 2), int(sy - im.height * lift)))
 
-# ---- engine wakes: short streaks behind moving ships
+# ---- engine wakes: short streaks behind each ship, in screen space along the way it faces
+ANG = {n: i * 45 for i, n in enumerate(NAMES)}
 l = layer(); d = ImageDraw.Draw(l)
 for (name, facing, x, y, side, r, _) in concord + asc:
-    hx, hy = {'north_east': (0.7, -0.7), 'east': (1, 0), 'south_west': (-0.7, 0.7), 'west': (-1, 0)}[facing]
-    tail = pt(x - hx * (r + 0.2), y - hy * (r + 0.2))
+    a_ = math.radians(ANG[face(x, y, facing)])
+    ux, uy = math.cos(a_), math.sin(a_) * 0.6
+    cx0, cy0 = pt(x, y)
+    cy0 -= 22
+    tail = (cx0 - ux * r * 40 * SCALE, cy0 - uy * r * 40 * SCALE)
     for k in range(10):
-        p0 = (tail[0] - hx * U * 0.25 * k, tail[1] - hy * U * TILT * 0.25 * k)
+        p0 = (tail[0] - ux * 5 * k, tail[1] - uy * 5 * k)
         col = (AMBER if side == 'C' else CYAN) + (max(0, 120 - k * 12),)
         d.point(p0, fill=col)
         d.point((p0[0] + 1, p0[1]), fill=col)

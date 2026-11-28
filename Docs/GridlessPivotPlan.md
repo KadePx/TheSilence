@@ -69,10 +69,15 @@ Settled from the mock-ups in `ArtSource/Screenshots/mock_large_battle*.png` (com
 
 - **Scale:** a large-scale fleet battle. Fields several screens wide (the mock-up's is 60×36 spans), ships at 1×,
   six or more ships a side, long moves (speeds 4–6), a minimap with the camera's window and reserves arriving.
-- **Angle:** a strong tilt (0.5–0.6) with ships drawn in a real three-quarter view (`create_8_direction_object`).
+- **Projection: true isometric** (Kade's pick from four options, 2026-11-28): the plane turned 45° and squashed 2:1,
+  so the lattice runs in diamonds at the classic 2:1 pixel slope. Ships are drawn in a real three-quarter view
+  (`create_8_direction_object`). Mock-up: `ArtSource/Screenshots/mock_large_battle_isometric.png`.
+  - Open point: in true isometric the eight plane headings land on screen at 0°, ±26.6°, ±90°, ±153.4° and 180°, while
+    PixelLab draws its diagonal facings at 45° on screen. Either headings snap to what the art shows, or the
+    diagonals are drawn for the 2:1 angle (PixelLab's `create_image_pixflux` has an isometric option to test).
 - **The plane:** not free-floating and not a board. **Orbital rings and spokes centred on the field's landmark**
-  (rings every 4 spans, stronger every 12, bearing ticks on the 12-span ring), over a **wide square lattice** every
-  8 spans with crosses where its lines meet. Faint, so ships and orders carry the screen.
+  (rings every 4 spans, stronger every 12, bearing ticks on the 12-span ring), over a **square lattice** (diamonds on
+  screen) every 4 spans, stronger every 12, with small marks where the strong lines meet. Faint, so ships and orders carry the screen.
 - **Ships above the plane:** each ship floats a little above its point on the plane, tied to it by a short line and a
   small marker in its side's colour, with a soft shadow on the plane.
 - **Orders:** a ship's course is a long curved path you drag, ending in a ghost of where it will be; the whole fleet
