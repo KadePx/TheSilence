@@ -8,15 +8,15 @@ namespace Silence.Core.Open
     {
         public static OpenShip Flagship() => new OpenShip
         {
-            Name = "Long Promise", Art = "con_longpromise", Side = OpenSide.Player, Flagship = true,
-            MaxSpeed = 3, Radius = 1600, Hull = 30, MaxHull = 30, Shields = 4, MaxShields = 4,
+            Name = "Long Promise", Art = "con_frigate", Side = OpenSide.Player, Flagship = true,
+            MaxSpeed = 3, Radius = 1300, Hull = 30, MaxHull = 30, Shields = 4, MaxShields = 4,
             Armor = new[] { 2, 2, 1, 2 }, HeatCap = 5, Vent = 1, Agility = 90,
         };
 
         public static OpenShip Outrider() => new OpenShip
         {
-            Name = "Outrider", Art = "con_outrider", Side = OpenSide.Player,
-            MaxSpeed = 4, Radius = 900, Hull = 14, MaxHull = 14, Shields = 3, MaxShields = 3,
+            Name = "Outrider", Art = "con_skiff", Side = OpenSide.Player,
+            MaxSpeed = 4, Radius = 800, Hull = 14, MaxHull = 14, Shields = 3, MaxShields = 3,
             Armor = new[] { 1, 1, 0, 1 }, HeatCap = 3, Vent = 1, Agility = 135,
         };
 
@@ -34,8 +34,8 @@ namespace Silence.Core.Open
 
         public static OpenShip Escort(string name) => new OpenShip
         {
-            Name = name, Art = "asc_blade", Side = OpenSide.Enemy,
-            MaxSpeed = 3, Radius = 600, Hull = 9, MaxHull = 9, Shields = 2, MaxShields = 2,
+            Name = name, Art = "asc_escort", Side = OpenSide.Enemy,
+            MaxSpeed = 3, Radius = 650, Hull = 9, MaxHull = 9, Shields = 2, MaxShields = 2,
             Armor = new[] { 1, 1, 0, 1 }, Agility = 135,
             Weapons = { new OpenWeapon { Name = "Fore guns", Fore = true, Range = 4000, Damage = 3 } },
         };
@@ -119,7 +119,7 @@ namespace Silence.Core.Open
         /// Wrecks and rock across the field, from the seed on a stream of its own (so the deck shuffle is not
         /// disturbed). Each keeps clear of the ships' starting places and leaves a lane between itself and the next.
         /// </summary>
-        public static void Scatter(OpenBattle b, ulong seed, int wrecks = 4, int rocks = 16)
+        public static void Scatter(OpenBattle b, ulong seed, int wrecks = 4, int rocks = 10)
         {
             var rng = new Pcg32(seed, 77);
             for (int i = 0; i < wrecks + rocks; i++)
@@ -129,7 +129,7 @@ namespace Silence.Core.Open
                 int radius = wreck ? 1100 : art == "iso_rock_a" ? 800 : 850;
                 for (int attempt = 0; attempt < 200; attempt++)
                 {
-                    var p = new Vec(rng.Range(-b.HalfWidth + 2500, b.HalfWidth - 2500), rng.Range(-b.HalfHeight + 2000, b.HalfHeight - 2000));
+                    var p = new Vec(rng.Range(-b.HalfWidth + Lane + radius, b.HalfWidth - Lane - radius), rng.Range(-b.HalfHeight + Lane + radius, b.HalfHeight - Lane - radius));
                     if (!Clear(b, p, radius)) continue;
                     b.Rocks.Add(new OpenRock { Name = wreck ? "Wreck" : "Rocks", Art = art, Pos = p, Radius = radius });
                     break;
@@ -137,7 +137,11 @@ namespace Silence.Core.Open
             }
         }
 
-        public const int StartClearance = 2500, Lane = 1600;
+        /// <summary>
+        /// Room kept clear around the starts, and the narrowest gap left between two obstacles (or an obstacle and
+        /// the edge): wider than the biggest base, with room to turn, so no ship can be caught in a pocket.
+        /// </summary>
+        public const int StartClearance = 2500, Lane = 4200;
 
         static bool Clear(OpenBattle b, Vec p, int radius)
         {

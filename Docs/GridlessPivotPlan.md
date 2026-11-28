@@ -98,10 +98,14 @@ Result (sheet: `ArtSource/IsoPilot/pilot_sheet.png`):
 | Text + today's sprite as style image, low top-down (`create_object_pro_flash`, 6–8) | Lost the quilted hull | **Good**, kept | **Good**, kept |
 | Same, high top-down | Became a different ship | Lost the catamaran | Usable, less like the original |
 
-- **Route:** expand the existing sprite for flagships and anything with a design detail worth keeping; text plus
-  style image in low top-down for the rest. High top-down is out.
+- **Kade's verdict (2026-11-28): the pilot looks too flat.** Kade prefers the first demo: a strong tilt (0.6) and
+  hulls drawn by `create_8_direction_object` in a true three-quarter view. The pilot routes (expansion and text plus
+  style) both come out close to top-down. **Route for production: `create_8_direction_object`, low top-down,** with a
+  per-faction style object (`style_object_id`) so a fleet matches; to be tested next for keeping today's designs
+  (its reference-image mode).
+- ~~Route: expand the existing sprite for flagships; text plus style image for the rest.~~ Superseded.
 - **View angle:** PixelLab's low top-down ships are barely foreshortened (nose-up about 0.9 of side-on), so the field
-  is tilted only to 0.85. The depth comes from the ships' shading more than from perspective.
+  was tilted to 0.85 to match. Kade found that flat; the field is back at 0.6 with the demo hulls.
 - **Cost:** cheaper than planned. Text-plus-style hulls are 6–8 generations for all eight facings.
 
 The plan as written before the pilot:

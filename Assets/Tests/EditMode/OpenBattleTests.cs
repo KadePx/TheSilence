@@ -137,7 +137,7 @@ namespace Silence.Tests
             flag.Speed = 3;
             b.Start();
             b.EndTurn();
-            Assert.AreEqual(new Vec(600, 0), flag.Pos, "stops where the bases touch: 3000 - 800 - 1600");
+            Assert.AreEqual(new Vec(900, 0), flag.Pos, "stops where the bases touch: 3000 - 800 - 1300");
             Assert.AreEqual(0, flag.Speed);
             Assert.AreEqual(27, flag.Hull);
             Assert.IsTrue(b.Log.Any(e => e.Kind == OpenEventKind.Collision));
@@ -224,15 +224,18 @@ namespace Silence.Tests
             for (ulong seed = 1; seed <= 20; seed++)
             {
                 var b = OpenContent.BreakersYard(seed);
-                Assert.GreaterOrEqual(b.Rocks.Count, 16, $"seed {seed}");
+                Assert.GreaterOrEqual(b.Rocks.Count, 6, $"seed {seed}: too open, nothing to hide behind");
                 foreach (var r in b.Rocks)
                 {
                     Assert.LessOrEqual(System.Math.Abs(r.Pos.X) + r.Radius, b.HalfWidth);
                     Assert.LessOrEqual(System.Math.Abs(r.Pos.Y) + r.Radius, b.HalfHeight);
+                    Assert.GreaterOrEqual(b.HalfWidth - System.Math.Abs(r.Pos.X) - r.Radius, OpenContent.Lane, $"seed {seed}: no lane at the side edge");
+                    Assert.GreaterOrEqual(b.HalfHeight - System.Math.Abs(r.Pos.Y) - r.Radius, OpenContent.Lane, $"seed {seed}: no lane at the top or bottom");
                     foreach (var s in b.Ships)
                         Assert.GreaterOrEqual(OpenMath.Dist(r.Pos, s.Pos), r.Radius + s.Radius + OpenContent.StartClearance, $"seed {seed}: rock on a start");
                     foreach (var o in b.Rocks)
                         if (o != r) Assert.GreaterOrEqual(OpenMath.Dist(r.Pos, o.Pos), r.Radius + o.Radius + OpenContent.Lane, $"seed {seed}: no lane");
+                    Assert.Greater(OpenContent.Lane, 2 * b.Ships.Max(x => x.Radius), "a lane is wider than the biggest ship");
                 }
             }
         }

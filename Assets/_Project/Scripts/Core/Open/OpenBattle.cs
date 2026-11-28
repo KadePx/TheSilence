@@ -114,7 +114,7 @@ namespace Silence.Core.Open
     public sealed class OpenBattle
     {
         /// <summary>Half the size of the field. Nothing may leave it.</summary>
-        public int HalfWidth = 20000, HalfHeight = 11000;
+        public int HalfWidth = 20000, HalfHeight = 12000;
         public const int HandSize = 5;
         const int StepSize = 100;
 

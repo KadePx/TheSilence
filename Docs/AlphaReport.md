@@ -938,3 +938,15 @@ After Kade played the prototype: turning by card was annoying and unforgiving, a
   new field by hand.
 - Known layout faults: the last line of each ship panel ("TURN LEFT") runs into the panel's border, and the pan/zoom
   hint under End turn wraps.
+
+### After Kade played it again (2026-11-28)
+
+- **Look:** the pilot hulls and the gentler 0.85 tilt read as flat. Back to the first demo's look: tilt 0.6 and the demo
+  hulls (drawn by `create_8_direction_object` in three-quarter view). That tool is the production route now.
+- **Stuck between obstacles:** the lanes between obstacles (1.6 spans) were narrower than Long Promise's base (3.2).
+  Lanes are now 4.2 spans between any two obstacles and between an obstacle and the edge, wider than the biggest ship
+  with room to turn; a field holds 7 to 10 obstacles. Headings in the helm fan whose drift would hit something are
+  marked red.
+- Ship panels and the pan/zoom hint no longer overflow.
+- Tests: all pass (the field test now checks lanes against the biggest base). Bot over 40 seeds: 40 wins, 0 losses,
+  about 15 turns.

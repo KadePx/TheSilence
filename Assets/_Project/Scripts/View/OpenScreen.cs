@@ -23,8 +23,8 @@ namespace Silence.View
         // The plane on screen: thousandths of a span to layout pixels (U), flattened top to bottom (Tilt), and
         // panned by a whole number of pixels (camF, rounded). Sprites are drawn at a whole-number scale, and U
         // keeps step with it so a base and its ship stay the same size: 1x shows the whole field, 2x is close.
-        // Tilt matches the art: PixelLab's low top-down ships are barely foreshortened (nose-up about 0.9 of side-on).
-        const float Tilt = 0.85f, Cx = 960f, Cy = 394f;
+        // A strong tilt: the field reads as a floor seen at an angle, which is the look Kade chose.
+        const float Tilt = 0.6f, Cx = 960f, Cy = 394f;
         float U = 0.036f;
         int scale = 1;
         Vector2 camF;
@@ -111,7 +111,8 @@ namespace Silence.View
             handRoot = Ui.Box(root, "Hand", 0, 0, Ui.RefW, Ui.RefH);
             endTurn = Ui.Btn(bottom.transform, "End turn", 1664, 116, 224, 76, OnEndTurn, 32);
             Ui.Label(bottom.transform, "E or Enter. F9 lets the bot play a turn.", Skin.Stencil, 12, Skin.Faint, 1600, 204, 300, 14, TextAlignmentOptions.Center);
-            Ui.Label(bottom.transform, "DRAG OR ARROWS TO PAN   WHEEL OR Z TO ZOOM   SPACE CENTRES", Skin.Stencil, 12, Skin.Faint, 1540, 236, 360, 14, TextAlignmentOptions.Center);
+            var nav = Ui.Label(bottom.transform, "DRAG PANS   WHEEL ZOOMS   SPACE CENTRES", Skin.Stencil, 12, Skin.Faint, 1560, 236, 340, 14, TextAlignmentOptions.Center);
+            nav.textWrappingMode = TextWrappingModes.NoWrap;
             overlayRoot = Ui.Box(root, "Overlay", 0, 0, Ui.RefW, Ui.RefH);
 
             Music.Play("music_battle");
@@ -414,7 +415,11 @@ namespace Silence.View
             {
                 if (limit >= 180 && a == s.StartHeading + limit) break;
                 bool now = OpenMath.Norm(a) == s.Heading;
-                under.Line(Polar(c, a, reach - 500f), Polar(c, a, reach), now ? 3f : 2f, now ? Color.white : PlayerCol);
+                // A heading whose drift at the present speed would hit something is marked red.
+                var hit = Stop.None;
+                if (s.Speed > 0) battle.Trace(s, OpenMath.Norm(a), s.Speed * OpenMath.Span, out hit);
+                bool blocked = hit != Stop.None;
+                under.Line(Polar(c, a, reach - 500f), Polar(c, a, reach), now ? 3f : 2f, now ? Color.white : blocked ? Skin.Bad : PlayerCol);
             }
             if (helmPreview < 0 || helmPreview == s.Heading) return;
             under.Line(Polar(c, helmPreview, s.Radius), Polar(c, helmPreview, reach), 2f, Color.white);
@@ -467,11 +472,11 @@ namespace Silence.View
             float y = 64;
             foreach (var s in battle.Ships.Where(x => x.Side == OpenSide.Player))
             {
-                var plate = Ui.Plate(panelRoot, s.Name, 12, y, 300, 186);
+                var plate = Ui.Plate(panelRoot, s.Name, 12, y, 300, 196);
                 var p = plate.transform;
                 int id = s.Id;
                 plate.gameObject.AddComponent<PointerRelay>().Click = _ => { if (shown[id].Alive && mode == Mode.Idle) { helm = id; Refresh(); } };
-                if (id == helm) Ui.Img(p, "Selected", Skin.Frame, -2, -2, 304, 190, PlayerCol, true);
+                if (id == helm) Ui.Img(p, "Selected", Skin.Frame, -2, -2, 304, 200, PlayerCol, true);
                 var sh = shown[s.Id];
                 Ui.Heading(p, sh.Alive ? s.Name : s.Name + " - lost", 16, 16, 14, 200, 20, TextAlignmentOptions.Left, sh.Alive ? Skin.Text : Skin.Faint);
                 Ui.Label(p, s.Flagship ? "FLAGSHIP" : "ESCORT", Skin.Stencil, 12, Skin.BrassDark, 190, 18, 94, 14, TextAlignmentOptions.Right);
@@ -495,7 +500,7 @@ namespace Silence.View
                     Ui.Btn(p, "<", 170, 146, 52, 34, () => { helm = id; Steer(s.Heading - OpenMath.HeadingStep, s.Speed); }, 16);
                     Ui.Btn(p, ">", 230, 146, 52, 34, () => { helm = id; Steer(s.Heading + OpenMath.HeadingStep, s.Speed); }, 16);
                 }
-                y += 194;
+                y += 204;
             }
             var enemies = battle.Ships.Where(x => x.Side == OpenSide.Enemy).ToList();
             var e = Ui.Plate(panelRoot, "Enemies", 1608, 64, 300, 40 + enemies.Count * 40).transform;
